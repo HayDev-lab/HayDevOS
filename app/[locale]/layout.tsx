@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "../globals.css";
+import "../business-os.css";
 import { notFound } from "next/navigation";
 import { LanguageProvider } from "@/components/language-provider";
 import { getMessages, getTranslator, isLocale } from "@/lib/i18n";
@@ -8,11 +9,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
  const { locale } = await params; if (!isLocale(locale)) notFound(); const t = getTranslator(locale);
  return {
   metadataBase: new URL(origin),
-  title: t("HayDev — ERP, CRM, AI и сайты для бизнеса в Армении"),
+  title: t("HayDev — цифровая операционная система бизнеса в Армении"),
   description: t("Создаём цифровую операционную систему бизнеса: ERP, CRM, сайт, реклама, AI и аналитика. Процессы, склад, продажи и финансы в одном центре управления."),
   alternates: { canonical: `/${locale}`, languages: { hy: "/hy", ru: "/ru", en: "/en", "x-default": "/hy" } },
-  openGraph: { title: t("HayDev — ваш бизнес на новой орбите"), description: t("Сайт, CRM, ERP, AI и реклама в одной системе."), url: `${origin}/${locale}`, siteName: "HayDev", type: "website", locale: { hy: "hy_AM", ru: "ru_RU", en: "en_US" }[locale] },
-  twitter: { card: "summary", title: t("HayDev — система роста вашего бизнеса"), description: t("Сайт, CRM, ERP, AI и реклама в одной системе.") },
+  openGraph: { title: t("HayDev — цифровая операционная система бизнеса в Армении"), description: t("Сайт, CRM, ERP, AI и реклама в одной системе."), url: `${origin}/${locale}`, siteName: "HayDev", type: "website", locale: { hy: "hy_AM", ru: "ru_RU", en: "en_US" }[locale] },
+  twitter: { card: "summary", title: t("HayDev — цифровая операционная система бизнеса в Армении"), description: t("Сайт, CRM, ERP, AI и реклама в одной системе.") },
   robots: { index: false, follow: false },
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };

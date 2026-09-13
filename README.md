@@ -1,59 +1,52 @@
-# HayDev
+# HayDev — Business Operating Systems
 
-Русскоязычный сайт студии, которая соединяет ИИ-автоматизацию, сайты, бизнес-ПО, CRM и маркетинг в единую систему роста.
+Existing Armenian-first HayDev site, with Russian and English routes. The site demonstrates how marketing, a website, leads, CRM, sales, ERP, operations, finance, analytics and AI can work on shared data. This is a services website with interactive examples, not an operational customer ERP.
 
-## Стек
+## Stack and routes
+Sites Vinext / React 19 / TypeScript / Tailwind 4, existing Radix primitives, Cloudflare Worker and D1. pnpm lockfile and dependencies are preserved. No graphics or animation dependency added.
 
-Sites Vinext (Next-compatible App Router), React 19, TypeScript, Tailwind 4, существующие Radix/Shadcn primitives, Cloudflare Worker и D1. Пакетный менеджер — pnpm; `pnpm-lock.yaml` является источником версий. Новые runtime-зависимости не добавлялись.
+- `/` redirects to `/hy`; `/hy`, `/ru`, `/en` have their own language metadata and canonical URLs.
+- `/api/leads` validates and persists enquiries. No public read endpoint.
+- Current audience is owner-private. `noindex` and current access policy are intentionally preserved.
 
-## Где редактировать
+## Editable source
+- `components/haydev.tsx`: page sequence, navigation, project stages, trust, contact and legal dialog.
+- `components/sections/business-core.tsx`: hero, ten semantic system nodes, shared selection and explanation.
+- `components/visuals/orbital-engine.ts`: native WebGL mesh renderer, adaptive quality and resource ownership.
+- `components/visuals/orbital-scene.tsx`: lazy initialization, first-frame and failure fallback.
+- `components/sections/growth-system.tsx`: fragmented/connected comparison, five layers, eight automation recipes and six intelligence modules.
+- `components/sections/erp-section.tsx`: shared-data pipeline, existing eight ERP modules, ten directions and two packages.
+- `components/sections/industry-systems.tsx`: eight selectable industry architectures.
+- `components/sections/mission-control.tsx`: clearly labelled demonstration dashboard. All numbers are synthetic examples, not customer outcomes.
+- `components/sections/business-audit.tsx`: eight questions, rule-based preliminary map and transfer to the enquiry form.
+- `components/sections/contact-form.tsx`: editable enquiry, consent, server response and error states.
+- `data/business-os.ts`, `data/erp-content.json`, `data/site-content.ts`: structured content.
+- `data/translations.json`: all three dictionaries. New visitor-facing text has Armenian and English translations.
+- `app/globals.css`: existing brand and shared UI; `app/business-os.css`: scoped Business OS extensions.
 
-- `data/site-content.ts`: навигация, услуги, модули системы, этапы, примеры сценариев.
-- `components/haydev.tsx`: секции и интерактивные состояния.
-- `components/sections/contact-form.tsx`: форма, клиентская валидация, отправка и статусы.
-- `app/globals.css`: цвета, размеры, responsive и reduced motion.
-- `app/layout.tsx`: русский язык, title/description, OpenGraph, canonical и noindex закрытой версии.
-- `app/api/leads/route.ts`: POST заявки, серверная валидация и ограничения.
-- `db/schema.ts`, `drizzle/`: структура и миграции D1.
-- `public/images/`: оригинальная 3D-графика в WebP; live WebGL не используется.
+## Audit and enquiry data
+The diagnostic is deterministic, not an LLM call. It does not inspect a visitor's systems or claim verified efficiency. Responses stay in React memory and are lost on reload/language navigation. The visitor explicitly transfers them to an editable description, then submits with consent. No third-party data transmission or localStorage persistence is added.
 
-## Основной путь
+`POST /api/leads` uses existing schema, prepared SQL, same-origin enforcement, body limits, UUID idempotency and per-contact rate limiting. Success appears only after the server accepts the request. D1 data can be inspected through the Site owner's data management. Email/Telegram notifications and external CRM are not connected.
 
-Посетитель изучает роль модулей, переключает карту «без системы / с HayDev», раскрывает решения, выбирает этапы и примеры. Все основные CTA ведут к форме. POST `/api/leads` сохраняет заявку в D1. Успех показывается после успешного ответа сервера. Повтор с тем же UUID не создаёт дубликат. Сервер ограничивает заявки тремя на адрес за 24 часа, проверяет согласие, honeypot и размер тела.
+## WebGL
+One native WebGL 1 program, procedural meshes, no textures or post-processing. Ten ports share a geometry buffer; a packet follows the business sequence. Pointer tilt and drag affect the core. Selected HTML nodes update the renderer and explanation. No rotation-hint toolbar exists.
 
-Публичного GET заявок нет. Владелец просматривает таблицу `leads` через управление данными Site. Уведомления на email, Telegram и внешняя CRM не подключены: адреса и учётные данные не предоставлены. Данные формы не отправляются сторонним сервисам и не записываются в localStorage.
+Dynamic import starts in the viewport. Desktop DPR <=1.25, mobile/constrained DPR <=1, buffer <=900×720. Quality drops to .65 after sustained slow frames. Target frame cadence is 30fps desktop / 20fps mobile, not a measured performance guarantee. Offscreen/hidden rendering stops; reduced motion disables automatic animation; listeners, observers, buffers and program are disposed. The fallback WebP is an exported native frame, 34,594 bytes.
 
-## Запуск и сборка
+## Development and validation
+Existing scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm db:generate`. Sites manages preview/build/publishing. Do not run a second project initializer.
 
-В среде Sites используйте `sites-building`/`sites-hosting`; managed preview только через `sites-preview start /workspace/sites/haydev`. Обычные scripts сохранены: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm db:generate`. Проверка типов: `node node_modules/typescript/bin/tsc --noEmit`. Отдельного test/typecheck script в исходном starter нет.
+Additional explicit checks:
+- `node node_modules/typescript/bin/tsc --noEmit`
+- `node scripts/verify-business-content.mjs`
+- `node scripts/verify-webgl-lifecycle.mjs`
+- `node scripts/verify-webgl-capture.mjs`
+- `python scripts/verify-webgl-render.py`
 
-Для локального D1 сначала соберите проект, затем примените `drizzle/0000_regular_hedge_knight.sql` через Wrangler с `--local --config dist/server/wrangler.json --persist-to .wrangler/state`. При публикации Sites применяет миграции отдельно; локальные тестовые записи не публикуются.
+The last two require system EGL/Mesa and Python Pillow. They capture and render the actual shaders/meshes with OpenGL ES; they are not browser GPU benchmarks. Diagnostic artifacts are ignored under `.sites-runtime/webgl-qa/`. Lifecycle tests use a fake GL driver and verify scheduling and cleanup only.
 
-## Граница готовности
+## Release boundary
+See `haydev_business_os_verification.md` for current inspection, repair passes, evidence and limitations. Historical research/design/verification reports remain in the repository, with current decisions appended where needed.
 
-Версия предназначена для закрытого просмотра. Перед открытым запуском владелец должен добавить реальные контакты, реквизиты оператора и окончательную политику работы с данными. После этого можно согласовать открытый доступ и индексацию (сейчас noindex). Нет выдуманных клиентов, кейсов, партнёрств или обещаний процентов роста. Примеры явно обозначены как сценарии.
-
-## Проверки и решения
-
-- `haydev_research_matrix.md`: источники, заимствуемые принципы, стоимость и риски.
-- `haydev_design_direction.md`: три направления, выбранная метафора, 3D gate и план.
-- `haydev_verification_report.md`: команды и фактические результаты.
-- `haydev_repair_loop.md`: ошибки, минимальные исправления и повторные проверки.
-- `haydev_final_deep_audit.md`: повторный аудит исходников и оставшиеся ограничения.
-
-Hero создан встроенным imagegen специально для этого проекта, без чужих брендов и ассетов. Original PNG 1536×1024 преобразован в desktop WebP 127444 bytes и mobile WebP 39030 bytes. CSS perspective применяется только для мыши и отключается при reduced motion. Временная QA-страница удалена перед итоговой сборкой.
-
-## Languages
-Armenian is the default: `/` redirects to `/hy`. `/ru` and `/en` are independently addressable Russian and English versions. The header switch uses accessible links; reloading preserves the locale in the URL. All copy, form states, API validation messages and metadata are translated. Edit `data/translations.json` (Russian source keys), with structured content in `data/site-content.ts`. The selected dictionary is provided by the locale root layout; no translation service or new runtime dependency is used. API locale is selected by the allowlisted `X-Haydev-Locale` header, defaulting to Armenian.
-
-See `haydev_i18n_verification.md` for the language update audit.
-
-## ERP / Business OS
-ERP is now a central service in all three languages, including hero, navigation, metadata and the system-map stage. `components/sections/erp-section.tsx` renders the accessible ERP command core, eight module links, ten service directions and ERP Core / Business OS packages. Editable structured content lives in `data/erp-content.json`; translations remain in `data/translations.json`. The visualization uses DOM/SVG without a WebGL runtime. See `haydev_armenia_service_strategy.md` for the opportunity map and `haydev_erp_verification.md` for update evidence. Existing lead storage and access policy are unchanged.
-
-## WebGL + compact landing
-The hero now lazy-loads a native WebGL 1 mesh renderer (`components/visuals/orbital-engine.ts`), with no added graphics dependency. DOM controls rotate, pause/reset, select the service accent and switch to 2D. The existing responsive image is the fallback before first frame, on unsupported contexts and on context loss. Desktop/mobile pixel ratios and frame targets are capped; offscreen/hidden tabs stop rendering; reduced motion disables auto-rotation.
-
-The page now uses compact ERP module selectors, ten industry options, five service selectors, five process selectors and on-demand package/trust/outcome details. All services and three languages remain available. Details: `haydev_webgl_verification.md`.
-
-Graphics diagnostics (optional local dependencies: system EGL/Mesa plus Python Pillow): `node scripts/verify-webgl-capture.mjs` captures the actual engine draw data, then `python scripts/verify-webgl-render.py` compiles and renders those shaders/meshes in OpenGL ES. This is **not** a browser WebGL test. Outputs go to ignored `.sites-runtime/webgl-qa/`. The current QA browser could not create a WebGL context; fallback was verified, browser GPU performance was not.
+The cloud QA browser cannot create a WebGL context. Browser fallback and interactions are verified; native shader rendering succeeds. Hardware-browser FPS/INP/LCP and long-session GPU memory measurements remain unverified. Before public lead collection, the owner must provide final business/operator details and a retention/privacy policy. The page clearly identifies its private-demo status in the data notice; no contact identity is invented.

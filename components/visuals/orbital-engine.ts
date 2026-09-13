@@ -45,18 +45,28 @@ export function createOrbitalEngine(canvas:HTMLCanvasElement,onLost:()=>void,onR
  if(!gl.getProgramParameter(program,gl.LINK_STATUS)){for(const s of shaders)gl.deleteShader(s);gl.deleteProgram(program);throw new Error('Shader link failed');}
  for(const s of shaders)gl.deleteShader(s);
  gl.useProgram(program);const normal=gl.getAttribLocation(program,'n'),model=gl.getUniformLocation(program,'model'),vp=gl.getUniformLocation(program,'vp'),color=gl.getUniformLocation(program,'color'),emission=gl.getUniformLocation(program,'emission'),surface=gl.getUniformLocation(program,'surface'),phase=gl.getUniformLocation(program,'phase');gl.enableVertexAttribArray(0);gl.enableVertexAttribArray(normal);gl.enable(gl.DEPTH_TEST);
+ const constrained=navigator.hardwareConcurrency<=4;
  const mobile=matchMedia('(max-width: 767px)').matches;
- const mesh=(sphere:boolean,thickness:number)=>{const g=geometry(sphere,mobile?48:88,sphere?20:10,thickness),v=gl.createBuffer(),i=gl.createBuffer();if(!v||!i)throw new Error('Buffer allocation');buffers.push(v,i);gl.bindBuffer(gl.ARRAY_BUFFER,v);gl.bufferData(gl.ARRAY_BUFFER,g.vertices,gl.STATIC_DRAW);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,i);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,g.indices,gl.STATIC_DRAW);return {v,i,count:g.indices.length};};
- const ball=mesh(true,0),ring=mesh(false,.014),shell=mesh(false,.18);
+ const mesh=(sphere:boolean,thickness:number,small=false)=>{const g=geometry(sphere,small?8:(mobile||constrained)?40:64,small?6:sphere?16:8,thickness),v=gl.createBuffer(),i=gl.createBuffer();if(!v||!i)throw new Error('Buffer allocation');buffers.push(v,i);gl.bindBuffer(gl.ARRAY_BUFFER,v);gl.bufferData(gl.ARRAY_BUFFER,g.vertices,gl.STATIC_DRAW);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,i);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,g.indices,gl.STATIC_DRAW);return {v,i,count:g.indices.length};};
+ const ball=mesh(true,0),ring=mesh(false,.014),shell=mesh(false,.18),bead=mesh(true,0,true);
+ const portGeometry=geometry(true,8,6,0),portVertices:number[]=[],portIndices:number[]=[];
+ for(let k=0;k<10;k++){const a=k*Math.PI*2/10+Math.PI/2,offset=portVertices.length/6;
+ for(let j=0;j<portGeometry.vertices.length;j+=6)portVertices.push(portGeometry.vertices[j]*.035+Math.cos(a)*1.88,portGeometry.vertices[j+1]*.035+Math.sin(a)*1.5,portGeometry.vertices[j+2]*.035,portGeometry.vertices[j+3],portGeometry.vertices[j+4],portGeometry.vertices[j+5]);
+ for(const index of portGeometry.indices)portIndices.push(index+offset);}
+ const portV=gl.createBuffer(),portI=gl.createBuffer();if(!portV||!portI)throw new Error('Port allocation');buffers.push(portV,portI);gl.bindBuffer(gl.ARRAY_BUFFER,portV);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(portVertices),gl.STATIC_DRAW);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,portI);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(portIndices),gl.STATIC_DRAW);const ports={v:portV,i:portI,count:portIndices.length};
  const palette=[[.77,.96,.35],[.35,.8,1],[1,.65,.32],[.75,.52,1]];
+ let quality=1,slowFrames=0,hoverX=0,hoverY=0,targetX=0,targetY=0;
  let active=0,angle=.4,tilt=.35,clock=0,paused=false,inView=true,disposed=false,raf=0,last=0,frames=0,dragging=false,pointerX=0;
  const motion=matchMedia('(prefers-reduced-motion: reduce)');
  const draw=(now:number)=>{
   raf=0;if(disposed||!inView||document.hidden)return;
   if(last&&now-last<(mobile?50:33)){raf=requestAnimationFrame(draw);return;}
-  const dt=Math.min(now-last||0,60);last=now;if(!paused&&!motion.matches&&!dragging){angle+=dt*.000065;clock+=dt*.001;}
+  const elapsed=now-last;const dt=Math.min(elapsed||0,60);last=now;
+  if(elapsed>85&&elapsed<500)slowFrames++;else slowFrames=Math.max(0,slowFrames-1);
+  if(slowFrames>18&&quality>.65){quality=.65;slowFrames=0;resize();}
+  if(!motion.matches){hoverX+=(targetX-hoverX)*.08;hoverY+=(targetY-hoverY)*.08;}if(!paused&&!motion.matches&&!dragging){angle+=dt*.000065;clock+=dt*.001;}
   gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(.031,.039,.035,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.uniformMatrix4fv(vp,false,multiply(perspective(canvas.width/canvas.height),transform(1,0,0,-6.5)));
-  const base=rotate(tilt,angle,-.28),tint=palette[active];gl.uniform1f(phase,clock);
+  const base=rotate(tilt+hoverY,angle+hoverX,-.28),tint=palette[active%palette.length];gl.uniform1f(phase,clock);
   const paint=(mesh:typeof ball,m:Mat,c:number[],glow:number,material=0)=>{gl.bindBuffer(gl.ARRAY_BUFFER,mesh.v);gl.vertexAttribPointer(0,3,gl.FLOAT,false,24,0);gl.vertexAttribPointer(normal,3,gl.FLOAT,false,24,12);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,mesh.i);gl.uniformMatrix4fv(model,false,m);gl.uniform3fv(color,c);gl.uniform1f(emission,glow);gl.uniform1f(surface,material);gl.drawElements(gl.TRIANGLES,mesh.count,gl.UNSIGNED_SHORT,0);};
   paint(ball,multiply(base,transform(.72)),[.22,.84,1.],.1,1);
   const reactor=multiply(base,rotate(1.12,0,.14));
@@ -64,28 +74,35 @@ export function createOrbitalEngine(canvas:HTMLCanvasElement,onLost:()=>void,onR
   paint(ring,multiply(reactor,transform(.84)),tint,.8,2);
   paint(ring,multiply(reactor,transform(1.25)),[.25,.82,1.],.5,2);
   paint(ring,multiply(reactor,transform(1.31)),tint,.6,2);
-  for(let i=0;i<3;i++){
+  for(let i=0;i<2;i++){
    const orbit=multiply(base,rotate(i*.48+.8,.2,i*.7-.6));
    const radius=1.48+i*.15;
-   paint(ring,multiply(orbit,transform(radius)),i===active%3?tint:[.2,.57,.72],.3,2);
-   const position=clock*(.18+i*.07)+i*2.1;
-   paint(ball,multiply(orbit,transform(.045,Math.cos(position)*radius,0,Math.sin(position)*radius)),i===active%3?tint:[.25,.85,1.],1.2);
+   paint(ring,multiply(orbit,transform(radius)),i===active%2?tint:[.2,.57,.72],.3,2);
+   const position=clock*.24+i*Math.PI;
+   paint(bead,multiply(orbit,transform(.045,Math.cos(position)*radius,0,Math.sin(position)*radius)),i===active%2?tint:[.25,.85,1.],1.2);
   }
+  paint(ports,identity(),[.32,.75,.67],.4);
+  // One ordered packet follows MARKETING -> WEBSITE -> LEADS -> CRM -> ... -> AI.
+  const dataPhase=-clock*.22+Math.PI/2;
+  paint(bead,transform(.045,Math.cos(dataPhase)*1.88,Math.sin(dataPhase)*1.5,0),tint,1.1);
+  const selectedAngle=-active*Math.PI*2/10+Math.PI/2;
+  paint(bead,transform(.065,Math.cos(selectedAngle)*1.88,Math.sin(selectedAngle)*1.5,0),tint,1.1);
   // DOM diagnostics expose actual submitted frames without synchronous GPU readback.
-  canvas.dataset.frames=String(++frames);if(frames===1)onReady();canvas.dataset.rotation=angle.toFixed(3);canvas.dataset.active=String(active);canvas.dataset.mode=motion.matches?'reduced':paused?'paused':'animated';
-  if(!paused&&!motion.matches)raf=requestAnimationFrame(draw);
+  canvas.dataset.quality=String(quality);canvas.dataset.frames=String(++frames);if(frames===1)onReady();canvas.dataset.rotation=angle.toFixed(3);canvas.dataset.active=String(active);canvas.dataset.mode=motion.matches?'reduced':paused?'paused':'animated';
+  if(!paused&&!motion.matches&&!raf)raf=requestAnimationFrame(draw);
  };
  const request=()=>{if(!raf&&!disposed)raf=requestAnimationFrame(draw);};
- const resize=()=>{const bounds=canvas.getBoundingClientRect(),ratio=Math.min(devicePixelRatio,mobile?1:1.5),scale=Math.min(ratio,900/Math.max(bounds.width,1),720/Math.max(bounds.height,1));canvas.width=Math.max(1,Math.round(bounds.width*scale));canvas.height=Math.max(1,Math.round(bounds.height*scale));request();};
+ const resize=()=>{const bounds=canvas.getBoundingClientRect(),ratio=Math.min(devicePixelRatio,(mobile||constrained)?1:1.25)*quality,scale=Math.min(ratio,900/Math.max(bounds.width,1),720/Math.max(bounds.height,1));canvas.width=Math.max(1,Math.round(bounds.width*scale));canvas.height=Math.max(1,Math.round(bounds.height*scale));request();};
  const observer=new ResizeObserver(resize);observer.observe(canvas);
  const intersection=new IntersectionObserver(entries=>{inView=entries[0].isIntersecting;if(inView){last=0;request();}else{cancelAnimationFrame(raf);raf=0;}},{threshold:0});intersection.observe(canvas);
  const visibility=()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;}else{last=0;request();}};
  const change=()=>{cancelAnimationFrame(raf);raf=0;request();};
  const down=(e:PointerEvent)=>{dragging=true;pointerX=e.clientX;canvas.setPointerCapture(e.pointerId);};
- const move=(e:PointerEvent)=>{if(!dragging)return;angle+=(e.clientX-pointerX)*.008;pointerX=e.clientX;request();};
+ const move=(e:PointerEvent)=>{if(!dragging){if(e.pointerType==='mouse'&&!motion.matches){const b=canvas.getBoundingClientRect();targetX=((e.clientX-b.left)/b.width-.5)*.25;targetY=((e.clientY-b.top)/b.height-.5)*.18;request();}return;}angle+=(e.clientX-pointerX)*.008;pointerX=e.clientX;request();};
+ const leave=()=>{targetX=0;targetY=0;};
  const up=()=>{dragging=false;};
  const lost=(e:Event)=>{e.preventDefault();cancelAnimationFrame(raf);raf=0;disposed=true;onLost();};
- canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('webglcontextlost',lost);document.addEventListener('visibilitychange',visibility);motion.addEventListener('change',change);
+ canvas.addEventListener('pointerleave',leave);canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('webglcontextlost',lost);document.addEventListener('visibilitychange',visibility);motion.addEventListener('change',change);
  resize();
- return {setActive:(value)=>{active=Math.max(0,Math.min(3,value));request();},setPaused:(value)=>{paused=value;change();},turn:(delta)=>{angle+=delta;request();},reset:()=>{angle=.4;tilt=.35;clock=0;request();},dispose:()=>{disposed=true;cancelAnimationFrame(raf);observer.disconnect();intersection.disconnect();document.removeEventListener('visibilitychange',visibility);motion.removeEventListener('change',change);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('webglcontextlost',lost);for(const b of buffers)gl.deleteBuffer(b);gl.deleteProgram(program);}};
+ return {setActive:(value)=>{active=Math.max(0,Math.min(9,value));request();},setPaused:(value)=>{paused=value;change();},turn:(delta)=>{angle+=delta;request();},reset:()=>{angle=.4;tilt=.35;clock=0;request();},dispose:()=>{disposed=true;cancelAnimationFrame(raf);observer.disconnect();intersection.disconnect();document.removeEventListener('visibilitychange',visibility);motion.removeEventListener('change',change);canvas.removeEventListener('pointerleave',leave);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('webglcontextlost',lost);for(const b of buffers)gl.deleteBuffer(b);gl.deleteProgram(program);}};
 }

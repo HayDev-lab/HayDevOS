@@ -78,3 +78,10 @@ User explicitly requested real WebGL and a lighter, more interactive landing.
 | Decision: ADD / ADD_LATER / REJECT | ADD WebGL, explicitly requested; preserve fallback and evidence limits |
 
 Plan: implement lazy renderer and controls; replace repetitive page sections with compact module/service/stage selectors and on-demand details; verify graphics, fallback, translations, layouts and CTA; publish existing Site.
+
+## Business OS upgrade — current decision, 2026-09-13
+The current update keeps native WebGL (ADD), three languages and the existing visual identity. Earlier toolbar/pause/reset references above describe superseded iterations; the rotation hint and toolbar must not return.
+
+Visual thesis: a restrained graphite/cyan/lime business operating system. The core explains ten connected domains; five layers describe acquisition through control; industry maps and a labelled demonstration console make the architecture tangible. The audit is an eight-question rule-based diagnostic with no fake AI score.
+
+Current gate: no new dependency, one shader program, batched ports, 12 draw calls and 9,536 desktop triangles in the captured frame. DPR <=1.25 desktop /1 mobile with adaptive reduction; lazy import; offscreen and hidden-tab stop; reduced-motion single frames; static fallback. Browser GPU context is unavailable in QA, so device FPS and GPU behaviour remain NOT_RUN. Native shader render and deterministic lifecycle tests are separate evidence, not substituted browser performance claims. The decision respects the user's explicit request to retain WebGL.

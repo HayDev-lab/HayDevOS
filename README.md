@@ -42,3 +42,8 @@ Sites Vinext (Next-compatible App Router), React 19, TypeScript, Tailwind 4, с�
 - `haydev_final_deep_audit.md`: повторный аудит исходников и оставшиеся ограничения.
 
 Hero создан встроенным imagegen специально для этого проекта, без чужих брендов и ассетов. Original PNG 1536×1024 преобразован в desktop WebP 127444 bytes и mobile WebP 39030 bytes. CSS perspective применяется только для мыши и отключается при reduced motion. Временная QA-страница удалена перед итоговой сборкой.
+
+## Languages
+Armenian is the default: `/` redirects to `/hy`. `/ru` and `/en` are independently addressable Russian and English versions. The header switch uses accessible links; reloading preserves the locale in the URL. All copy, form states, API validation messages and metadata are translated. Edit `data/translations.json` (Russian source keys), with structured content in `data/site-content.ts`. The selected dictionary is provided by the locale root layout; no translation service or new runtime dependency is used. API locale is selected by the allowlisted `X-Haydev-Locale` header, defaulting to Armenian.
+
+See `haydev_i18n_verification.md` for the language update audit.

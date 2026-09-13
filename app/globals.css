@@ -196,3 +196,17 @@ h2 { font-size: clamp(34px,3.6vw,49px); letter-spacing: -2px; line-height: 1.14;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 }
+
+/* Language navigation stays visible at every width. */
+.language-switch { display: flex; align-items: center; gap: 2px; }
+.language-switch a { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 44px; font-size: 12px; color: #bec5bd; border-bottom: 2px solid transparent; }
+.language-switch a[aria-current="page"] { color: var(--primary); border-color: var(--primary); }
+html[lang=hy] h1 { font-size: clamp(52px, 5.6vw, 82px); letter-spacing: -2px; }
+html[lang=hy] h2 { letter-spacing: -1px; }
+html[lang=hy] .hero-kicker { letter-spacing: 1px; }
+html[lang=hy] .desktop-nav { gap: 16px; }
+html[lang=hy] .desktop-nav a { font-size: 12px; }
+.service-title, .stage-details, .contact-copy, .hero-copy { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 1199px) { .header-actions { gap: 10px; }.desktop-nav { gap: 14px; }.desktop-nav a { font-size: 12px; } }
+@media (max-width: 767px) { html[lang=hy] h1 { font-size: clamp(45px, 10.5vw, 75px); letter-spacing: -1.5px; } html[lang=hy] .contact-copy h2 { font-size: clamp(36px, 9vw, 47px); }.hero-cta { flex-wrap: wrap; }.system-panel-top { flex-wrap: wrap; }.map-node { overflow-wrap: anywhere; }.scene-bottomline { flex-wrap: wrap; gap: 6px; }.mission-stop { max-width: 125px; white-space: normal; }.header-actions { gap: 2px; }.language-switch a { min-width: 32px; }.brand { font-size: 24px; }.scenario-tab-list { flex-wrap: wrap; height: auto; }.eyebrow { overflow-wrap: anywhere; } }
+.scenario-narrative, .scenario-flow, .before-after > div { min-width: 0; overflow-wrap: anywhere; }

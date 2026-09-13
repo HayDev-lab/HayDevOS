@@ -47,3 +47,6 @@ Hero создан встроенным imagegen специально для эт
 Armenian is the default: `/` redirects to `/hy`. `/ru` and `/en` are independently addressable Russian and English versions. The header switch uses accessible links; reloading preserves the locale in the URL. All copy, form states, API validation messages and metadata are translated. Edit `data/translations.json` (Russian source keys), with structured content in `data/site-content.ts`. The selected dictionary is provided by the locale root layout; no translation service or new runtime dependency is used. API locale is selected by the allowlisted `X-Haydev-Locale` header, defaulting to Armenian.
 
 See `haydev_i18n_verification.md` for the language update audit.
+
+## ERP / Business OS
+ERP is now a central service in all three languages, including hero, navigation, metadata and the system-map stage. `components/sections/erp-section.tsx` renders the accessible ERP command core, eight module links, ten service directions and ERP Core / Business OS packages. Editable structured content lives in `data/erp-content.json`; translations remain in `data/translations.json`. The visualization uses DOM/SVG without a WebGL runtime. See `haydev_armenia_service_strategy.md` for the opportunity map and `haydev_erp_verification.md` for update evidence. Existing lead storage and access policy are unchanged.

@@ -38,3 +38,24 @@ HayDev turns business processes, marketing and digital presence into one connect
 4. Add metadata/favicon, responsive styles for 320 through wide desktop, focus and reduced-motion behavior.
 5. Run existing lint, compiler, build, local browser QA and functional form/storage checks. Repair one confirmed error at a time.
 6. Re-read actual source/output for final audit; save/publish private review Site. Record unavailable contact/legal data as public-launch blockers.
+
+## ERP / Business OS update — 2026-09-13
+
+Implementation plan: (1) add ERP to hero, navigation, services, process and metadata in all three languages; (2) build an explorable command-core data map with ten connections, eight module entry points, ten service directions and two packages; (3) update Armenia opportunity strategy with sourced context and explicit hypotheses; (4) verify interactions, translations and responsive layout, repair confirmed issues, then publish to the existing audience.
+
+The earlier WebGL rejection was a design/architecture judgment, **not a failed benchmark**. No WebGL prototype was built or timed (NOT_RUN). A live 3D scene can be reconsidered if spatial manipulation adds a demonstrated product benefit. A heavyweight dependency alone is not evidence that performance would fail. The current choice preserves a pre-rendered hero with pointer perspective; it does not claim live 3D.
+
+### ERP visual gate
+| Criterion | Assessment |
+|---|---|
+| Product Value | Make the data relationship between ERP, acquisition and operations understandable |
+| Thematic Fit | ERP is mission control; stable orbit nodes represent real categories of business data |
+| User Benefit | Select one of ten connections to read problem, data and operational value |
+| Technical Cost | DOM buttons, functional SVG connection diagram, existing React state |
+| Bundle Impact | No added dependency or 3D runtime; new localized copy and component only |
+| Mobile Impact | Two-column selector replaces spatial orbit below 768px; same information and actions |
+| Accessibility Impact | Native keyboard buttons, aria-pressed, aria-controls, live detail panel; decorative geometry hidden |
+| Fallback | Labels, default ERP explanation and linked modules in server-rendered HTML; no image/GPU required |
+| Reduced Motion Behavior | No continuous motion; hover transitions disabled under reduced motion |
+| Maintenance Risk | Low; no WebGL lifecycle or shader compatibility surface |
+| Decision: ADD / ADD_LATER / REJECT | ADD functional 2D orbital map. ADD_LATER live WebGL only if validated by a dedicated prototype |

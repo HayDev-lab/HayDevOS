@@ -8,11 +8,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
  const { locale } = await params; if (!isLocale(locale)) notFound(); const t = getTranslator(locale);
  return {
   metadataBase: new URL(origin),
-  title: t("HayDev — ИИ, сайты, ПО и маркетинг в единой системе роста"),
-  description: t("Соединяем ИИ-автоматизацию, разработку сайтов, бизнес-ПО, CRM и рекламу. От аудита процессов до запуска связанной системы для вашего бизнеса."),
+  title: t("HayDev — ERP, CRM, AI и сайты для бизнеса в Армении"),
+  description: t("Создаём цифровую операционную систему бизнеса: ERP, CRM, сайт, реклама, AI и аналитика. Процессы, склад, продажи и финансы в одном центре управления."),
   alternates: { canonical: `/${locale}`, languages: { hy: "/hy", ru: "/ru", en: "/en", "x-default": "/hy" } },
-  openGraph: { title: t("HayDev — ваш бизнес на новой орбите"), description: t("ИИ, сайты, программы и маркетинг в одной системе. Обсудим вашу задачу и построим понятный маршрут к запуску."), url: `${origin}/${locale}`, siteName: "HayDev", type: "website", locale: { hy: "hy_AM", ru: "ru_RU", en: "en_US" }[locale] },
-  twitter: { card: "summary", title: t("HayDev — система роста вашего бизнеса"), description: t("ИИ-автоматизация, сайты, бизнес-ПО и маркетинг.") },
+  openGraph: { title: t("HayDev — ваш бизнес на новой орбите"), description: t("Сайт, CRM, ERP, AI и реклама в одной системе."), url: `${origin}/${locale}`, siteName: "HayDev", type: "website", locale: { hy: "hy_AM", ru: "ru_RU", en: "en_US" }[locale] },
+  twitter: { card: "summary", title: t("HayDev — система роста вашего бизнеса"), description: t("Сайт, CRM, ERP, AI и реклама в одной системе.") },
   robots: { index: false, follow: false },
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };

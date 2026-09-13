@@ -50,3 +50,6 @@ The last two require system EGL/Mesa and Python Pillow. They capture and render 
 See `haydev_business_os_verification.md` for current inspection, repair passes, evidence and limitations. Historical research/design/verification reports remain in the repository, with current decisions appended where needed.
 
 The cloud QA browser cannot create a WebGL context. Browser fallback and interactions are verified; native shader rendering succeeds. Hardware-browser FPS/INP/LCP and long-session GPU memory measurements remain unverified. Before public lead collection, the owner must provide final business/operator details and a retention/privacy policy. The page clearly identifies its private-demo status in the data notice; no contact identity is invented.
+
+### Lighter presentation
+The default page now keeps detailed capabilities behind a lazy disclosure and starts the audit on demand. Glass button styles live in `app/light-glass.css`; mobile omits backdrop blur and reduced-motion omits transform feedback. See `haydev_light_glass_update.md` for focused verification.

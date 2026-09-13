@@ -1,0 +1,59 @@
+{
+  "total_js_gzip": 159121,
+  "total_css_gzip": 27909,
+  "desktop_image": 127444,
+  "mobile_image": 39030,
+  "note": "Local gzip of all emitted client chunks, not measured network transfer or Web Vitals",
+  "assets": [
+    {
+      "file": "dist/client/_next/static/bf9b6c0c-44dc-4f2d-907d-d005ae084c67/_buildManifest.js",
+      "bytes": 159,
+      "gzip": 121
+    },
+    {
+      "file": "dist/client/_next/static/bf9b6c0c-44dc-4f2d-907d-d005ae084c67/_ssgManifest.js",
+      "bytes": 76,
+      "gzip": 60
+    },
+    {
+      "file": "dist/client/_next/static/css/index.CXFlmaNO.css",
+      "bytes": 175742,
+      "gzip": 27909
+    },
+    {
+      "file": "dist/client/_next/static/chunks/index-ClNEJhp3.js",
+      "bytes": 192774,
+      "gzip": 55659
+    },
+    {
+      "file": "dist/client/_next/static/chunks/layout-segment-context-CVwdQvj-.js",
+      "bytes": 494,
+      "gzip": 343
+    },
+    {
+      "file": "dist/client/_next/static/chunks/streamed-icons-Bumrcy-j.js",
+      "bytes": 772,
+      "gzip": 490
+    },
+    {
+      "file": "dist/client/_next/static/chunks/app-route-prefetch-policy-uSfJpl-r.js",
+      "bytes": 937,
+      "gzip": 485
+    },
+    {
+      "file": "dist/client/_next/static/chunks/framework-D_rUT4EX.js",
+      "bytes": 190152,
+      "gzip": 58938
+    },
+    {
+      "file": "dist/client/_next/static/chunks/rolldown-runtime-C60lm6uB.js",
+      "bytes": 694,
+      "gzip": 423
+    },
+    {
+      "file": "dist/client/_next/static/chunks/haydev-Dllhm6oS.js",
+      "bytes": 142217,
+      "gzip": 42602
+    }
+  ]
+}

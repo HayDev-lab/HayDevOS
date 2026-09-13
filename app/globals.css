@@ -256,3 +256,6 @@ html[lang=hy] .desktop-nav a { font-size: 12px; }
 @media(prefers-reduced-motion:reduce) { .pause-scene { display: none !important; } }
 .webgl-toolbar { bottom: 138px; }
 @media(max-width:767px) { .webgl-toolbar { bottom: 85px; }.orbit-chip-3 { top: 265px; } }
+/* The fallback is an exported frame of the live command core. */
+.webgl-fallback img { object-fit: contain; }
+.hero-scene { background: #080a09; }

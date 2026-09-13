@@ -12,7 +12,7 @@ export function OrbitalScene({ active }: { active: number }) {
   return()=>{cancelled=true;observer.disconnect();engine.current?.dispose();engine.current=null;};
  },[]);
  return <div className={`webgl-scene ${ready&&!fallback?'is-ready':''}`} data-renderer={ready&&!fallback?'webgl':'fallback'}>
-  <picture className="webgl-fallback"><source media="(max-width:767px)" srcSet="/images/orbital-core-mobile.webp"/><img src="/images/orbital-core.webp" alt="" width={1536} height={1024} fetchPriority="high"/></picture>
+  <picture className="webgl-fallback"><img src="/images/command-core.webp" alt="" width={720} height={640} fetchPriority="high"/></picture>
   <canvas ref={canvas} aria-hidden="true" className="orbital-canvas"/>
   <div className="webgl-toolbar" role="group" aria-label={t("Управление 3D-сценой")}>
    <span>{t(fallback?"Статичный вид":"Вращайте ядро")}</span>

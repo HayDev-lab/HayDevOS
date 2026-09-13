@@ -29,5 +29,5 @@ for draw in frame['draws']:
 err=gl('glGetError',U,[])();assert err==0,hex(err)
 pixels=(C.c_ubyte*(w*h*4))();gl('glReadPixels',None,[I,I,I,I,U,U,P])(0,0,w,h,6408,5121,pixels)
 from PIL import Image
-im=Image.frombytes('RGBA',(w,h),bytes(pixels)).transpose(Image.Transpose.FLIP_TOP_BOTTOM);im.save('.sites-runtime/webgl-qa/render.png');distinct=len(set(im.getdata()));assert distinct>100,distinct
+im=Image.frombytes('RGBA',(w,h),bytes(pixels)).transpose(Image.Transpose.FLIP_TOP_BOTTOM);im.save('.sites-runtime/webgl-qa/render.png');im.save('.sites-runtime/webgl-qa/render.webp',quality=85,method=6);distinct=len(set(im.getdata()));assert distinct>100,distinct
 print(json.dumps({'shader_compile':'PASS','link':'PASS','GL_error':err,'draw_calls':len(frame['draws']),'distinct_colors':distinct,'renderer':gl('glGetString',C.c_char_p,[U])(7937).decode()}))

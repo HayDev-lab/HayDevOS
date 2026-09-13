@@ -50,3 +50,10 @@ See `haydev_i18n_verification.md` for the language update audit.
 
 ## ERP / Business OS
 ERP is now a central service in all three languages, including hero, navigation, metadata and the system-map stage. `components/sections/erp-section.tsx` renders the accessible ERP command core, eight module links, ten service directions and ERP Core / Business OS packages. Editable structured content lives in `data/erp-content.json`; translations remain in `data/translations.json`. The visualization uses DOM/SVG without a WebGL runtime. See `haydev_armenia_service_strategy.md` for the opportunity map and `haydev_erp_verification.md` for update evidence. Existing lead storage and access policy are unchanged.
+
+## WebGL + compact landing
+The hero now lazy-loads a native WebGL 1 mesh renderer (`components/visuals/orbital-engine.ts`), with no added graphics dependency. DOM controls rotate, pause/reset, select the service accent and switch to 2D. The existing responsive image is the fallback before first frame, on unsupported contexts and on context loss. Desktop/mobile pixel ratios and frame targets are capped; offscreen/hidden tabs stop rendering; reduced motion disables auto-rotation.
+
+The page now uses compact ERP module selectors, ten industry options, five service selectors, five process selectors and on-demand package/trust/outcome details. All services and three languages remain available. Details: `haydev_webgl_verification.md`.
+
+Graphics diagnostics (optional local dependencies: system EGL/Mesa plus Python Pillow): `node scripts/verify-webgl-capture.mjs` captures the actual engine draw data, then `python scripts/verify-webgl-render.py` compiles and renders those shaders/meshes in OpenGL ES. This is **not** a browser WebGL test. Outputs go to ignored `.sites-runtime/webgl-qa/`. The current QA browser could not create a WebGL context; fallback was verified, browser GPU performance was not.

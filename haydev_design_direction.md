@@ -59,3 +59,22 @@ The earlier WebGL rejection was a design/architecture judgment, **not a failed b
 | Reduced Motion Behavior | No continuous motion; hover transitions disabled under reduced motion |
 | Maintenance Risk | Low; no WebGL lifecycle or shader compatibility surface |
 | Decision: ADD / ADD_LATER / REJECT | ADD functional 2D orbital map. ADD_LATER live WebGL only if validated by a dedicated prototype |
+
+## WebGL and compact landing — supersedes earlier rejection
+User explicitly requested real WebGL and a lighter, more interactive landing.
+
+| Criterion | Assessment |
+|---|---|
+| Product Value | A rotatable core responds to the chosen business discipline; retains clear text explanations |
+| Thematic Fit | One operating core with connected orbital components |
+| User Benefit | Drag, rotate with keyboard buttons, pause/reset and choose a discipline; content independent of GPU |
+| Technical Cost | Small native WebGL 1 renderer; sphere/torus meshes and one lighting program, no textures or post-processing |
+| Bundle Impact | Dynamic import; no new dependency; exact gzip size recorded in verification |
+| Mobile Impact | Lower mesh resolution, DPR capped at 1, target 20fps; desktop DPR <=1.5 and target 30fps; buffer capped at 900×720 |
+| Accessibility Impact | Canvas decorative; accessible DOM controls and descriptions; no hover-only or GPU-only content |
+| Fallback | Existing responsive image before first frame, failed context or context loss; user-selectable 2D |
+| Reduced Motion Behavior | No automatic rotation; single-frame redraw on explicit controls; pause control hidden when unnecessary |
+| Maintenance Risk | Native renderer owns resources, resize/intersection/visibility listeners and disposal |
+| Decision: ADD / ADD_LATER / REJECT | ADD WebGL, explicitly requested; preserve fallback and evidence limits |
+
+Plan: implement lazy renderer and controls; replace repetitive page sections with compact module/service/stage selectors and on-demand details; verify graphics, fallback, translations, layouts and CTA; publish existing Site.

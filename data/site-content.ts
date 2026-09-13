@@ -1,5 +1,4 @@
 export const navigation = [
-  { label: "Система", href: "#system" },
   { label: "ERP", href: "#erp" },
   { label: "Решения", href: "#services" },
   { label: "Как работаем", href: "#process" },

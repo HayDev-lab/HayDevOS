@@ -6,6 +6,7 @@ Existing Armenian-first HayDev site, with Russian and English routes. The site d
 Sites Vinext / React 19 / TypeScript / Tailwind 4, existing Radix primitives, Cloudflare Worker and D1. pnpm lockfile and dependencies are preserved. No graphics or animation dependency added.
 
 - `/` redirects to `/hy`; `/hy`, `/ru`, `/en` have their own language metadata and canonical URLs.
+- `/:locale/audit` is the full HayDev Business Audit product in Armenian, Russian and English.
 - `/api/leads` validates and persists enquiries. No public read endpoint.
 - Current audience is owner-private. `noindex` and current access policy are intentionally preserved.
 
@@ -19,13 +20,16 @@ Sites Vinext / React 19 / TypeScript / Tailwind 4, existing Radix primitives, Cl
 - `components/sections/industry-systems.tsx`: eight selectable industry architectures.
 - `components/sections/mission-control.tsx`: clearly labelled demonstration dashboard. All numbers are synthetic examples, not customer outcomes.
 - `components/sections/business-audit.tsx`: eight questions, rule-based preliminary map and transfer to the enquiry form.
+- `components/business-audit/audit-app.tsx`: the full 15-question internal/public audit workspace and report.
+- `data/business-audit.ts`: localized questions, answer weights, Automation Map states and recommendation catalogue.
+- `lib/audit-engine.ts`: versioned draft parsing, six-domain scoring and a stable future-integration payload.
 - `components/sections/contact-form.tsx`: editable enquiry, consent, server response and error states.
 - `data/business-os.ts`, `data/erp-content.json`, `data/site-content.ts`: structured content.
 - `data/translations.json`: all three dictionaries. New visitor-facing text has Armenian and English translations.
 - `app/globals.css`: existing brand and shared UI; `app/business-os.css`: scoped Business OS extensions.
 
 ## Audit and enquiry data
-The diagnostic is deterministic, not an LLM call. It does not inspect a visitor's systems or claim verified efficiency. Responses stay in React memory and are lost on reload/language navigation. The visitor explicitly transfers them to an editable description, then submits with consent. No third-party data transmission or localStorage persistence is added.
+Both diagnostics are deterministic, not LLM calls. They do not inspect a visitor's systems, predict savings or claim verified efficiency. The compact homepage diagnostic stays in React memory. The full Business Audit stores a versioned draft in the current browser so answers survive refresh and backward navigation; it does not send those answers to HayDev or a third party. Its report can produce a stable `haydev.business-audit/1` payload for future CRM, LeadOS and HayDev Control connections, but no external connector is active yet.
 
 `POST /api/leads` uses existing schema, prepared SQL, same-origin enforcement, body limits, UUID idempotency and per-contact rate limiting. Success appears only after the server accepts the request. D1 data can be inspected through the Site owner's data management. Email/Telegram notifications and external CRM are not connected.
 

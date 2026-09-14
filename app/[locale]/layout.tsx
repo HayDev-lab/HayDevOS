@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "../globals.css";
 import "../business-os.css";
 import "../light-glass.css";
+import "../audit.css";
 import { notFound } from "next/navigation";
 import { LanguageProvider } from "@/components/language-provider";
 import { getMessages, getTranslator, isLocale } from "@/lib/i18n";

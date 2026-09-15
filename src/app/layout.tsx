@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "HayDev — Business Operating Systems",
+  title: "HayDev — Software & AI Development Company",
   description:
-    "Создаём цифровую операционную систему бизнеса: ERP, CRM, сайт, реклама, AI и аналитика. Процессы, склад, продажи и финансы в одном центре управления.",
+    "Мы создаём программные продукты, на которых работает бизнес: web-платформы, AI-системы, ERP/CRM и автоматизация. Custom software development в Армении — от идеи до работающего продукта.",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
   robots: { index: false, follow: false },
 };

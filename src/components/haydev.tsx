@@ -6,7 +6,10 @@ import { ArrowUpRight, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { BusinessCore } from "@/components/sections/business-core";
-import { GrowthSystem } from "@/components/sections/growth-system";
+import { WhatWeBuild } from "@/components/sections/what-we-build";
+import { CustomSoftware } from "@/components/sections/custom-software";
+import { AutomationSection } from "@/components/sections/ai-automation";
+import { HaydevProducts } from "@/components/sections/haydev-products";
 import { IndustrySystems } from "@/components/sections/industry-systems";
 
 import { BusinessAudit } from "@/components/sections/business-audit";
@@ -48,9 +51,18 @@ export default function HayDev() {
   const [privacy, setPrivacy] = useState(false);
 
   const privacyOpener = useRef<HTMLElement | null>(null);
+  const showcaseRef = useRef<HTMLDetailsElement>(null);
   function openPrivacy() {
     privacyOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setPrivacy(true);
+  }
+  function openShowcase(anchor?: string) {
+    const details = showcaseRef.current;
+    if (details) { details.open = true; setDetailsOpened(true); }
+    requestAnimationFrame(() => {
+      const target = anchor ? document.getElementById(anchor) : details;
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   const renderNavItem = (item: { href: string; label: string }) =>
@@ -67,7 +79,7 @@ export default function HayDev() {
         {item.label}
       </a>
     ) : (
-      <a key={item.href} href={item.href}>{item.label}</a>
+      <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)}>{item.label}</a>
     );
 
   return <>
@@ -97,13 +109,9 @@ export default function HayDev() {
           </nav>
           <a
             className="button button-primary os-cta header-audit"
-            href="#audit"
-            onClick={(event) => {
-              event.preventDefault();
-              openAudit();
-            }}
+            href="#contact"
           >
-            {t("Начать аудит")} ↗
+            {t("Начать проект")} ↗
           </a>
           <Button
             className="menu-toggle"
@@ -127,16 +135,19 @@ export default function HayDev() {
           }}
         >
           {navigation.map(renderNavItem)}
-          <a href="#contact" onClick={() => setMenuOpen(false)}>{t("Спроектировать решение")}<ArrowUpRight size={18} /></a>
+          <a href="#contact" onClick={() => setMenuOpen(false)}>{t("Обсудить проект")}<ArrowUpRight size={18} /></a>
         </nav>
       )}
     </header>
     <main id="main">
       <BusinessCore />
-      <GrowthSystem />
+      <WhatWeBuild />
+      <CustomSoftware />
+      <AutomationSection />
+      <HaydevProducts onShowcase={() => openShowcase("erp")} />
       <div className="container">
-        <details className="lite-details" onToggle={(e) => { if (e.currentTarget.open) setDetailsOpened(true); }}>
-          <summary>{t("Возможности системы")}<span aria-hidden="true">＋</span></summary>
+        <details ref={showcaseRef} className="lite-details" onToggle={(e) => { if (e.currentTarget.open) setDetailsOpened(true); }}>
+          <summary>{t("Продукты и системы подробнее")}<span aria-hidden="true">＋</span></summary>
           {detailsOpened && (
             <Suspense fallback={<p className="compact-note">{t("Загрузка…")}</p>}>
               <SystemDetails />
@@ -150,10 +161,10 @@ export default function HayDev() {
       <section className="contact-section" id="contact" aria-labelledby="contact-heading">
         <div className="container contact-grid">
           <div className="contact-copy">
-            <SectionLabel number="04">{t("НАЧНЁМ С ВАШЕЙ ЗАДАЧИ")}</SectionLabel>
-            <h2 id="contact-heading">{t("Покажите нам")}<br /><span className="lime-text">{t("свой бизнес.")}</span></h2>
-            <p>{t("Расскажите, где теряются время и заявки.")}<br />{t("Обсудим, что можно изменить и с чего начать.")}</p>
-            <div className="contact-next"><span className="small-cross">+</span><span>{t("Знакомство → аудит → карта решений")}</span></div>
+            <SectionLabel number="07">{t("РАССКАЖИТЕ О ЗАДАЧЕ")}</SectionLabel>
+            <h2 id="contact-heading">{t("Что вы хотите")}<br /><span className="lime-text">{t("создать?")}</span></h2>
+            <p>{t("CRM, портал, платформа или AI-система — расскажите задачу.")}<br />{t("HayDev спроектирует решение и покажет, как его реализовать.")}</p>
+            <div className="contact-next"><span className="small-cross">+</span><span>{t("Идея → архитектура → работающий продукт")}</span></div>
           </div>
           <ContactForm onPrivacy={openPrivacy} message={auditSummary} onMessageChange={setAuditSummary} auditAttached={auditAttached} />
         </div>
@@ -163,7 +174,7 @@ export default function HayDev() {
       <div className="footer-top">
         <div>
           <Brand />
-          <p>{t("ERP, CRM, сайты, бизнес-ПО и AI-автоматизация для компаний в Армении.")}</p>
+          <p>{t("Разрабатываем программные продукты: web-платформы, AI-системы, ERP/CRM и автоматизация. Software development для бизнеса в Армении.")}</p>
         </div>
         <div className="footer-links">
           <span className="eyebrow">{t("НАВИГАЦИЯ")}</span>
@@ -171,8 +182,8 @@ export default function HayDev() {
         </div>
         <div className="footer-links">
           <span className="eyebrow">{t("НАЧАТЬ ДИАЛОГ")}</span>
-          <a href="#contact">{t("Спроектировать решение")} <ArrowUpRight size={16} /></a>
-          <a href="#contact">{t("Получить аудит")} <ArrowUpRight size={16} /></a>
+          <a href="#contact">{t("Обсудить проект")} <ArrowUpRight size={16} /></a>
+          <a href="#audit">{t("Пройти Business Audit")} <ArrowUpRight size={16} /></a>
         </div>
       </div>
       <div className="footer-bottom">

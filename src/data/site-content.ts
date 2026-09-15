@@ -1,7 +1,8 @@
 export const navigation = [
- {label:'Growth OS',href:'#growth-os'},
+ {label:'Что мы создаём',href:'#build'},
+ {label:'AI и автоматизация',href:'#automation'},
+ {label:'Продукты',href:'#products'},
  {label:'Отрасли',href:'#industries'},
- {label:'AI Audit',href:'#audit'},
 ];
 
 export const modules = [

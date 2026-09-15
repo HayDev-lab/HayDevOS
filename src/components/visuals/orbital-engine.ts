@@ -6,7 +6,7 @@ function rotate(x:number,y:number,z:number): Mat {const a=identity(),b=identity(
 function transform(scale:number,x=0,y=0,z=0):Mat {const a=identity();a[0]=a[5]=a[10]=scale;a[12]=x;a[13]=y;a[14]=z;return a;}
 function perspective(aspect:number):Mat {const n=.1,f=30,s=1/Math.tan(.38);return new Float32Array([s/aspect,0,0,0,0,s,0,0,0,0,(f+n)/(n-f),-1,0,0,2*f*n/(n-f),0]);}
 function geometry(sphere:boolean,segments:number,tube:number,radius:number){const vertices:number[]=[],indices:number[]=[];for(let u=0;u<=segments;u++){const a=u/segments*Math.PI*2;for(let v=0;v<=tube;v++){const b=v/tube*Math.PI*(sphere?1:2),nx=Math.cos(a)*(sphere?Math.sin(b):Math.cos(b)),ny=sphere?Math.cos(b):Math.sin(b),nz=Math.sin(a)*(sphere?Math.sin(b):Math.cos(b));vertices.push(sphere?nx:Math.cos(a)*(1+radius*Math.cos(b)),sphere?ny:radius*ny,sphere?nz:Math.sin(a)*(1+radius*Math.cos(b)),nx,ny,nz);if(u<segments&&v<tube){const i=u*(tube+1)+v;indices.push(i,i+tube+1,i+1,i+1,i+tube+1,i+tube+2);}}}return {vertices:new Float32Array(vertices),indices:new Uint16Array(indices)};}
-export type OrbitalEngine = { setActive:(index:number)=>void; setPaused:(value:boolean)=>void; turn:(delta:number)=>void; reset:()=>void; dispose:()=>void };
+export type OrbitalEngine = { setActive:(index:number)=>void; setScene:(scene:number)=>void; setPaused:(value:boolean)=>void; turn:(delta:number)=>void; reset:()=>void; dispose:()=>void };
 export function createOrbitalEngine(canvas:HTMLCanvasElement,onLost:()=>void,onReady:()=>void):OrbitalEngine {
  const gl=canvas.getContext('webgl',{alpha:true,antialias:false,depth:true,stencil:false,powerPreference:'low-power',preserveDrawingBuffer:false});
  if(!gl)throw new Error('WebGL unavailable');
@@ -49,14 +49,16 @@ export function createOrbitalEngine(canvas:HTMLCanvasElement,onLost:()=>void,onR
  const mobile=matchMedia('(max-width: 767px)').matches;
  const mesh=(sphere:boolean,thickness:number,small=false)=>{const g=geometry(sphere,small?8:(mobile||constrained)?40:64,small?6:sphere?16:8,thickness),v=gl.createBuffer(),i=gl.createBuffer();if(!v||!i)throw new Error('Buffer allocation');buffers.push(v,i);gl.bindBuffer(gl.ARRAY_BUFFER,v);gl.bufferData(gl.ARRAY_BUFFER,g.vertices,gl.STATIC_DRAW);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,i);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,g.indices,gl.STATIC_DRAW);return {v,i,count:g.indices.length};};
  const ball=mesh(true,0),ring=mesh(false,.014),shell=mesh(false,.18),bead=mesh(true,0,true);
- const portGeometry=geometry(true,8,6,0),portVertices:number[]=[],portIndices:number[]=[];
- for(let k=0;k<10;k++){const a=k*Math.PI*2/10+Math.PI/2,offset=portVertices.length/6;
- for(let j=0;j<portGeometry.vertices.length;j+=6)portVertices.push(portGeometry.vertices[j]*.035+Math.cos(a)*1.88,portGeometry.vertices[j+1]*.035+Math.sin(a)*1.5,portGeometry.vertices[j+2]*.035,portGeometry.vertices[j+3],portGeometry.vertices[j+4],portGeometry.vertices[j+5]);
- for(const index of portGeometry.indices)portIndices.push(index+offset);}
- const portV=gl.createBuffer(),portI=gl.createBuffer();if(!portV||!portI)throw new Error('Port allocation');buffers.push(portV,portI);gl.bindBuffer(gl.ARRAY_BUFFER,portV);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(portVertices),gl.STATIC_DRAW);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,portI);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(portIndices),gl.STATIC_DRAW);const ports={v:portV,i:portI,count:portIndices.length};
+ // Port layouts for every logical scene: CORE (10 nodes), BUILD (6), AUTOMATE (6), PRODUCTS (5).
+ const portGeometry=geometry(true,8,6,0);
+ const makePorts=(count:number)=>{const portVertices:number[]=[],portIndices:number[]=[];for(let k=0;k<count;k++){const a=k*Math.PI*2/count+Math.PI/2,offset=portVertices.length/6;
+  for(let j=0;j<portGeometry.vertices.length;j+=6)portVertices.push(portGeometry.vertices[j]*.035+Math.cos(a)*1.88,portGeometry.vertices[j+1]*.035+Math.sin(a)*1.5,portGeometry.vertices[j+2]*.035,portGeometry.vertices[j+3],portGeometry.vertices[j+4],portGeometry.vertices[j+5]);
+  for(const index of portGeometry.indices)portIndices.push(index+offset);}
+  const portV=gl.createBuffer(),portI=gl.createBuffer();if(!portV||!portI)throw new Error('Port allocation');buffers.push(portV,portI);gl.bindBuffer(gl.ARRAY_BUFFER,portV);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(portVertices),gl.STATIC_DRAW);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,portI);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(portIndices),gl.STATIC_DRAW);return {v:portV,i:portI,count:portIndices.length};};
+ const scenePorts=[makePorts(10),makePorts(6),makePorts(6),makePorts(5)];
  const palette=[[.77,.96,.35],[.35,.8,1],[1,.65,.32],[.75,.52,1]];
  let quality=1,slowFrames=0,hoverX=0,hoverY=0,targetX=0,targetY=0;
- let active=0,angle=.4,tilt=.35,clock=0,paused=false,inView=true,disposed=false,raf=0,last=0,frames=0,dragging=false,pointerX=0;
+ let active=0,scene=0,angle=.4,tilt=.35,clock=0,paused=false,inView=true,disposed=false,raf=0,last=0,frames=0,dragging=false,pointerX=0;
  const motion=matchMedia('(prefers-reduced-motion: reduce)');
  const draw=(now:number)=>{
   raf=0;if(disposed||!inView||document.hidden)return;
@@ -81,14 +83,16 @@ export function createOrbitalEngine(canvas:HTMLCanvasElement,onLost:()=>void,onR
    const position=clock*.24+i*Math.PI;
    paint(bead,multiply(orbit,transform(.045,Math.cos(position)*radius,0,Math.sin(position)*radius)),i===active%2?tint:[.25,.85,1.],1.2);
   }
-  paint(ports,identity(),[.32,.75,.67],.4);
-  // One ordered packet follows MARKETING -> WEBSITE -> LEADS -> CRM -> ... -> AI.
+  const nodes=scenePorts[scene];
+  paint(nodes,identity(),[.32,.75,.67],.4);
+  // One ordered data packet travels across the current node ring.
+  const nodeCount=[10,6,6,5][scene];
   const dataPhase=-clock*.22+Math.PI/2;
   paint(bead,transform(.045,Math.cos(dataPhase)*1.88,Math.sin(dataPhase)*1.5,0),tint,1.1);
-  const selectedAngle=-active*Math.PI*2/10+Math.PI/2;
+  const selectedAngle=-active*Math.PI*2/nodeCount+Math.PI/2;
   paint(bead,transform(.065,Math.cos(selectedAngle)*1.88,Math.sin(selectedAngle)*1.5,0),tint,1.1);
   // DOM diagnostics expose actual submitted frames without synchronous GPU readback.
-  canvas.dataset.quality=String(quality);canvas.dataset.frames=String(++frames);if(frames===1)onReady();canvas.dataset.rotation=angle.toFixed(3);canvas.dataset.active=String(active);canvas.dataset.mode=motion.matches?'reduced':paused?'paused':'animated';
+  canvas.dataset.quality=String(quality);canvas.dataset.frames=String(++frames);if(frames===1)onReady();canvas.dataset.rotation=angle.toFixed(3);canvas.dataset.active=String(active);canvas.dataset.scene=String(scene);canvas.dataset.mode=motion.matches?'reduced':paused?'paused':'animated';
   if(!paused&&!motion.matches&&!raf)raf=requestAnimationFrame(draw);
  };
  const request=()=>{if(!raf&&!disposed)raf=requestAnimationFrame(draw);};
@@ -104,5 +108,5 @@ export function createOrbitalEngine(canvas:HTMLCanvasElement,onLost:()=>void,onR
  const lost=(e:Event)=>{e.preventDefault();cancelAnimationFrame(raf);raf=0;disposed=true;onLost();};
  canvas.addEventListener('pointerleave',leave);canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('webglcontextlost',lost);document.addEventListener('visibilitychange',visibility);motion.addEventListener('change',change);
  resize();
- return {setActive:(value)=>{active=Math.max(0,Math.min(9,value));request();},setPaused:(value)=>{paused=value;change();},turn:(delta)=>{angle+=delta;request();},reset:()=>{angle=.4;tilt=.35;clock=0;request();},dispose:()=>{disposed=true;cancelAnimationFrame(raf);observer.disconnect();intersection.disconnect();document.removeEventListener('visibilitychange',visibility);motion.removeEventListener('change',change);canvas.removeEventListener('pointerleave',leave);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('webglcontextlost',lost);for(const b of buffers)gl.deleteBuffer(b);gl.deleteProgram(program);}};
+ return {setActive:(value)=>{active=Math.max(0,Math.min([10,6,6,5][scene]-1,value));request();},setScene:(value:number)=>{scene=Math.max(0,Math.min(3,value));active=Math.min(active,[10,6,6,5][scene]-1);request();},setPaused:(value)=>{paused=value;change();},turn:(delta)=>{angle+=delta;request();},reset:()=>{angle=.4;tilt=.35;clock=0;request();},dispose:()=>{disposed=true;cancelAnimationFrame(raf);observer.disconnect();intersection.disconnect();document.removeEventListener('visibilitychange',visibility);motion.removeEventListener('change',change);canvas.removeEventListener('pointerleave',leave);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('webglcontextlost',lost);for(const b of buffers)gl.deleteBuffer(b);gl.deleteProgram(program);}};
 }

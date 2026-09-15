@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
-import { buildPipeline } from '@/data/business-os';
+import { buildPipeline, techStack } from '@/data/business-os';
 
 export function CustomSoftware() {
   const { t } = useLanguage();
@@ -20,7 +20,7 @@ export function CustomSoftware() {
           <span className="pipeline-index">{String(index + 1).padStart(2, '0')}</span>
           <span className="pipeline-code">{item.code}</span>
         </button>
-        {index < buildPipeline.length - 1 && <span className="pipeline-connector" aria-hidden="true" />}
+        {index < buildPipeline.length - 1 && <span className="pipeline-connector" aria-hidden="true"><i /></span>}
       </li>)}
     </ol>
     <div className="pipeline-detail" aria-live="polite" data-reveal>
@@ -35,6 +35,20 @@ export function CustomSoftware() {
           <a className="button button-primary" href="#contact">{t('Обсудить идею')}<ArrowUpRight size={18} /></a>
           <a className="text-link" href="#products">{t('Наши собственные продукты')} <ArrowUpRight size={16} /></a>
         </div>
+      </div>
+    </div>
+    <div className="stack-block" data-reveal aria-label={t('Технологии')}>
+      <div className="stack-block-head">
+        <span className="eyebrow">TECH STACK</span>
+        <p>{t('Проверенные технологии — под задачу, а не наоборот.')}</p>
+      </div>
+      <div className="stack-grid">
+        {techStack.map(group => <div key={group.code} className="stack-group">
+          <span className="stack-group-code">{group.code}</span>
+          <ul className="stack-chips">
+            {group.items.map(item => <li key={item}>{t(item)}</li>)}
+          </ul>
+        </div>)}
       </div>
     </div>
   </section>;

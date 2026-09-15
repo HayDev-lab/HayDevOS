@@ -4,7 +4,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
 import { useAppView } from '@/components/app-view';
 import { OrbitalScene } from '@/components/visuals/orbital-scene';
-import { heroScenes } from '@/data/business-os';
+import { heroScenes, heroTicker } from '@/data/business-os';
 
 export function BusinessCore() {
   const { t } = useLanguage(); const { openAudit } = useAppView();
@@ -53,6 +53,17 @@ export function BusinessCore() {
         <strong>Idea</strong><i aria-hidden="true">→</i><strong>Architecture</strong><i aria-hidden="true">→</i><strong>Design</strong><i aria-hidden="true">→</i><strong>Code</strong><i aria-hidden="true">→</i><strong>Integration</strong><i aria-hidden="true">→</i><strong>Launch</strong>
       </p>
       <a href="#build">{t('Как мы строим')} ↗</a>
+    </div>
+    <div className="hero-ticker" aria-hidden="true">
+      <div className="hero-ticker-track">
+        {[0, 1].map(copy => <div key={copy} className="hero-ticker-row">
+          {heroTicker.map(item => <span key={copy + item}>{item}<i>·</i></span>)}
+        </div>)}
+      </div>
+    </div>
+    <div className="hero-scroll-hint" aria-hidden="true">
+      <span>{t('ЛИСТАЙТЕ')}</span>
+      <i className="hero-scroll-line" />
     </div>
   </section>;
 }

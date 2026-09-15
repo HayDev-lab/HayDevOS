@@ -11,13 +11,14 @@ import { CustomSoftware } from "@/components/sections/custom-software";
 import { AutomationSection } from "@/components/sections/ai-automation";
 import { HaydevProducts } from "@/components/sections/haydev-products";
 import { WhyHaydev } from "@/components/sections/why-haydev";
+import { EngagementModels } from "@/components/sections/engagement-models";
 import { IndustrySystems } from "@/components/sections/industry-systems";
 
 import { BusinessAudit } from "@/components/sections/business-audit";
 import { FaqSection } from "@/components/sections/faq";
 
 import { ContactForm } from "@/components/sections/contact-form";
-import { BackToTop, ScrollProgress, useReveal, useScrollSpy } from "@/components/site-chrome";
+import { BackToTop, MobileCta, ScrollProgress, SectionDots, useReveal, useScrollSpy } from "@/components/site-chrome";
 import { navigation as baseNavigation } from "@/data/site-content";
 
 const SystemDetails = lazy(() => import("@/components/sections/system-details"));
@@ -213,6 +214,7 @@ export default function HayDev() {
         </details>
       </div>
       <WhyHaydev />
+      <EngagementModels />
       <IndustrySystems onSelect={setIndustry} />
       <BusinessAudit industry={industry} onApply={(value) => { setAuditSummary(value); setAuditAttached(true); }} />
       <FaqSection />
@@ -220,7 +222,7 @@ export default function HayDev() {
       <section className="contact-section" id="contact" aria-labelledby="contact-heading">
         <div className="container contact-grid">
           <div className="contact-copy">
-            <SectionLabel number="09">{t("РАССКАЖИТЕ О ЗАДАЧЕ")}</SectionLabel>
+            <SectionLabel number="10">{t("РАССКАЖИТЕ О ЗАДАЧЕ")}</SectionLabel>
             <h2 id="contact-heading">{t("Что вы хотите")}<br /><span className="lime-text">{t("создать?")}</span></h2>
             <p>{t("CRM, портал, платформа или AI-система — расскажите задачу.")}<br />{t("HayDev спроектирует решение и покажет, как его реализовать.")}</p>
             <div className="contact-next-steps" aria-label={t("Что дальше")}>
@@ -261,6 +263,8 @@ export default function HayDev() {
       </div>
     </footer>
     <BackToTop />
+    <SectionDots />
+    <MobileCta />
     <Dialog open={privacy} onOpenChange={setPrivacy}>
       <DialogContent
         className="privacy-dialog"

@@ -907,3 +907,194 @@ html[lang=hy] .desktop-nav a,.desktop-nav a{font-size:14px}.section summary:focu
   .products-grid{gap:14px}
   .automation-recipe li{font-size:14.5px}
 }
+
+/* ============================================================
+   ROUND 6 — engagement models, tech stack, dot nav, mobile CTA,
+   hero ticker + detailed style pass across every section
+   ============================================================ */
+
+/* --- Global polish: lime selection + themed scrollbar. --- */
+::selection{background:var(--primary);color:#0c120a}
+html{scrollbar-width:thin;scrollbar-color:#33413a #0a0e0c}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-track{background:#0a0e0c}
+::-webkit-scrollbar-thumb{background:#26312b;border:3px solid #0a0e0c;border-radius:8px}
+::-webkit-scrollbar-thumb:hover{background:#3c4f44}
+::-webkit-scrollbar-corner{background:#0a0e0c}
+
+/* --- Header: hairline gradient under the sticky bar. --- */
+.site-header::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,#3f524880 18%,#3f524880 82%,transparent);pointer-events:none}
+
+/* --- Hero: capabilities ticker (infinite marquee, pauses on hover). --- */
+.hero-ticker{position:relative;overflow:hidden;border-top:1px solid #242f2a;border-bottom:1px solid #242f2a;background:#0a0f0d;
+  mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
+.hero-ticker-track{display:flex;width:max-content;animation:hero-ticker 38s linear infinite}
+.hero-ticker:hover .hero-ticker-track{animation-play-state:paused}
+.hero-ticker-row{display:flex;align-items:center}
+.hero-ticker-row span{display:inline-flex;align-items:center;gap:20px;padding:12px 0 12px 20px;font:11px ui-monospace,monospace;letter-spacing:1.8px;color:#79907c;white-space:nowrap;transition:color .2s}
+.hero-ticker-row span:hover{color:var(--primary)}
+.hero-ticker-row span i{font-style:normal;color:#42523f;font-size:9px}
+@keyframes hero-ticker{to{transform:translateX(-50%)}}
+
+/* --- Hero: scroll hint (desktop only, animated drop line). --- */
+.hero-scroll-hint{display:none}
+@media (min-width:1100px){
+  .hero-scroll-hint{display:flex;flex-direction:column;align-items:center;gap:10px;margin:30px auto 0;width:max-content}
+  .hero-scroll-hint>span{font:9.5px ui-monospace,monospace;letter-spacing:2.6px;color:#6f8179}
+  .hero-scroll-line{position:relative;width:1px;height:36px;background:#3a4a44;overflow:hidden}
+  .hero-scroll-line::after{content:'';position:absolute;left:0;top:-45%;width:100%;height:45%;background:linear-gradient(180deg,transparent,var(--primary));animation:hero-scroll-drop 1.9s cubic-bezier(.45,0,.2,1) infinite}
+  @keyframes hero-scroll-drop{to{top:115%}}
+}
+
+/* --- 02 CUSTOM SOFTWARE — tech stack block. --- */
+.stack-block{margin-top:46px;border:1px solid #2c3a34;background:linear-gradient(160deg,#0e1513,#0a0f0d);padding:24px 28px 26px;position:relative;overflow:hidden}
+.stack-block::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#3d5236 18%,#3d5236 82%,transparent)}
+.stack-block-head{display:flex;align-items:baseline;gap:20px;flex-wrap:wrap;margin-bottom:22px}
+.stack-block-head .eyebrow{color:var(--primary)}
+.stack-block-head p{margin:0;font-size:13.5px;color:#8a978c}
+.stack-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
+.stack-group-code{display:block;font:10px ui-monospace,monospace;letter-spacing:1.5px;color:#93a69b;margin-bottom:11px;padding-bottom:9px;border-bottom:1px solid #2a3a2e}
+.stack-chips{list-style:none;display:flex;flex-wrap:wrap;gap:7px;margin:0;padding:0}
+.stack-chips li{font:11px ui-monospace,monospace;color:#b7cda6;border:1px solid #3f5237;border-radius:4px;padding:6px 10px;background:#c5f56306;transition:color .18s,border-color .18s,transform .18s}
+.stack-chips li:hover{color:#e2f0d8;border-color:#587045;transform:translateY(-1px)}
+@media (max-width:1100px){.stack-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  .stack-block{padding:20px 20px 22px}}
+@media (max-width:620px){.stack-grid{grid-template-columns:1fr}}
+
+/* --- 06 ENGAGEMENT MODELS — how to start working with us. --- */
+.models-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:28px}
+.model-card{position:relative;overflow:hidden;display:flex;flex-direction:column;border:1px solid #34463a;background:linear-gradient(160deg,#111915,#0b100e);padding:24px 26px 22px;transition:border-color .22s,transform .22s,box-shadow .22s}
+.model-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#3d5236 18%,#3d5236 82%,transparent);transition:background .25s}
+.model-card:hover{border-color:#5d7a62;transform:translateY(-3px);box-shadow:0 18px 44px #00000055}
+.model-card:hover::before{background:linear-gradient(90deg,transparent,var(--primary) 30%,var(--primary) 70%,transparent)}
+.model-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+.model-code{font:12px ui-monospace,monospace;letter-spacing:1px;color:var(--primary);transition:text-shadow .22s}
+.model-card:hover .model-code{text-shadow:0 0 16px #c5f56366}
+.model-label{font:10px ui-monospace,monospace;letter-spacing:1.6px;color:#77896f}
+.model-card h3{font-size:21px;font-weight:400;letter-spacing:-.4px;margin:0 0 10px;color:#e2eae2}
+.model-card>p{margin:0;font-size:13.5px;line-height:1.75;color:#a9b6ad}
+.model-fits{margin-top:16px;padding-top:15px;border-top:1px dashed #3b4a36}
+.model-fits .eyebrow{display:block;color:#8ba27e}
+.model-fits ul{list-style:none;margin:11px 0 0;padding:0;display:grid;gap:8px}
+.model-fits li{display:flex;align-items:center;gap:9px;font-size:13px;line-height:1.5;color:#c9d4bd}
+.model-fits li svg{color:var(--primary);flex-shrink:0}
+.model-cta{margin-top:auto;padding-top:20px;display:inline-flex;align-items:center;gap:7px;font-size:13.5px;color:var(--primary);transition:gap .2s,text-shadow .2s}
+.model-cta:hover{gap:11px;text-shadow:0 0 18px #c5f56355}
+.model-cta svg{transition:transform .2s}
+.model-cta:hover svg{transform:translate(2px,-2px)}
+.model-accent{border-color:#4a5f42;background:radial-gradient(circle at 85% -10%,#c5f5630d,transparent 55%),linear-gradient(160deg,#111915,#0b100e)}
+.models-note{margin:22px 0 0;font-size:12.5px;color:#8a978c;line-height:1.7;display:flex;align-items:center;gap:10px}
+.models-note::before{content:'';width:26px;height:1px;background:#587049;flex-shrink:0}
+@media (max-width:1100px){.models-grid{grid-template-columns:1fr;gap:14px}}
+@media (max-width:767px){.model-card{padding:19px 18px 17px}.model-card h3{font-size:20px}}
+@media (prefers-reduced-motion:reduce){.model-card{transition:none}.model-card:hover{transform:none}}
+
+/* --- Section dots: desktop-only right-side navigation. --- */
+.section-dots{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:36;display:none;flex-direction:column;gap:9px}
+@media (min-width:1280px){.section-dots{display:flex}}
+.section-dots a{position:relative;display:grid;place-items:center;width:22px;height:22px}
+.section-dots a:focus-visible{outline:none}
+.section-dot{width:7px;height:7px;border-radius:50%;background:#44544b;transition:transform .2s,background .2s,box-shadow .2s}
+.section-dots a:hover .section-dot{background:#8ba27e;transform:scale(1.3)}
+.section-dots a:focus-visible .section-dot{box-shadow:0 0 0 2px #0b100e,0 0 0 4px var(--primary)}
+.section-dots a[aria-current=true] .section-dot{background:var(--primary);box-shadow:0 0 12px #c5f56399;transform:scale(1.4)}
+.section-dot-label{position:absolute;right:28px;top:50%;transform:translateY(-50%) translateX(8px);white-space:nowrap;font:10px ui-monospace,monospace;letter-spacing:1px;color:#cfe0c8;background:#0e1411f2;border:1px solid #34463a;border-radius:4px;padding:6px 10px;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:2}
+.section-dots a:hover .section-dot-label,.section-dots a:focus-visible .section-dot-label{opacity:1;transform:translateY(-50%) translateX(0)}
+
+/* --- Mobile sticky CTA bar (hidden while contact is on screen). --- */
+.mobile-cta{position:fixed;left:0;right:0;bottom:0;z-index:38;display:flex;gap:10px;align-items:stretch;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:#080b0bf0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid #33413a;box-shadow:0 -14px 40px #00000066;transform:translateY(110%);transition:transform .32s cubic-bezier(.22,.61,.36,1)}
+.mobile-cta[data-hidden="false"]{transform:none}
+.mobile-cta-mail{display:grid;place-items:center;width:52px;flex-shrink:0;border:1px solid #3f5237;border-radius:9px;color:var(--primary);background:#c5f56308;transition:border-color .2s,background .2s}
+.mobile-cta-mail:hover{border-color:#587045;background:#c5f56314}
+.mobile-cta-mail:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.mobile-cta-button{flex:1;justify-content:space-between;min-height:48px}
+@media (min-width:768px){.mobile-cta{display:none}}
+@media (max-width:767px){.back-to-top{right:14px;bottom:calc(86px + env(safe-area-inset-bottom,0px))}}
+
+/* --- 01 WHAT WE BUILD — stronger active category state. --- */
+.build-categories button[aria-pressed=true]{background:linear-gradient(120deg,#1e2f1a,#0c120e);box-shadow:inset 0 0 0 1px #c5f5631f}
+.build-categories button[aria-pressed=true] .build-category-code{color:#b9d48f}
+.build-stack-list span:hover{border-color:#587045;color:#dcecd2}
+
+/* --- 02 CUSTOM SOFTWARE — pulsing progress dot on the current connector. --- */
+.pipeline-connector i{position:absolute;top:50%;left:2px;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--primary);box-shadow:0 0 9px #c5f563cc;opacity:0;transition:opacity .2s}
+.pipeline-rail li.current .pipeline-connector i{opacity:1;animation:pipeline-dot 2.1s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes pipeline-dot{0%{left:2px;opacity:0}12%{opacity:1}88%{opacity:1}100%{left:calc(100% - 7px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.pipeline-connector i{animation:none;opacity:.7}}
+
+/* --- 03 AI & AUTOMATION — arrow slide on row hover. --- */
+.automation-actions button span:last-child{display:inline-flex;transition:transform .2s,color .2s}
+.automation-actions button:hover span:last-child{transform:translateX(3px)}
+.automation-actions button[aria-pressed=true] span:last-child{color:var(--primary)}
+
+/* --- 04 PRODUCTS — unified status badges, foot separator, baseline alignment. --- */
+.product-status{display:inline-flex;align-items:center;gap:6px;font:9.5px ui-monospace,monospace;letter-spacing:.9px;text-transform:uppercase;padding:5px 10px;border-radius:999px;border:1px solid}
+.product-status::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor;flex-shrink:0}
+.product-card-foot{border-top:1px solid #2a3a2e;margin-top:16px;padding-top:14px}
+.product-card:hover .product-card-foot{border-color:#3d5236}
+
+/* --- 05 WHY HAYDEV — code glow + stronger heading presence. --- */
+.why-card h3{font-size:23px}
+.why-code{text-shadow:0 0 0 #c5f56300;transition:text-shadow .22s}
+.why-card:hover .why-code{text-shadow:0 0 16px #c5f56366}
+.why-card::after{content:'';position:absolute;right:-34px;top:-34px;width:88px;height:88px;border-radius:50%;background:radial-gradient(circle,#c5f56309,transparent 70%);opacity:0;transition:opacity .3s}
+.why-card:hover::after{opacity:1}
+
+/* --- 07 INDUSTRIES — header label + flow arrow accents. --- */
+.industry-system-header>span:last-child{color:#93a69b;letter-spacing:1.4px}
+.industry-pipeline .pipeline-arrow{color:#5d7a52;transition:color .18s,transform .18s;display:inline-block}
+.industry-pipeline li:hover .pipeline-arrow{color:var(--primary);transform:translateX(2px)}
+
+/* --- 08 AUDIT — solid fact cards with icons. --- */
+.audit-facts li{display:flex;align-items:center;gap:13px;padding:13px 20px;border:1px solid #33413a;border-radius:9px;background:linear-gradient(150deg,#10181599,#0b100ecc);box-shadow:inset 0 1px 0 #ffffff06;position:relative;overflow:hidden}
+.audit-facts li::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:2px;background:linear-gradient(180deg,transparent,#66824e,transparent)}
+.audit-fact-icon{display:grid;place-items:center;width:34px;height:34px;flex-shrink:0;border:1px solid #3f5237;border-radius:8px;color:var(--primary);background:#c5f56308}
+.audit-facts strong{font-size:23px}
+.audit-actions{flex-wrap:wrap;gap:10px}
+.audit-copy svg{margin-right:8px}
+@media (max-width:767px){.audit-facts li{padding:10px 14px;gap:10px}.audit-fact-icon{width:30px;height:30px}}
+
+/* --- 09 FAQ — heavier questions + larger lime chevron. --- */
+.faq-list [data-slot=accordion-trigger]{font-weight:500}
+.faq-list [data-slot=accordion-trigger]>svg{width:22px;height:22px;color:#a8de66}
+.faq-list [data-slot=accordion-trigger][data-state=open]>svg{color:var(--primary)}
+
+/* --- 10 CONTACT — solid timeline connectors + success glow. --- */
+.contact-next-steps li+li{border-top:1px solid #3b4a36}
+.contact-next-steps li>span{background:#c5f5630a}
+.form-success .success-icon{box-shadow:0 0 46px #c5f5632e}
+.form-success h3{font-size:27px;letter-spacing:-.6px}
+
+/* --- Footer — brighter copy, clearer column rhythm, boxed "to top". --- */
+.footer-top{gap:44px}
+.footer-top>div>p{color:#a3afa6}
+.footer-links{gap:2px}
+.footer-links a{transition:color .18s,transform .18s}
+.footer-links a:hover{color:var(--primary)}
+.footer-bottom{color:#9aa898}
+.footer-bottom a{padding:6px 12px;border:1px solid #2e3a30;border-radius:6px;transition:border-color .2s,color .2s,background .2s}
+.footer-bottom a:hover{border-color:#587045;color:var(--primary);background:#c5f56306}
+.footer-bottom button:hover{color:var(--primary)}
+
+/* --- Reveal timing for the new blocks. --- */
+.models-grid[data-reveal],.stack-block[data-reveal]{transition-delay:.06s}
+
+/* --- Reduced motion: kill marquee + dot pulse. --- */
+@media (prefers-reduced-motion:reduce){
+  .hero-ticker-track{animation:none}
+  .hero-scroll-line::after{animation:none;top:10%}
+  .section-dot,.section-dot-label{transition:none}
+  .stack-chips li,.mobile-cta{transition:none}
+}
+
+/* watcher kick */
+
+/* --- ROUND 6b: VLM pass fixes — placeholder contrast, counter, soon-chip. --- */
+.contact-form input::placeholder,.contact-form textarea::placeholder{color:#aeb9a3;opacity:1;transition:color .18s}
+.contact-form input:focus::placeholder,.contact-form textarea:focus::placeholder{color:#8a978c}
+.contact-form textarea{resize:none}
+.char-counter{margin:-15px 0 16px;padding-right:2px;letter-spacing:.6px;color:#8a978c}
+.product-soon{display:inline-flex;align-items:center;gap:8px;font:10.5px ui-monospace,monospace;color:#939f8a;letter-spacing:.5px}
+.product-soon::before{content:'';width:5px;height:5px;border-radius:50%;border:1px solid #939f8a;opacity:.85;flex-shrink:0}
+.product-card:hover .product-soon{color:#aeb9a3}
+.product-card:hover .product-soon::before{border-color:#aeb9a3}

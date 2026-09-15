@@ -186,6 +186,66 @@ export const whyPrinciples = [
   },
 ];
 
+/** Engagement models — how a client can start and keep working with us. */
+export type EngagementModel = {
+  code: string;
+  label: string;
+  title: string;
+  text: string;
+  fits: string[];
+  cta?: { label: string; href?: string; audit?: boolean };
+  accent?: boolean;
+};
+export const engagementModels: EngagementModel[] = [
+  {
+    code: "M-01",
+    label: "FIXED SCOPE",
+    title: "Фиксированный объём",
+    text: "Задача понятна: архитектура, оценка по этапам, разработка и приёмка. Вы контролируете каждый этап до перехода к следующему.",
+    fits: ["Требования сформулированы", "Нужен конкретный результат", "Важна предсказуемость бюджета"],
+    cta: { label: "Обсудить задачу", href: "#contact" },
+  },
+  {
+    code: "M-02",
+    label: "DEDICATED TEAM",
+    title: "Выделенная команда",
+    text: "Команда работает над вашим продуктом итерациями: планируем цикл, показываем рабочие версии, развиваем по данным использования.",
+    fits: ["Продукт развивается постоянно", "Приоритеты меняются", "Нужна скорость итераций"],
+    cta: { label: "Собрать команду", href: "#contact" },
+  },
+  {
+    code: "M-03",
+    label: "AUDIT FIRST",
+    title: "Аудит → проект",
+    text: "Начинаем с Business Audit: 8 вопросов о процессах — и карта того, что можно улучшить. Дальше решаем вместе, что строить первым.",
+    fits: ["Задача ещё не сформулирована", "Процессы запутаны", "Нужен внешний взгляд"],
+    cta: { label: "Пройти аудит", audit: true },
+    accent: true,
+  },
+];
+
+/** Tech stack shown in the Custom Software section — what we actually work with. */
+export const techStack: { code: string; items: string[] }[] = [
+  { code: "FRONTEND", items: ["TypeScript", "React", "Next.js", "Tailwind CSS", "React Native"] },
+  { code: "BACKEND", items: ["Node.js", "PostgreSQL", "Prisma", "REST / GraphQL", "Интеграции API"] },
+  { code: "AI & DATA", items: ["LLM-интеграции", "RAG", "Обработка документов", "Векторный поиск"] },
+  { code: "INFRASTRUCTURE", items: ["Docker", "CI/CD", "Мониторинг", "Облачное развёртывание"] },
+];
+
+/** Hero marquee — capabilities ticker under the hero data strip. */
+export const heroTicker = [
+  "CUSTOM SOFTWARE",
+  "AI SYSTEMS",
+  "WEB PLATFORMS",
+  "ERP / CRM",
+  "AUTOMATION",
+  "MOBILE APPS",
+  "INTEGRATIONS",
+  "DATA & ANALYTICS",
+  "E-COMMERCE",
+  "SAAS",
+];
+
 /** Contact form: project-type chips for lead qualification. */
 export const projectTypes = ["Сайт / портал", "CRM / ERP", "AI-система", "Платформа / SaaS", "Мобильное приложение", "Ещё не решили"];
 

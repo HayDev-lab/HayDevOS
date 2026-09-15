@@ -4,11 +4,11 @@ import { ArrowUpRight } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { faqItems } from "@/data/business-os";
 
-/** 08 / FAQ — honest answers to the questions every client asks first. */
+/** 09 / FAQ — honest answers to the questions every client asks first. */
 export function FaqSection() {
   const { t } = useLanguage();
   return <section id="faq" className="section container os-faq" aria-labelledby="faq-heading">
-    <span className="eyebrow">08 / FAQ</span>
+    <span className="eyebrow">09 / FAQ</span>
     <div className="os-section-heading">
       <h2 id="faq-heading">{t("Частые вопросы")}<br /><span className="lime-text">{t("до первого разговора")}</span></h2>
       <p>{t("Отвечаем честно: без «средних цен» и обещанных сроков до понимания задачи.")}</p>

@@ -7,9 +7,9 @@
   },
   "scripts": {
     "install:ci": "bash scripts/install-pnpm.sh",
-    "dev": "node scripts/run-framework.mjs dev --port 3000",
+    "dev": "node scripts/run-framework.mjs dev $(cat .dev-args 2>/dev/null)",
     "build": "node scripts/run-framework.mjs build",
-    "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --port ${PORT:-3000} --inspector-port 0",
+    "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --port ${PORT:-8787} --inspector-port 0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "db:push": "echo 'Local D1: apply drizzle/*.sql with wrangler d1 execute (sandbox compatibility no-op).'"

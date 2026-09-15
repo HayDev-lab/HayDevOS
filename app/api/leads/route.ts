@@ -18,7 +18,11 @@ export async function POST(request: Request) {
   const requestedLocale = request.headers.get("X-Haydev-Locale");
   const t = getTranslator(isLocale(requestedLocale) ? requestedLocale : "hy");
   const origin = request.headers.get("origin");
-  if (!origin || origin !== new URL(request.url).origin) return json({ error: t("Отправьте заявку через форму на сайте.") }, 403);
+  // Gateways that terminate TLS rewrite the scheme but keep the host, so
+  // same-host requests stay allowed regardless of http/https mismatch.
+  const originHost = origin ? new URL(origin).host : null;
+  const requestHost = new URL(request.url).host;
+  if (!origin || originHost !== requestHost) return json({ error: t("Отправьте заявку через форму на сайте.") }, 403);
   if (!request.headers.get("content-type")?.startsWith("application/json")) return json({ error: t("Неподдерживаемый формат запроса.") }, 415);
   if (Number(request.headers.get("content-length")) > MAX_BODY) return json({ error: t("Описание слишком длинное.") }, 413);
   let payload: unknown;

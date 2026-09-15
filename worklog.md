@@ -106,8 +106,33 @@ Work Log:
 - Исправлен lint-warning (неиспользуемый eslint-disable).
 
 Stage Summary:
-- Верифицировано: OG/Twitter/JSON-LD/hreflang/canonical рендерятся в DOM (проверено querySelector'ами), og:image резолвится в абсолютный URL; scrollspy корректно подсвечивает build/automation/products/industries (после settle — smooth-scroll учитывается); data-strip + showcase — VLM «PASS, premium, zero bugs»; mobile 390px — 9 секций без overflow, strip переносится чисто, тач-таргеты ≥44px; язык EN, форма 201 (POST /api/leads), audit-app round-trip — всё работает; lint 0/0, dev.log чист.
+- Верифицировано: OG/Twitter/JSON-LD/hreflang/canonical рендерятся в DOM (проверено querySelector'ами), og:image резолвится в абсолютный URL; scrollspy корректно подсвечивает build/automation/products/industries (посо settle — smooth-scroll учитывается); data-strip + showcase — VLM «PASS, premium, zero bugs»; mobile 390px — 9 секций без overflow, strip переносится чисто, тач-таргеты ≥44px; язык EN, форма 201 (POST /api/leads), audit-app round-trip — всё работает; lint 0/0, dev.log чист.
 - Артефакты: public/images/og-cover-1200x630.png (+ исходник og-cover.png), переписан src/app/layout.tsx, useScrollSpy в site-chrome.tsx, разметка business-core.tsx / haydev.tsx, +40 строк CSS (блок ROUND 4).
 - Скриншоты: screenshots/r4-*.png (9 шт.).
 - Риски/TODO к запуску: (1) заменить SITE_URL в layout.tsx на прод-домен; (2) переключить robots в index:true при публичном запуске; (3) hreflang указывает на ?lang= query — при прод-архитектуре с /:locale маршрутами заменить на реальные URL.
 - Рекомендации раунда 5: (1) блок «Почему HayDev» / принципы (engineering trust уже есть в showcase — вынести в основной поток?); (2) e2e-дымовой тест (форма + аудит + scrollspy) на Playwright; (3) email-уведомления о лидах; (4) favicon/OG-варианты под светлые мессенджеры-превью.
+
+---
+Task ID: 5
+Agent: main-agent (Z.ai Code)
+Task: Раунд 5 — QA-регрессия через agent-browser, исправление бага копирайта, НОВАЯ секция «Why HayDev», lead-qualification chips в форме, копирование email, icon-тайлы продуктов и микродетализация стилей по всем секциям.
+
+Work Log:
+- QA-оценка: dev.log чист, lint чист, tsc чист (только examples/skills). agent-browser: все секции desktop 1280 + mobile 390 (overflow нет), WebGL-сцены CORE/BUILD/AUTOMATE/PRODUCTS (узлы 10/6/6/5, frames растут), языки ru/en/hy, форма 201, audit полный проход. VLM-аудит всех секций (2 прогона + mobile): слабые места — продукты «плоские», FAQ без hover-состояний строк, инпуты формы с едва заметным underline, неактивные pills отраслей блёклые, коннекторы pipeline тонкие, audit-секция без визуального якоря, hero EN с грамматической ошибкой.
+- БАГ: EN hero «We build software / business runs on.» — неграмматично. ИСПРАВЛЕНО: «businesses run on.» (translations.json).
+- НОВАЯ СЕКЦИЯ 05 / WHY HAYDEV (why-haydev.tsx + whyPrinciples в business-os.ts): 4 принципа (Архитектура а не шаблон / Код и данные ваши / Оценки без фантазий / Одна команда на весь цикл), карточки с P-01..P-04, hover-топлайн, why-note. Вставлена между Products и Industries.
+- ПЕРЕНУМЕРАЦИЯ: build 01 / custom 02 / automation 03 / products 04 / why 05 / industries 06 / audit 07 / faq 08 / contact 09 / showcase process 10.
+- НОВОЕ в CONTACT: project-type chips (6 типов, multi-select, aria-pressed, mono-пилюли, lime-заливка активного) — выбранные типы префиксуются в message при отправке («Тип проекта: CRM / ERP, AI-система») — проверено в SQLite; char-counter «N / 3000» под textarea; textarea 4 rows / 122px; focus-glow lime на инпутах.
+- НОВОЕ в FOOTER: CopyEmail — hello@haydev.am + кнопка «Скопировать» (navigator.clipboard → execCommand fallback → «Скопировано» 2.2 сек, aria-live). Реальный клик в headless работает.
+- НОВОЕ в PRODUCTS: icon-тайлы lucide (Boxes/ScanSearch/Activity/Inbox/ReceiptText/FileScan) в 42px lime-рамке, код слева, name 22px; hover glow.
+- НОВОЕ в AUDIT: facts-стрип «8 вопросов · ~5 минут · 0 регистраций» (dashed-чипы с крупными lime-цифрами).
+- RESTYLE: build-categories lime hover-bar слева + pressed-состояние; pipeline-connector 2px с прогресс-градиентом (заполняется ДО текущего шага — проверено матрицами transform), pipeline-code ярче; automation-recipe полная рамка + lime-лево + яркие номера шагов 01-04 + hover-indent действий; industry-desktop pills контрастнее (#c0cec2), industry-builds с lime-тире; FAQ row hover/open фон (#c5f56304/07); мобильные scene-mode pills 40px/11px.
+- ПЕРЕВОДЫ: +26 EN и +27 HY ключей (секция why, chips, факты аудита, clipboard-кнопки).
+- Верификация: chips → POST → SQLite «Тип проекта: CRM / ERP, AI-система» ✓; копирайт кнопки ✓ (реальный клик); audit 8/8 → карта → apply в форму ✓; WebGL сцены 0-3 ✓; reveal на why-grid ✓; полный скролл 9045px — 0 JS-ошибок, 0 overflow; VLM-проверки новых блоков (why/contact/footer desktop + why/contact/hero mobile) — PASS по всем пунктам; lint 0/0, dev.log чист.
+
+Stage Summary:
+- Состояние: производство-готово; все флоу работают; ни одной регрессии; секций теперь 10 (было 9).
+- Ключевые артефакты: NEW src/components/sections/why-haydev.tsx; правки haydev.tsx (CopyEmail, порядок, 09), haydev-products.tsx (icons), contact-form.tsx (chips + counter), business-audit.tsx (facts + 07), industry-systems.tsx (06), faq.tsx (08), system-details.tsx (10), business-os.ts (whyPrinciples, projectTypes, productIcons), translations.json (EN hero fix + 53 новых ключа), globals.css (+120 строк, блок ROUND 5).
+- Скриншоты: screenshots/r5-*.png (27 шт.).
+- Остаточные риски: hello@haydev.am — плейсхолдер до подтверждения прод-ящика; clipboard в headless eval-кликах блокируется (user activation) — в реальном браузере работает; test-лиды QA остались в SQLite (закрытая демо — ок).
+- Рекомендации раунда 6: (1) e2e-дымовой тест (форма + аудит + scrollspy) на Playwright; (2) email-уведомления о лидах; (3) favicon/OG-вариант под светлые превью; (4) при открытом запуске — заменить SITE_URL/robots/email; (5) возможно «кейсы» или блок команды.

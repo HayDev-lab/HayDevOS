@@ -798,3 +798,112 @@ html[lang=hy] .desktop-nav a,.desktop-nav a{font-size:14px}.section summary:focu
   .lite-details-code{font-size:9px;letter-spacing:1.2px}
   .lite-details-title{font-size:15px}
 }
+
+/* ============================================================
+   ROUND 5 — Why HayDev section, lead qualification, micro-detail polish
+   ============================================================ */
+
+/* --- 05 WHY HAYDEV — engineering principles in the main flow. --- */
+.os-why .why-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.why-card{position:relative;overflow:hidden;display:flex;flex-direction:column;border:1px solid #34463a;background:linear-gradient(160deg,#111915,#0b100e);padding:24px 26px;transition:border-color .22s,transform .22s,box-shadow .22s}
+.why-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#3d5236 18%,#3d5236 82%,transparent);transition:background .25s}
+.why-card:hover{border-color:#5d7a62;transform:translateY(-2px);box-shadow:0 16px 40px #0000004d}
+.why-card:hover::before{background:linear-gradient(90deg,transparent,var(--primary) 30%,var(--primary) 70%,transparent)}
+.why-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:13px}
+.why-code{font:12px ui-monospace,monospace;letter-spacing:1px;color:var(--primary)}
+.why-label{font:10px ui-monospace,monospace;letter-spacing:1.6px;color:#77896f}
+.why-card h3{font-size:22px;font-weight:400;letter-spacing:-.4px;margin:0 0 10px}
+.why-card p{margin:0;font-size:14px;line-height:1.75;color:#a9b6ad}
+.why-note{margin:22px 0 0;font-size:12.5px;color:#8a978c;line-height:1.7;display:flex;align-items:center;gap:10px}
+.why-note::before{content:'';width:26px;height:1px;background:#587049;flex-shrink:0}
+@media (max-width:900px){.os-why .why-grid{grid-template-columns:1fr}}
+@media (max-width:767px){
+  .why-card{padding:19px 18px}
+  .why-card h3{font-size:20px}
+  .why-card p{font-size:14px}
+}
+@media (prefers-reduced-motion:reduce){.why-card{transition:none}.why-card:hover{transform:none}}
+
+/* --- 04 PRODUCTS — icon tile as visual anchor + clearer hierarchy. --- */
+.product-card-head{gap:12px}
+.product-icon{display:grid;place-items:center;width:42px;height:42px;flex-shrink:0;border:1px solid #3f5237;border-radius:9px;color:var(--primary);background:#c5f56308;transition:border-color .2s,box-shadow .2s,background .2s;margin:-1px 0}
+.product-card .product-code{margin-right:auto}
+.product-card h3{font-size:22px}
+.product-card:hover .product-icon{border-color:#6f8a52;box-shadow:inset 0 0 22px #c5f56314;background:#c5f5630f}
+@media (max-width:767px){.product-icon{width:38px;height:38px;border-radius:8px}}
+
+/* --- 09 CONTACT — project-type chips (lead qualification). --- */
+.contact-form .project-types{border:0;padding:0;margin:0 0 26px;display:block}
+.contact-form .project-types legend{padding:0;margin-bottom:12px}
+.project-types-list{display:flex;flex-wrap:wrap;gap:8px}
+.project-type-chip{appearance:none;cursor:pointer;min-height:38px;padding:8px 14px;border:1px solid #3f5237;border-radius:999px;background:transparent;color:#b7cda6;font:11.5px ui-monospace,monospace;letter-spacing:.4px;transition:color .18s,border-color .18s,background .18s,box-shadow .18s}
+.project-type-chip:hover{color:#dcecd2;border-color:#587045;background:#c5f56306}
+.project-type-chip[aria-pressed=true]{color:#0c120a;background:var(--primary);border-color:var(--primary);font-weight:600;box-shadow:0 6px 18px #c5f56326}
+.project-type-chip:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+.char-counter{display:block;text-align:right;font:10.5px ui-monospace,monospace;color:#7d8f76;margin:-18px 0 18px}
+@media (max-width:767px){.project-type-chip{min-height:42px;padding:10px 15px;font-size:12px}}
+
+/* --- Contact inputs: visible lime focus glow + taller textarea. --- */
+.contact-form input:focus,.contact-form textarea:focus{outline:1px solid var(--primary);outline-offset:5px;border-color:var(--primary);box-shadow:0 12px 34px -14px #c5f56333}
+.contact-form input:hover,.contact-form textarea:hover{border-color:#79855f}
+.contact-form textarea{height:122px}
+
+/* --- Footer: copyable contact email. --- */
+.footer-email{display:flex;align-items:center;gap:12px;min-height:44px;flex-wrap:wrap}
+.footer-email>a{font-size:14px;color:#d3e2ce;letter-spacing:.2px;transition:color .18s}
+.footer-email>a:hover{color:var(--primary)}
+.footer-email>button{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:6px 12px;border:1px solid #3f5237;border-radius:999px;background:transparent;color:#a4b694;font:10.5px ui-monospace,monospace;letter-spacing:.6px;transition:color .18s,border-color .18s,background .18s}
+.footer-email>button:hover{color:#dcecd2;border-color:#587045}
+.footer-email>button:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+
+/* --- 07 AUDIT — facts strip as visual anchor. --- */
+.audit-facts{list-style:none;display:flex;flex-wrap:wrap;gap:12px;margin:0 0 30px;padding:0}
+.audit-facts li{display:flex;align-items:baseline;gap:9px;padding:11px 18px;border:1px dashed #4a5f42;background:#c5f56305}
+.audit-facts strong{font-size:24px;font-weight:500;letter-spacing:-.5px;color:var(--primary);line-height:1}
+.audit-facts span{font:10.5px ui-monospace,monospace;letter-spacing:1.2px;color:#8a978c;text-transform:uppercase}
+@media (max-width:767px){.audit-facts{gap:9px;margin-bottom:24px}.audit-facts li{padding:9px 14px}.audit-facts strong{font-size:20px}}
+
+/* --- 01 WHAT WE BUILD — category hover bar + pressed state. --- */
+.build-categories button{position:relative}
+.build-categories button::after{content:'';position:absolute;left:0;top:12px;bottom:12px;width:2px;background:var(--primary);opacity:0;transition:opacity .18s}
+.build-categories button:hover{border-color:#54684f;background:linear-gradient(120deg,#121a17,#0c1210)}
+.build-categories button:hover::after{opacity:.75}
+.build-categories button[aria-pressed=true]{border-left-color:var(--primary)}
+.build-categories button[aria-pressed=true]::after{opacity:1}
+.build-items li{font-size:16px}
+.build-items li:hover{border-color:#4d624f}
+
+/* --- 02 CUSTOM SOFTWARE — rail: thicker connector, progress gradient. --- */
+.pipeline-connector{height:2px;background:#414f3e;position:relative;overflow:hidden}
+.pipeline-connector::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,var(--primary),#c5f56344);transform:scaleX(1);transform-origin:0 50%;transition:transform .35s cubic-bezier(.22,.61,.36,1)}
+.pipeline-rail li.current .pipeline-connector::after,.pipeline-rail li.current~li .pipeline-connector::after{transform:scaleX(0)}
+.pipeline-code{color:#c4d6c9}
+.pipeline-rail button:hover .pipeline-code{color:var(--primary)}
+
+/* --- 03 AI & AUTOMATION — brighter step numbers + connected panels. --- */
+.automation-recipe{border:1px solid #33413a;border-left:2px solid #587049;box-shadow:0 24px 60px -34px #000000cc}
+.automation-recipe li{font-size:15.5px;color:#c9d8c6}
+.automation-recipe li>span{font:13px ui-monospace,monospace;color:#a8de66;font-weight:600;min-width:30px}
+.automation-recipe li:last-child{border-bottom:0}
+.automation-actions button{transition:color .18s,padding-left .18s}
+.automation-actions button:hover{color:#e0ecdc;padding-left:6px}
+
+/* --- 06 INDUSTRIES — brighter inactive pills + workflow readability. --- */
+.industry-desktop button{color:#c0cec2;transition:color .18s,border-color .18s}
+.industry-desktop button:hover{color:#e6efe0;border-color:#54684f}
+.industry-pipeline li>strong{font-size:15px}
+.industry-builds p{letter-spacing:.2px}
+.industry-builds p::before{content:'';display:inline-block;width:16px;height:1px;background:#6b8551;margin-right:9px;vertical-align:middle}
+
+/* --- 08 FAQ — row hover/open background shift. --- */
+.faq-list [data-slot=accordion-item]{transition:background .2s,padding .2s;border-radius:6px}
+.faq-list [data-slot=accordion-item]:hover{background:#c5f56304}
+.faq-list [data-slot=accordion-item][data-state=open]{background:#c5f56307;padding-block:4px}
+.faq-list [data-slot=accordion-item][data-state=open] .faq-question{color:#e9f1e2}
+
+/* --- Mobile: bigger scene-mode touch targets. --- */
+@media (max-width:767px){
+  .scene-mode button{font-size:11px;padding:7px 12px;min-height:40px;letter-spacing:.7px}
+  .products-grid{gap:14px}
+  .automation-recipe li{font-size:14.5px}
+}

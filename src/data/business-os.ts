@@ -66,6 +66,16 @@ export const heroScenes: HeroScene[] = [
 
 export type ProductStatus = "LIVE" | "BETA" | "PRIVATE BETA" | "IN DEVELOPMENT" | "CONCEPT";
 
+/** Icon ids map to lucide-react components in haydev-products.tsx. */
+export const productIcons: Record<string, "boxes" | "scan-search" | "activity" | "inbox" | "receipt-text" | "file-scan"> = {
+  "ERP / CRM": "boxes",
+  AUDIT: "scan-search",
+  CONTROL: "activity",
+  LEADOS: "inbox",
+  QUOTEFLOW: "receipt-text",
+  "DOC AI": "file-scan",
+};
+
 export const products: { code: string; name: string; status: ProductStatus; text: string; features: string[]; cta?: { label: string; href?: string; audit?: boolean } }[] = [
   {
     code: "ERP / CRM",
@@ -147,6 +157,37 @@ export const buildCategories = [
     stack: ["Обработка данных", "Поиск и ответы", "Проверка человеком", "Метрики качества"],
   },
 ];
+
+/** Why HayDev — engineering principles shown in the main flow (not hidden in showcase). */
+export const whyPrinciples = [
+  {
+    code: "P-01",
+    label: "ENGINEERING CULTURE",
+    title: "Архитектура, а не шаблон",
+    text: "Каждую систему проектируем под процессы клиента. Решения можно объяснить одним предложением — если нельзя, мы его перерабатываем.",
+  },
+  {
+    code: "P-02",
+    label: "OWNERSHIP",
+    title: "Код и данные — ваши",
+    text: "Код, данные и доступы передаются клиенту с документацией. Систему можно поддерживать и развивать — включая без нас.",
+  },
+  {
+    code: "P-03",
+    label: "HONEST ESTIMATES",
+    title: "Оценки без фантазий",
+    text: "Не называем цену до понимания задачи и не обещаем сроки, в которых не уверены. Оценка — по этапам, которые вы контролируете.",
+  },
+  {
+    code: "P-04",
+    label: "ONE TEAM",
+    title: "Одна команда на весь цикл",
+    text: "Проектирование, интерфейс, бэкенд, AI и эксплуатация — одна команда, которая отвечает за результат целиком, а не за свою часть.",
+  },
+];
+
+/** Contact form: project-type chips for lead qualification. */
+export const projectTypes = ["Сайт / портал", "CRM / ERP", "AI-система", "Платформа / SaaS", "Мобильное приложение", "Ещё не решили"];
 
 export const buildPipeline = [
   { code: "IDEA", title: "Идея", text: "Слушаем задачу и формулируем продукт: кто пользователь, какая боль, какой результат." },

@@ -2,7 +2,7 @@
 import { useLanguage } from "@/components/language-provider";
 import { useAppView } from "@/components/app-view";
 import { lazy, Suspense, useRef, useState } from "react";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { ArrowUpRight, Check, Copy, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { BusinessCore } from "@/components/sections/business-core";
@@ -10,6 +10,7 @@ import { WhatWeBuild } from "@/components/sections/what-we-build";
 import { CustomSoftware } from "@/components/sections/custom-software";
 import { AutomationSection } from "@/components/sections/ai-automation";
 import { HaydevProducts } from "@/components/sections/haydev-products";
+import { WhyHaydev } from "@/components/sections/why-haydev";
 import { IndustrySystems } from "@/components/sections/industry-systems";
 
 import { BusinessAudit } from "@/components/sections/business-audit";
@@ -40,6 +41,46 @@ const languages = [
   { code: "ru", label: "Рус", name: "Русский" },
   { code: "en", label: "Eng", name: "English" },
 ] as const;
+
+/** Copy-to-clipboard contact email with visible feedback. */
+function CopyEmail() {
+  const { t } = useLanguage();
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  async function copy() {
+    const email = "hello@haydev.am";
+    // The async clipboard API needs a secure context AND user activation;
+    // fall back to the legacy execCommand path when it is unavailable.
+    try {
+      try {
+        if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(email);
+        else throw new Error("no-clipboard");
+      } catch {
+        const area = document.createElement("textarea");
+        area.value = email;
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        area.remove();
+      }
+      setCopied(true);
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setCopied(false), 2200);
+    } catch {
+      // Clipboard is fully blocked — the mailto link still works.
+    }
+  }
+  return (
+    <div className="footer-email">
+      <a href="mailto:hello@haydev.am">hello@haydev.am</a>
+      <button type="button" onClick={copy} aria-live="polite" aria-label={copied ? t("Почта скопирована") : t("Скопировать почту")}>
+        {copied ? <>{t("Скопировано")} <Check size={14} /></> : <><Copy size={14} /> {t("Скопировать")}</>}
+      </button>
+    </div>
+  );
+}
 
 export default function HayDev() {
   const { t, localize, locale, setLocale } = useLanguage();
@@ -171,6 +212,7 @@ export default function HayDev() {
           )}
         </details>
       </div>
+      <WhyHaydev />
       <IndustrySystems onSelect={setIndustry} />
       <BusinessAudit industry={industry} onApply={(value) => { setAuditSummary(value); setAuditAttached(true); }} />
       <FaqSection />
@@ -178,7 +220,7 @@ export default function HayDev() {
       <section className="contact-section" id="contact" aria-labelledby="contact-heading">
         <div className="container contact-grid">
           <div className="contact-copy">
-            <SectionLabel number="08">{t("РАССКАЖИТЕ О ЗАДАЧЕ")}</SectionLabel>
+            <SectionLabel number="09">{t("РАССКАЖИТЕ О ЗАДАЧЕ")}</SectionLabel>
             <h2 id="contact-heading">{t("Что вы хотите")}<br /><span className="lime-text">{t("создать?")}</span></h2>
             <p>{t("CRM, портал, платформа или AI-система — расскажите задачу.")}<br />{t("HayDev спроектирует решение и покажет, как его реализовать.")}</p>
             <div className="contact-next-steps" aria-label={t("Что дальше")}>
@@ -207,6 +249,7 @@ export default function HayDev() {
         </div>
         <div className="footer-links">
           <span className="eyebrow">{t("НАЧАТЬ ДИАЛОГ")}</span>
+          <CopyEmail />
           <a href="#contact">{t("Обсудить проект")} <ArrowUpRight size={16} /></a>
           <a href="#audit">{t("Пройти Business Audit")} <ArrowUpRight size={16} /></a>
         </div>

@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return json({ error: t("Проверьте имя, почту и согласие на обработку заявки.") }, 400);
   const { requestId, name, email, message } = parsed.data;
   try {
-    const db = leadsDatabase();
+    const db = await leadsDatabase();
     // Idempotent retries after a network interruption never duplicate a lead.
     const existing = await db.prepare("SELECT id FROM leads WHERE id = ?").bind(requestId).first();
     if (existing) return json({ accepted: true }, 200);

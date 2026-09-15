@@ -1,0 +1,414 @@
+     1→import type { Locale } from "@/lib/i18n";
+     2→
+     3→export type AuditLocaleText = Record<Locale, string>;
+     4→export type AuditState = "ok" | "manual" | "fragmented" | "missing";
+     5→export type AuditDomain =
+     6→  | "Acquisition"
+     7→  | "Sales"
+     8→  | "Operations"
+     9→  | "Data"
+    10→  | "Automation"
+    11→  | "AI Readiness";
+    12→export type AuditImpact = "high" | "medium";
+    13→export type AuditComplexity = "low" | "medium" | "high";
+    14→
+    15→export type AuditChoice = {
+    16→  id: string;
+    17→  label: AuditLocaleText;
+    18→  score: 0 | 1 | 2 | 3;
+    19→  state: AuditState;
+    20→};
+    21→
+    22→export type AuditQuestion = {
+    23→  id: string;
+    24→  mapLabel: AuditLocaleText;
+    25→  prompt: AuditLocaleText;
+    26→  hint: AuditLocaleText;
+    27→  domains: AuditDomain[];
+    28→  choices: AuditChoice[];
+    29→  recommendation: {
+    30→    title: AuditLocaleText;
+    31→    rationale: AuditLocaleText;
+    32→    impact: AuditImpact;
+    33→    complexity: AuditComplexity;
+    34→    connectsTo: Array<"CRM" | "LeadOS" | "HayDev Control" | "ERP" | "AI">;
+    35→  };
+    36→};
+    37→
+    38→const tx = (ru: string, hy: string, en: string): AuditLocaleText => ({ ru, hy, en });
+    39→const choice = (
+    40→  id: string,
+    41→  label: AuditLocaleText,
+    42→  score: 0 | 1 | 2 | 3,
+    43→  state: AuditState,
+    44→): AuditChoice => ({ id, label, score, state });
+    45→
+    46→export const auditDomains: AuditDomain[] = [
+    47→  "Acquisition",
+    48→  "Sales",
+    49→  "Operations",
+    50→  "Data",
+    51→  "Automation",
+    52→  "AI Readiness",
+    53→];
+    54→
+    55→export const auditDomainLabels: Record<AuditDomain, AuditLocaleText> = {
+    56→  Acquisition: tx("Привлечение", "Ներգրավում", "Acquisition"),
+    57→  Sales: tx("Продажи", "Վաճառք", "Sales"),
+    58→  Operations: tx("Операции", "Գործառնություններ", "Operations"),
+    59→  Data: tx("Данные", "Տվյալներ", "Data"),
+    60→  Automation: tx("Автоматизация", "Ավտոմատացում", "Automation"),
+    61→  "AI Readiness": tx("Готовность к AI", "AI պատրաստվածություն", "AI Readiness"),
+    62→};
+    63→
+    64→export const auditStateLabels: Record<AuditState, AuditLocaleText> = {
+    65→  ok: tx("OK", "ԼԱՎ", "OK"),
+    66→  manual: tx("Вручную", "Ձեռքով", "Manual"),
+    67→  fragmented: tx("Разрознено", "Մասնատված", "Fragmented"),
+    68→  missing: tx("Отсутствует", "Բացակայում է", "Missing"),
+    69→};
+    70→
+    71→export const auditQuestions: AuditQuestion[] = [
+    72→  {
+    73→    id: "lead-sources",
+    74→    mapLabel: tx("Источники лидов", "Լիդերի աղբյուրներ", "Lead sources"),
+    75→    prompt: tx("Откуда HayDev получает новые обращения?", "Որտեղի՞ց է HayDev-ը ստանում նոր դիմումները։", "Where does HayDev receive new enquiries?"),
+    76→    hint: tx("Оцените не количество каналов, а сохранение источника до продажи.", "Գնահատեք ոչ թե ալիքների քանակը, այլ աղբյուրի պահպանումը մինչև վաճառք։", "Assess whether the source stays attached through the sale, not the number of channels."),
+    77→    domains: ["Acquisition", "Data"],
+    78→    choices: [
+    79→      choice("connected", tx("Каналы связаны, источник сохраняется", "Ալիքները կապված են, աղբյուրը պահպանվում է", "Channels are connected and the source is retained"), 3, "ok"),
+    80→      choice("partial", tx("Источники видны только в части каналов", "Աղբյուրները տեսանելի են միայն որոշ ալիքներում", "Sources are visible in only some channels"), 2, "fragmented"),
+    81→      choice("manual", tx("Источник записывается вручную", "Աղբյուրը գրանցվում է ձեռքով", "The source is recorded manually"), 1, "manual"),
+    82→      choice("missing", tx("Источник обычно не фиксируется", "Աղբյուրը սովորաբար չի գրանցվում", "The source is usually not recorded"), 0, "missing"),
+    83→    ],
+    84→    recommendation: {
+    85→      title: tx("Единый захват источников", "Աղբյուրների միասնական հավաքագրում", "Unified source capture"),
+    86→      rationale: tx("Передавать источник и кампанию вместе с обращением до CRM.", "Աղբյուրն ու արշավը դիմումի հետ փոխանցել CRM։", "Carry source and campaign data with each enquiry into CRM."),
+    87→      impact: "high", complexity: "medium", connectsTo: ["LeadOS", "CRM", "HayDev Control"],
+    88→    },
+    89→  },
+    90→  {
+    91→    id: "lead-inbox",
+    92→    mapLabel: tx("Входящие заявки", "Մուտքային դիմումներ", "Lead inbox"),
+    93→    prompt: tx("Где команда видит все новые заявки?", "Որտե՞ղ է թիմը տեսնում բոլոր նոր դիմումները։", "Where does the team see every new lead?"),
+    94→    hint: tx("Учитывайте сайт, Instagram, мессенджеры, звонки и рекомендации.", "Հաշվի առեք կայքը, Instagram-ը, մեսենջերները, զանգերն ու առաջարկությունները։", "Include the website, Instagram, messengers, calls and referrals."),
+    95→    domains: ["Acquisition", "Sales"],
+    96→    choices: [
+    97→      choice("one", tx("В одном входящем списке", "Մեկ մուտքային ցանկում", "In one shared inbox"), 3, "ok"),
+    98→      choice("several", tx("В нескольких кабинетах и чатах", "Մի քանի համակարգերում և չաթերում", "Across several tools and chats"), 2, "fragmented"),
+    99→      choice("manual", tx("Сотрудник собирает их вручную", "Աշխատակիցը հավաքում է ձեռքով", "A team member collects them manually"), 1, "manual"),
+   100→      choice("missing", tx("Единого контроля нет", "Միասնական վերահսկում չկա", "There is no unified control"), 0, "missing"),
+   101→    ],
+   102→    recommendation: {
+   103→      title: tx("Единый inbox для заявок", "Դիմումների միասնական inbox", "Unified lead inbox"),
+   104→      rationale: tx("Собирать обращения из сайта и сообщений в одну очередь без копирования.", "Կայքից և հաղորդագրություններից դիմումները հավաքել մեկ հերթում՝ առանց պատճենման։", "Collect website and message enquiries in one queue without copy-paste."),
+   105→      impact: "high", complexity: "medium", connectsTo: ["LeadOS", "CRM"],
+   106→    },
+   107→  },
+   108→  {
+   109→    id: "crm",
+   110→    mapLabel: tx("CRM", "CRM", "CRM"),
+   111→    prompt: tx("Как HayDev ведёт клиентов и сделки?", "Ինչպե՞ս է HayDev-ը վարում հաճախորդներին և գործարքները։", "How does HayDev manage customers and deals?"),
+   112→    hint: tx("Проверьте, есть ли ответственный, статус и следующий шаг.", "Ստուգեք՝ կա՞ պատասխանատու, կարգավիճակ և հաջորդ քայլ։", "Check whether every record has an owner, status and next step."),
+   113→    domains: ["Sales", "Data"],
+   114→    choices: [
+   115→      choice("connected", tx("CRM связана с каналами и процессами", "CRM-ը կապված է ալիքների և գործընթացների հետ", "CRM is connected to channels and processes"), 3, "ok"),
+   116→      choice("isolated", tx("CRM есть, но живёт отдельно", "CRM կա, բայց գործում է առանձին", "CRM exists but works in isolation"), 2, "fragmented"),
+   117→      choice("manual", tx("Таблицы, чаты или ручной список", "Աղյուսակներ, չաթեր կամ ձեռքով ցուցակ", "Spreadsheets, chats or a manual list"), 1, "manual"),
+   118→      choice("missing", tx("Системы учёта клиентов нет", "Հաճախորդների հաշվառման համակարգ չկա", "There is no customer system"), 0, "missing"),
+   119→    ],
+   120→    recommendation: {
+   121→      title: tx("CRM-контур продаж", "Վաճառքի CRM շղթա", "Connected CRM pipeline"),
+   122→      rationale: tx("Фиксировать ответственного, этап и следующий шаг для каждой сделки.", "Յուրաքանչյուր գործարքի համար գրանցել պատասխանատուին, փուլն ու հաջորդ քայլը։", "Track an owner, stage and next action for every deal."),
+   123→      impact: "high", complexity: "medium", connectsTo: ["CRM", "LeadOS", "HayDev Control"],
+   124→    },
+   125→  },
+   126→  {
+   127→    id: "follow-up",
+   128→    mapLabel: tx("Follow-up", "Հետադարձ կապ", "Follow-up"),
+   129→    prompt: tx("Как контролируется следующий контакт с лидом?", "Ինչպե՞ս է վերահսկվում լիդի հետ հաջորդ կապը։", "How is the next lead follow-up controlled?"),
+   130→    hint: tx("Важен механизм, который замечает просроченное действие.", "Կարևոր է մեխանիզմը, որը նկատում է ուշացած գործողությունը։", "Look for a mechanism that detects an overdue action."),
+   131→    domains: ["Sales", "Automation"],
+   132→    choices: [
+   133→      choice("automatic", tx("Система ставит и проверяет задачи", "Համակարգը դնում և ստուգում է առաջադրանքները", "The system creates and checks tasks"), 3, "ok"),
+   134→      choice("crm", tx("Задачи есть, но контроль частичный", "Առաջադրանքներ կան, բայց վերահսկումը մասնակի է", "Tasks exist but control is partial"), 2, "fragmented"),
+   135→      choice("memory", tx("Напоминания вручную или по памяти", "Հիշեցումները ձեռքով են կամ հիշողությամբ", "Reminders are manual or memory-based"), 1, "manual"),
+   136→      choice("missing", tx("Следующий шаг не фиксируется", "Հաջորդ քայլը չի գրանցվում", "The next step is not tracked"), 0, "missing"),
+   137→    ],
+   138→    recommendation: {
+   139→      title: tx("Контроль забытых лидов", "Մոռացված լիդերի վերահսկում", "Lost-lead control"),
+   140→      rationale: tx("Создавать следующий шаг и поднимать просроченные заявки ответственному.", "Ստեղծել հաջորդ քայլը և ուշացած դիմումները բարձրացնել պատասխանատուին։", "Create the next action and surface overdue leads to their owner."),
+   141→      impact: "high", complexity: "low", connectsTo: ["LeadOS", "CRM", "HayDev Control"],
+   142→    },
+   143→  },
+   144→  {
+   145→    id: "erp",
+   146→    mapLabel: tx("ERP / проекты", "ERP / նախագծեր", "ERP / projects"),
+   147→    prompt: tx("Где управляются проекты, заказы и исполнение?", "Որտե՞ղ են կառավարվում նախագծերը, պատվերներն ու կատարումը։", "Where are projects, orders and delivery managed?"),
+   148→    hint: tx("Смотрите на передачу данных из продажи в исполнение.", "Դիտարկեք տվյալների փոխանցումը վաճառքից կատարման փուլ։", "Assess the hand-off from a won sale into delivery."),
+   149→    domains: ["Operations", "Data"],
+   150→    choices: [
+   151→      choice("connected", tx("В связанной ERP / project-системе", "Կապակցված ERP / նախագծային համակարգում", "In a connected ERP or project system"), 3, "ok"),
+   152→      choice("separate", tx("В отдельной системе без связи с CRM", "CRM-ից անջատ համակարգում", "In a separate system disconnected from CRM"), 2, "fragmented"),
+   153→      choice("manual", tx("В таблицах, чатах и документах", "Աղյուսակներում, չաթերում և փաստաթղթերում", "In spreadsheets, chats and documents"), 1, "manual"),
+   154→      choice("missing", tx("Единого процесса нет", "Միասնական գործընթաց չկա", "There is no unified process"), 0, "missing"),
+   155→    ],
+   156→    recommendation: {
+   157→      title: tx("Передача продажи в исполнение", "Վաճառքից կատարման փոխանցում", "Sales-to-delivery hand-off"),
+   158→      rationale: tx("После согласования автоматически создавать проект, владельца и контрольные точки.", "Հաստատումից հետո ավտոմատ ստեղծել նախագիծ, պատասխանատու և վերահսկման կետեր։", "Create the project, owner and checkpoints automatically after approval."),
+   159→      impact: "high", complexity: "medium", connectsTo: ["CRM", "ERP", "HayDev Control"],
+   160→    },
+   161→  },
+   162→  {
+   163→    id: "inventory",
+   164→    mapLabel: tx("Склад / ресурсы", "Պահեստ / ռեսուրսներ", "Inventory / resources"),
+   165→    prompt: tx("Как учитываются склад, лицензии или проектные ресурсы?", "Ինչպե՞ս են հաշվառվում պահեստը, լիցենզիաները կամ նախագծային ռեսուրսները։", "How are inventory, licences or project resources tracked?"),
+   166→    hint: tx("Для HayDev ресурсом может быть не товар, а доступ, лимит или загрузка команды.", "HayDev-ի համար ռեսուրսը կարող է լինել մուտքը, սահմանաչափը կամ թիմի ծանրաբեռնվածությունը։", "For HayDev, a resource may be access, usage limits or team capacity rather than stock."),
+   167→    domains: ["Operations", "Data"],
+   168→    choices: [
+   169→      choice("connected", tx("Связаны с заказами и проектами", "Կապված են պատվերների և նախագծերի հետ", "Connected to orders and projects"), 3, "ok"),
+   170→      choice("separate", tx("Учитываются в отдельных инструментах", "Հաշվառվում են առանձին գործիքներում", "Tracked in separate tools"), 2, "fragmented"),
+   171→      choice("manual", tx("Проверяются и обновляются вручную", "Ստուգվում և թարմացվում են ձեռքով", "Checked and updated manually"), 1, "manual"),
+   172→      choice("missing", tx("Системного учёта нет", "Համակարգային հաշվառում չկա", "There is no systematic tracking"), 0, "missing"),
+   173→    ],
+   174→    recommendation: {
+   175→      title: tx("Контроль ресурсов и лимитов", "Ռեսուրսների և սահմանաչափերի վերահսկում", "Resource and limit control"),
+   176→      rationale: tx("Связать доступные ресурсы с проектами и предупредительными порогами.", "Հասանելի ռեսուրսները կապել նախագծերի և զգուշացման շեմերի հետ։", "Connect available resources to projects and warning thresholds."),
+   177→      impact: "medium", complexity: "medium", connectsTo: ["ERP", "HayDev Control"],
+   178→    },
+   179→  },
+   180→  {
+   181→    id: "reporting",
+   182→    mapLabel: tx("Отчётность", "Հաշվետվություն", "Reporting"),
+   183→    prompt: tx("Как руководство получает общую картину бизнеса?", "Ինչպե՞ս է ղեկավարությունը ստանում բիզնեսի ընդհանուր պատկերը։", "How does leadership get a full view of the business?"),
+   184→    hint: tx("Оцените время на сбор, сверку и объяснение данных.", "Գնահատեք տվյալների հավաքման, համադրման և բացատրության ժամանակը։", "Consider the effort spent collecting, reconciling and explaining data."),
+   185→    domains: ["Data", "Operations"],
+   186→    choices: [
+   187→      choice("live", tx("Показатели доступны из общих данных", "Ցուցանիշները հասանելի են ընդհանուր տվյալներից", "Metrics are available from shared data"), 3, "ok"),
+   188→      choice("several", tx("Есть несколько несвязанных отчётов", "Կան մի քանի չկապակցված հաշվետվություններ", "There are several disconnected reports"), 2, "fragmented"),
+   189→      choice("manual", tx("Отчёт собирается вручную", "Հաշվետվությունը հավաքվում է ձեռքով", "The report is assembled manually"), 1, "manual"),
+   190→      choice("missing", tx("Регулярной картины нет", "Կանոնավոր պատկեր չկա", "There is no regular overview"), 0, "missing"),
+   191→    ],
+   192→    recommendation: {
+   193→      title: tx("Панель владельца", "Սեփականատիրոջ վահանակ", "Owner control view"),
+   194→      rationale: tx("Собирать согласованные показатели из продаж, проектов и затрат в одном экране.", "Վաճառքի, նախագծերի և ծախսերի համաձայնեցված ցուցանիշները հավաքել մեկ էկրանին։", "Bring agreed sales, project and cost metrics into one view."),
+   195→      impact: "high", complexity: "medium", connectsTo: ["HayDev Control", "CRM", "ERP"],
+   196→    },
+   197→  },
+   198→  {
+   199→    id: "marketing-attribution",
+   200→    mapLabel: tx("Реклама → продажа", "Գովազդ → վաճառք", "Ads → sale"),
+   201→    prompt: tx("Можно ли связать рекламу с реальной сделкой?", "Հնարավո՞ր է գովազդը կապել իրական գործարքի հետ։", "Can advertising be connected to a real deal?"),
+   202→    hint: tx("Клики и заявки — ещё не подтверждённый результат продаж.", "Սեղմումներն ու դիմումները դեռ հաստատված վաճառքի արդյունք չեն։", "Clicks and leads are not yet a confirmed sales result."),
+   203→    domains: ["Acquisition", "Data"],
+   204→    choices: [
+   205→      choice("connected", tx("Да, источник проходит до сделки", "Այո, աղբյուրը հասնում է մինչև գործարք", "Yes, source data reaches the deal"), 3, "ok"),
+   206→      choice("partial", tx("Только часть кампаний или каналов", "Միայն որոշ արշավներ կամ ալիքներ", "Only some campaigns or channels"), 2, "fragmented"),
+   207→      choice("manual", tx("Связываем вручную по таблицам", "Կապում ենք ձեռքով՝ աղյուսակներով", "We reconcile it manually in spreadsheets"), 1, "manual"),
+   208→      choice("missing", tx("Связи рекламы с продажами нет", "Գովազդի և վաճառքի կապ չկա", "There is no ad-to-sale link"), 0, "missing"),
+   209→    ],
+   210→    recommendation: {
+   211→      title: tx("Граф рекламы и выручки", "Գովազդի և հասույթի գրաֆ", "Marketing-to-revenue graph"),
+   212→      rationale: tx("Сохранять кампанию в карточке сделки и сверять её с подтверждённым результатом.", "Արշավը պահպանել գործարքի քարտում և համադրել հաստատված արդյունքի հետ։", "Keep campaign data on the deal and reconcile it with the confirmed outcome."),
+   213→      impact: "high", complexity: "high", connectsTo: ["CRM", "HayDev Control"],
+   214→    },
+   215→  },
+   216→  {
+   217→    id: "data-transfer",
+   218→    mapLabel: tx("Передача данных", "Տվյալների փոխանցում", "Data transfer"),
+   219→    prompt: tx("Как часто данные переносятся между системами вручную?", "Որքա՞ն հաճախ են տվյալները ձեռքով փոխանցվում համակարգերի միջև։", "How often is data copied manually between systems?"),
+   220→    hint: tx("Сюда входят копирование контактов, статусов, сумм и документов.", "Ներառում է կոնտակտների, կարգավիճակների, գումարների և փաստաթղթերի պատճենումը։", "Include contacts, statuses, amounts and documents."),
+   221→    domains: ["Automation", "Data", "Operations"],
+   222→    choices: [
+   223→      choice("automatic", tx("Почти не переносится вручную", "Գրեթե չի փոխանցվում ձեռքով", "Almost never copied manually"), 3, "ok"),
+   224→      choice("some", tx("Есть несколько ручных передач", "Կան մի քանի ձեռքով փոխանցումներ", "There are a few manual hand-offs"), 2, "fragmented"),
+   225→      choice("often", tx("Перенос — регулярная часть работы", "Փոխանցումը աշխատանքի կանոնավոր մաս է", "Copying is a regular part of work"), 1, "manual"),
+   226→      choice("core", tx("Большинство систем держится на копировании", "Համակարգերի մեծ մասը հիմնված է պատճենման վրա", "Most systems depend on copy-paste"), 0, "manual"),
+   227→    ],
+   228→    recommendation: {
+   229→      title: tx("Интеграционный слой", "Ինտեգրման շերտ", "Integration layer"),
+   230→      rationale: tx("Определить единый источник данных и убрать повторный ввод между ключевыми системами.", "Սահմանել տվյալների մեկ աղբյուր և վերացնել կրկնակի մուտքագրումը հիմնական համակարգերում։", "Define a source of truth and remove duplicate entry across core systems."),
+   231→      impact: "high", complexity: "high", connectsTo: ["CRM", "ERP", "LeadOS", "HayDev Control"],
+   232→    },
+   233→  },
+   234→  {
+   235→    id: "documents",
+   236→    mapLabel: tx("Документы", "Փաստաթղթեր", "Documents"),
+   237→    prompt: tx("Как создаются предложения, договоры и рабочие документы?", "Ինչպե՞ս են ստեղծվում առաջարկները, պայմանագրերն ու աշխատանքային փաստաթղթերը։", "How are proposals, contracts and working documents created?"),
+   238→    hint: tx("Учитывайте шаблоны, согласование и перенос данных из сделки.", "Հաշվի առեք ձևանմուշները, հաստատումը և տվյալների փոխանցումը գործարքից։", "Consider templates, approval and data copied from the deal."),
+   239→    domains: ["Automation", "Operations"],
+   240→    choices: [
+   241→      choice("generated", tx("Из шаблона и данных системы", "Համակարգի տվյալներից և ձևանմուշից", "From system data and approved templates"), 3, "ok"),
+   242→      choice("templates", tx("Шаблоны есть, заполнение ручное", "Ձևանմուշներ կան, լրացումը ձեռքով է", "Templates exist but are filled manually"), 2, "fragmented"),
+   243→      choice("manual", tx("Каждый документ собирается вручную", "Յուրաքանչյուր փաստաթուղթ հավաքվում է ձեռքով", "Each document is assembled manually"), 1, "manual"),
+   244→      choice("missing", tx("Нет единого шаблона и процесса", "Միասնական ձևանմուշ և գործընթաց չկա", "There is no shared template or process"), 0, "missing"),
+   245→    ],
+   246→    recommendation: {
+   247→      title: tx("Document Flow", "Փաստաթղթերի հոսք", "Document flow"),
+   248→      rationale: tx("Создавать черновики из согласованных шаблонов и данных сделки с проверкой человеком.", "Ստեղծել սևագրեր հաստատված ձևանմուշներից և գործարքի տվյալներից՝ մարդու ստուգմամբ։", "Generate drafts from approved templates and deal data with human review."),
+   249→      impact: "medium", complexity: "medium", connectsTo: ["CRM", "ERP", "AI"],
+   250→    },
+   251→  },
+   252→  {
+   253→    id: "task-control",
+   254→    mapLabel: tx("Задачи и статусы", "Առաջադրանքներ և կարգավիճակներ", "Tasks and status"),
+   255→    prompt: tx("Как команда понимает, что делать дальше по проекту?", "Ինչպե՞ս է թիմը հասկանում նախագծի հաջորդ քայլը։", "How does the team know what happens next on a project?"),
+   256→    hint: tx("Ищите единый статус, владельца и контрольную дату.", "Փնտրեք միասնական կարգավիճակ, պատասխանատու և վերահսկման ամսաթիվ։", "Look for one status, one owner and a checkpoint date."),
+   257→    domains: ["Operations", "Automation"],
+   258→    choices: [
+   259→      choice("system", tx("Этапы и ответственные видны в системе", "Փուլերն ու պատասխանատուները տեսանելի են համակարգում", "Stages and owners are visible in the system"), 3, "ok"),
+   260→      choice("several", tx("Данные распределены между инструментами", "Տվյալները բաշխված են գործիքների միջև", "Information is split across tools"), 2, "fragmented"),
+   261→      choice("manual", tx("Через чаты, встречи и ручные напоминания", "Չաթերով, հանդիպումներով և ձեռքով հիշեցումներով", "Through chats, meetings and manual reminders"), 1, "manual"),
+   262→      choice("missing", tx("Формального контроля нет", "Պաշտոնական վերահսկում չկա", "There is no formal control"), 0, "missing"),
+   263→    ],
+   264→    recommendation: {
+   265→      title: tx("Событийный контроль проектов", "Նախագծերի իրադարձային վերահսկում", "Event-driven project control"),
+   266→      rationale: tx("Создавать задачи и уведомления из изменений статуса заказа или проекта.", "Առաջադրանքներ և ծանուցումներ ստեղծել պատվերի կամ նախագծի կարգավիճակի փոփոխությունից։", "Create tasks and alerts from order or project status changes."),
+   267→      impact: "high", complexity: "medium", connectsTo: ["ERP", "HayDev Control"],
+   268→    },
+   269→  },
+   270→  {
+   271→    id: "data-quality",
+   272→    mapLabel: tx("Качество данных", "Տվյալների որակ", "Data quality"),
+   273→    prompt: tx("Насколько можно доверять данным без дополнительной сверки?", "Որքանո՞վ կարելի է վստահել տվյալներին առանց լրացուցիչ ստուգման։", "How trustworthy is the data without extra reconciliation?"),
+   274→    hint: tx("Одинаковые названия, обязательные поля и правила доступа важнее красивого дашборда.", "Միասնական անվանումները, պարտադիր դաշտերն ու մուտքի կանոնները կարևոր են գեղեցիկ վահանակից։", "Consistent names, required fields and access rules matter more than a polished dashboard."),
+   275→    domains: ["Data", "AI Readiness"],
+   276→    choices: [
+   277→      choice("trusted", tx("Есть правила и регулярная проверка", "Կան կանոններ և պարբերական ստուգում", "Rules and regular checks are in place"), 3, "ok"),
+   278→      choice("partial", tx("Ключевые данные надёжны, остальные нет", "Հիմնական տվյալները վստահելի են, մնացածը՝ ոչ", "Core data is reliable, the rest is not"), 2, "fragmented"),
+   279→      choice("manual", tx("Качество зависит от ручной сверки", "Որակը կախված է ձեռքով համադրումից", "Quality depends on manual reconciliation"), 1, "manual"),
+   280→      choice("unknown", tx("Правил качества и доступа нет", "Որակի և մուտքի կանոններ չկան", "There are no quality or access rules"), 0, "missing"),
+   281→    ],
+   282→    recommendation: {
+   283→      title: tx("Основа данных", "Տվյալների հիմք", "Data foundation"),
+   284→      rationale: tx("Согласовать обязательные поля, владельцев данных, доступ и правила проверки.", "Համաձայնեցնել պարտադիր դաշտերը, տվյալների պատասխանատուներին, մուտքն ու ստուգման կանոնները։", "Define required fields, data owners, access and validation rules."),
+   285→      impact: "high", complexity: "medium", connectsTo: ["CRM", "ERP", "AI", "HayDev Control"],
+   286→    },
+   287→  },
+   288→  {
+   289→    id: "workflow-automation",
+   290→    mapLabel: tx("Автоматизации", "Ավտոմատացումներ", "Automations"),
+   291→    prompt: tx("Как управляются уже существующие автоматизации?", "Ինչպե՞ս են կառավարվում առկա ավտոմատացումները։", "How are existing automations managed?"),
+   292→    hint: tx("Нужны владелец, журнал ошибок и безопасное ручное продолжение.", "Անհրաժեշտ են պատասխանատու, սխալների մատյան և անվտանգ ձեռքով շարունակություն։", "They need an owner, error log and a safe manual fallback."),
+   293→    domains: ["Automation", "AI Readiness"],
+   294→    choices: [
+   295→      choice("managed", tx("Есть владельцы, мониторинг и fallback", "Կան պատասխանատուներ, մոնիթորինգ և fallback", "Owners, monitoring and fallback are defined"), 3, "ok"),
+   296→      choice("scattered", tx("Автоматизации есть, но разрознены", "Ավտոմատացումները կան, բայց մասնատված են", "Automations exist but are fragmented"), 2, "fragmented"),
+   297→      choice("manual", tx("Есть отдельные скрипты без контроля", "Կան առանձին սկրիպտներ առանց վերահսկման", "There are isolated scripts without oversight"), 1, "manual"),
+   298→      choice("missing", tx("Автоматизаций пока нет", "Ավտոմատացումներ դեռ չկան", "There are no automations yet"), 0, "missing"),
+   299→    ],
+   300→    recommendation: {
+   301→      title: tx("Реестр автоматизаций", "Ավտոմատացումների ռեգիստր", "Automation registry"),
+   302→      rationale: tx("Собрать сценарии, владельцев, ошибки и ручной fallback в одном контуре.", "Սցենարները, պատասխանատուներին, սխալներն ու ձեռքով fallback-ը հավաքել մեկ համակարգում։", "Track workflows, owners, errors and manual fallback in one place."),
+   303→      impact: "medium", complexity: "low", connectsTo: ["HayDev Control", "AI"],
+   304→    },
+   305→  },
+   306→  {
+   307→    id: "ai-knowledge",
+   308→    mapLabel: tx("AI и знания", "AI և գիտելիքներ", "AI and knowledge"),
+   309→    prompt: tx("На каких данных AI мог бы безопасно помогать команде?", "Ո՞ր տվյալներով կարող է AI-ն անվտանգ օգնել թիմին։", "What data could AI safely use to assist the team?"),
+   310→    hint: tx("Не выбирайте AI раньше, чем определены источники, доступ и проверка человеком.", "Մի ընտրեք AI, մինչև չսահմանվեն աղբյուրները, մուտքն ու մարդու ստուգումը։", "Do not choose AI before sources, access and human review are defined."),
+   311→    domains: ["AI Readiness", "Data"],
+   312→    choices: [
+   313→      choice("ready", tx("Источники, доступ и проверка определены", "Աղբյուրները, մուտքն ու ստուգումը սահմանված են", "Sources, access and review are defined"), 3, "ok"),
+   314→      choice("partial", tx("Есть знания, но они распределены", "Գիտելիքները կան, բայց բաշխված են", "Knowledge exists but is distributed"), 2, "fragmented"),
+   315→      choice("manual", tx("Данные приходится собирать вручную", "Տվյալները պետք է հավաքել ձեռքով", "Data must be assembled manually"), 1, "manual"),
+   316→      choice("missing", tx("Нет согласованной базы знаний", "Համաձայնեցված գիտելիքների բազա չկա", "There is no agreed knowledge base"), 0, "missing"),
+   317→    ],
+   318→    recommendation: {
+   319→      title: tx("Управляемая база знаний", "Կառավարվող գիտելիքների բազա", "Governed knowledge base"),
+   320→      rationale: tx("Определить документы, права доступа, источники ответа и обязательную проверку.", "Սահմանել փաստաթղթերը, մուտքի իրավունքները, պատասխանի աղբյուրներն ու պարտադիր ստուգումը։", "Define documents, access, answer sources and mandatory review."),
+   321→      impact: "medium", complexity: "medium", connectsTo: ["AI", "HayDev Control"],
+   322→    },
+   323→  },
+   324→  {
+   325→    id: "ai-use",
+   326→    mapLabel: tx("AI-сценарии", "AI սցենարներ", "AI use cases"),
+   327→    prompt: tx("Как HayDev выбирает задачи для AI?", "Ինչպե՞ս է HayDev-ը ընտրում AI-ի խնդիրները։", "How does HayDev select work for AI?"),
+   328→    hint: tx("Лучший первый сценарий повторяем, проверяем и не требует автономного решения с высоким риском.", "Լավ առաջին սցենարը կրկնվող է, ստուգելի և չի պահանջում բարձր ռիսկի ինքնավար որոշում։", "A good first use case is repeatable, reviewable and avoids high-risk autonomous decisions."),
+   329→    domains: ["AI Readiness", "Automation"],
+   330→    choices: [
+   331→      choice("criteria", tx("Есть критерии, пилоты и проверка", "Կան չափանիշներ, փորձարկումներ և ստուգում", "Criteria, pilots and review are defined"), 3, "ok"),
+   332→      choice("experiments", tx("Есть эксперименты без общего процесса", "Կան փորձեր առանց ընդհանուր գործընթացի", "Experiments exist without a shared process"), 2, "fragmented"),
+   333→      choice("ad-hoc", tx("AI используется точечно сотрудниками", "AI-ն օգտագործվում է առանձին աշխատակիցների կողմից", "AI is used ad hoc by individuals"), 1, "manual"),
+   334→      choice("missing", tx("Подходящих сценариев ещё не выбрали", "Հարմար սցենարներ դեռ չեն ընտրվել", "No suitable use cases have been selected"), 0, "missing"),
+   335→    ],
+   336→    recommendation: {
+   337→      title: tx("Контролируемый AI-пилот", "Վերահսկվող AI փորձարկում", "Controlled AI pilot"),
+   338→      rationale: tx("Выбрать один повторяемый сценарий, критерии качества и обязательную проверку человеком.", "Ընտրել մեկ կրկնվող սցենար, որակի չափանիշներ և պարտադիր մարդկային ստուգում։", "Choose one repeatable use case with quality criteria and mandatory human review."),
+   339→      impact: "medium", complexity: "low", connectsTo: ["AI", "HayDev Control"],
+   340→    },
+   341→  },
+   342→];
+   343→
+   344→export const haydevDemoAnswers: Record<string, string> = {
+   345→  "lead-sources": "partial",
+   346→  "lead-inbox": "several",
+   347→  crm: "isolated",
+   348→  "follow-up": "crm",
+   349→  erp: "separate",
+   350→  inventory: "separate",
+   351→  reporting: "manual",
+   352→  "marketing-attribution": "partial",
+   353→  "data-transfer": "often",
+   354→  documents: "templates",
+   355→  "task-control": "several",
+   356→  "data-quality": "partial",
+   357→  "workflow-automation": "scattered",
+   358→  "ai-knowledge": "partial",
+   359→  "ai-use": "experiments",
+   360→};
+   361→
+   362→export const auditUi = {
+   363→  back: tx("На сайт HayDev", "HayDev կայք", "HayDev website"),
+   364→  title: tx("Business Audit", "Business Audit", "Business Audit"),
+   365→  subtitle: tx("Диагностика цифровой системы бизнеса", "Բիզնեսի թվային համակարգի ախտորոշում", "Digital business system diagnostic"),
+   366→  internal: tx("Внутренний режим", "Ներքին ռեժիմ", "Internal mode"),
+   367→  public: tx("Публичный preview", "Հանրային preview", "Public preview"),
+   368→  current: tx("Текущий бизнес", "Ընթացիկ բիզնես", "Current business"),
+   369→  demo: tx("Демо HayDev", "HayDev դեմո", "HayDev demo"),
+   370→  demoNotice: tx("Демо-ответы — гипотезы для проверки, а не факты о HayDev.", "Դեմո պատասխանները ստուգման վարկածներ են, ոչ HayDev-ի մասին փաստեր։", "Demo answers are assumptions to review, not facts about HayDev."),
+   371→  saved: tx("Черновик сохраняется на этом устройстве", "Սևագիրը պահպանվում է այս սարքում", "Draft saved on this device"),
+   372→  restore: tx("Продолжить сохранённый аудит", "Շարունակել պահպանված աուդիտը", "Continue saved audit"),
+   373→  reset: tx("Начать заново", "Սկսել նորից", "Start over"),
+   374→  progress: tx("Прогресс", "Առաջընթաց", "Progress"),
+   375→  question: tx("Вопрос", "Հարց", "Question"),
+   376→  of: tx("из", "ից", "of"),
+   377→  map: tx("Automation Map", "Automation Map", "Automation Map"),
+   378→  live: tx("Живая предварительная карта", "Նախնական կենդանի քարտեզ", "Live preliminary map"),
+   379→  unanswered: tx("Нет ответа", "Պատասխան չկա", "Unanswered"),
+   380→  previous: tx("Назад", "Հետ", "Back"),
+   381→  next: tx("Далее", "Հաջորդը", "Next"),
+   382→  showReport: tx("Сформировать отчёт", "Ստեղծել հաշվետվություն", "Build report"),
+   383→  overview: tx("Связность системы", "Համակարգի կապակցվածություն", "System connectivity"),
+   384→  notEfficiency: tx("Это показатель связности процессов по ответам, а не оценка эффективности или финансовый прогноз.", "Սա պատասխանների հիման վրա գործընթացների կապակցվածության ցուցանիշ է, ոչ արդյունավետության կամ ֆինանսական կանխատեսում։", "This measures process connectivity from the answers, not efficiency or a financial forecast."),
+   385→  report: tx("Business Audit Report", "Business Audit Report", "Business Audit Report"),
+   386→  reportIntro: tx("Предварительная карта точек, которые стоит проверить перед внедрением.", "Ներդրումից առաջ ստուգման ենթակա կետերի նախնական քարտեզ։", "A preliminary map of areas to verify before implementation."),
+   387→  scores: tx("Оценка по направлениям", "Գնահատում ըստ ուղղությունների", "Scores by domain"),
+   388→  priorities: tx("Приоритетные автоматизации", "Առաջնահերթ ավտոմատացումներ", "Priority automations"),
+   389→  impact: tx("Impact", "Ազդեցություն", "Impact"),
+   390→  complexity: tx("Сложность", "Բարդություն", "Complexity"),
+   391→  high: tx("Высокий", "Բարձր", "High"),
+   392→  medium: tx("Средний", "Միջին", "Medium"),
+   393→  low: tx("Низкая", "Ցածր", "Low"),
+   394→  complexityHigh: tx("Высокая", "Բարձր", "High"),
+   395→  complexityMedium: tx("Средняя", "Միջին", "Medium"),
+   396→  complexityLow: tx("Низкая", "Ցածր", "Low"),
+   397→  connections: tx("Будущие связи", "Ապագա կապեր", "Future connections"),
+   398→  caveat: tx("Результат основан только на выбранных ответах. Перед решением нужны интервью, проверка систем, данных, доступов и ограничений.", "Արդյունքը հիմնված է միայն ընտրված պատասխանների վրա։ Որոշումից առաջ անհրաժեշտ են հարցազրույցներ և համակարգերի, տվյալների, մուտքերի ու սահմանափակումների ստուգում։", "The result uses only the selected answers. Interviews and a review of systems, data, access and constraints are required before decisions."),
+   399→  internalCta: tx("Создать план внедрения", "Ստեղծել ներդրման պլան", "Create implementation plan"),
+   400→  publicCta: tx("Получить подробный аудит HayDev", "Ստանալ HayDev-ի մանրամասն աուդիտ", "Get a detailed HayDev audit"),
+   401→  edit: tx("Изменить ответы", "Փոխել պատասխանները", "Edit answers"),
+   402→  plan: tx("Черновик плана внедрения", "Ներդրման պլանի սևագիր", "Implementation plan draft"),
+   403→  planIntro: tx("Порядок основан на зависимостях: сначала данные и контроль, затем автоматизация и AI.", "Հերթականությունը հիմնված է կախվածությունների վրա՝ սկզբում տվյալներ և վերահսկում, հետո ավտոմատացում և AI։", "The order follows dependencies: data and control first, then automation and AI."),
+   404→  phaseFoundation: tx("01 · Основа", "01 · Հիմք", "01 · Foundation"),
+   405→  phaseConnect: tx("02 · Соединение", "02 · Կապակցում", "02 · Connect"),
+   406→  phaseAutomate: tx("03 · Автоматизация", "03 · Ավտոմատացում", "03 · Automate"),
+   407→  phasePilot: tx("04 · AI-пилот", "04 · AI փորձարկում", "04 · AI pilot"),
+   408→  noPromise: tx("Без обещаний экономии: impact и сложность здесь качественные и требуют проверки на реальных данных.", "Առանց խնայողության խոստումների․ ազդեցությունն ու բարդությունը որակական են և պահանջում են ստուգում իրական տվյալներով։", "No savings claims: impact and complexity are qualitative and require validation with real data."),
+   409→};
+   410→
+   411→export function auditText(text: AuditLocaleText, locale: Locale) {
+   412→  return text[locale];
+   413→}
+   414→

@@ -88,3 +88,45 @@ export function useReveal() {
     return () => observer.disconnect();
   }, []);
 }
+
+/**
+ * Scrollspy: highlights the nav link matching the section currently in the
+ * viewport. Links are matched by href="#id" against tracked sections; a
+ * section counts as active once its top passes the header + offset line,
+ * staying active until the next one takes over (classic one-pager behaviour).
+ */
+export function useScrollSpy() {
+  useEffect(() => {
+    const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(".desktop-nav a[href^='#']"));
+    if (links.length === 0) return;
+    const ids = links.map((link) => link.hash.slice(1)).filter(Boolean);
+    const sections = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    if (sections.length === 0) return;
+
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const line = window.scrollY + (document.querySelector<HTMLElement>(".site-header")?.offsetHeight ?? 74) + window.innerHeight * 0.28;
+      let active: string | null = null;
+      for (const section of sections) {
+        if (section.offsetTop <= line) active = section.id;
+      }
+      // Near the very bottom, always highlight the last tracked section.
+      if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 40) {
+        active = sections[sections.length - 1].id;
+      }
+      links.forEach((link) => link.setAttribute("data-current", link.hash.slice(1) === active ? "true" : "false"));
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+}

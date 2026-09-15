@@ -16,7 +16,7 @@ import { BusinessAudit } from "@/components/sections/business-audit";
 import { FaqSection } from "@/components/sections/faq";
 
 import { ContactForm } from "@/components/sections/contact-form";
-import { BackToTop, ScrollProgress, useReveal } from "@/components/site-chrome";
+import { BackToTop, ScrollProgress, useReveal, useScrollSpy } from "@/components/site-chrome";
 import { navigation as baseNavigation } from "@/data/site-content";
 
 const SystemDetails = lazy(() => import("@/components/sections/system-details"));
@@ -52,6 +52,7 @@ export default function HayDev() {
   const [detailsOpened, setDetailsOpened] = useState(false);
   const [privacy, setPrivacy] = useState(false);
   useReveal();
+  useScrollSpy();
 
   const privacyOpener = useRef<HTMLElement | null>(null);
   const showcaseRef = useRef<HTMLDetailsElement>(null);
@@ -156,7 +157,13 @@ export default function HayDev() {
       <HaydevProducts onShowcase={() => openShowcase("erp")} />
       <div className="container">
         <details ref={showcaseRef} className="lite-details" onToggle={(e) => { if (e.currentTarget.open) setDetailsOpened(true); }}>
-          <summary>{t("Продукты и системы подробнее")}<span aria-hidden="true">＋</span></summary>
+          <summary>
+            <span className="lite-details-copy">
+              <span className="lite-details-code">PRODUCT&nbsp;SHOWCASE</span>
+              <span className="lite-details-title">{t("Продукты и системы подробнее")}</span>
+            </span>
+            <span className="lite-details-icon" aria-hidden="true">＋</span>
+          </summary>
           {detailsOpened && (
             <Suspense fallback={<p className="compact-note">{t("Загрузка…")}</p>}>
               <SystemDetails />

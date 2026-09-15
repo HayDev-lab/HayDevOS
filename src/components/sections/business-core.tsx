@@ -47,9 +47,11 @@ export function BusinessCore() {
         <div className="core-explanation" id="core-explanation" aria-live="polite"><span>{view.nodes[active].code}</span><p>{t(view.nodes[active].detail)}</p></div>
       </div>
     </div>
-    <div className="os-data-strip container">
+    <div className="os-data-strip container" data-reveal>
       <span>{t('ОДИН ПУТЬ ПРОДУКТА')}</span>
-      <p>Idea → Architecture → Design → Code → Integration → Launch</p>
+      <p className="data-strip-flow" aria-label="Idea, Architecture, Design, Code, Integration, Launch">
+        <strong>Idea</strong><i aria-hidden="true">→</i><strong>Architecture</strong><i aria-hidden="true">→</i><strong>Design</strong><i aria-hidden="true">→</i><strong>Code</strong><i aria-hidden="true">→</i><strong>Integration</strong><i aria-hidden="true">→</i><strong>Launch</strong>
+      </p>
       <a href="#build">{t('Как мы строим')} ↗</a>
     </div>
   </section>;

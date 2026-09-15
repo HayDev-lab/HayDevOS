@@ -88,3 +88,26 @@ Stage Summary:
 - Скриншоты: screenshots/r3-*.png (12 шт.) + qa-*.png.
 - Остаточные риски: WebGL на очень старых GPU (есть fallback-картинка); ru-копирайт обновляется ключами (проверять при новых текстах); honeypot-защита формы минимальна (закрытая демо — ок).
 - Рекомендации следующего раунда: (1) SEO-метаданные Open Graph + JSON-LD Organization; (2) страница/блок «команда и принципы» или кейсы; (3) email-уведомления о лидах (сейчас только SQLite); (4) лёгкий e2e-дымовой тест (форма + аудит) для регрессий.
+
+---
+Task ID: 4
+Agent: main-agent (Z.ai Code)
+Task: Раунд 4 — QA-регрессия, SEO-пакет (OG/Twitter/JSON-LD), scrollspy-навигация, полировка hero-стрипа и showcase-тумблера.
+
+Work Log:
+- QA-оценка статуса: lint чист, dev.log без ошибок, все секции/языки/flows работают; глубокий QA: 404-роут (Next.js стандарт), Tab-навигация (focus-visible 2px работает), полный скролл с перехватом ошибок JS/fetch — 0 ошибок.
+- VLM-аудит двух «слабых» элементов (по раунду 3): hero data-strip и lite-details summary — «сырые, placeholder-вид»; составлен план редизайна.
+- SEO (layout.tsx полностью переписан): metadataBase (TODO-домен haydev.am — заменить при запуске), title template, keywords (SEO-направление из брифа: custom software/AI/ERP/CRM/web application/automation Armenia + RU-эквиваленты), alternates canonical + hreflang ru/en/hy + x-default, Open Graph (type, siteName, locale ru_RU + alternateLocale en_US/hy_AM, og:image 1200x630 с dimensions/alt/type), Twitter summary_large_image, formatDetection, apple-icon, robots (noindex сохранён для закрытой демо — переключить при запуске + комментарий в коде).
+- JSON-LD: два блока — Organization (name, url, logo, description, slogan, areaServed AM, knowsAbout, makesOffer×3) + WebSite (inLanguage ru/en/hy), рендерятся в <head> через script tag.
+- OG-IMAGE: сгенерирован через image-generation (1344x768, lime-орбиты на near-black) → центр-кроп sharp до 1200x630 → public/images/og-cover-1200x630.png. VLM-проверка: «excellent, negative space для текста, без артефактов».
+- SCROLLSPY (site-chrome.tsx → useScrollSpy): rAF-throttled, активная секция = offsetTop <= линия (хедер + 28% вьюпорта), у самого низа — последняя секция; подсветка через data-current атрибут + CSS (lime underline scaleX-анимация, hover-хинт 0.4).
+- DATA STRIP редизайн (business-core.tsx + CSS): размечен как <strong>слова</strong> + <i>→</i>, градиентный фон-подложка, левый lime-акцент, hover на ключевых словах, aria-label для доступности.
+- SHOWCASE TOGGLE редизайн (haydev.tsx + CSS): структура «PRODUCT SHOWCASE» (mono-лейбл) + заголовок + круглый ＋-иконка (rotate 45° при open), левая lime-полоса (opacity .55 → 1 при hover/open), открытый state с фоном; старый селектор rotate исправлен (не задевает новый .lite-details-copy).
+- Исправлен lint-warning (неиспользуемый eslint-disable).
+
+Stage Summary:
+- Верифицировано: OG/Twitter/JSON-LD/hreflang/canonical рендерятся в DOM (проверено querySelector'ами), og:image резолвится в абсолютный URL; scrollspy корректно подсвечивает build/automation/products/industries (после settle — smooth-scroll учитывается); data-strip + showcase — VLM «PASS, premium, zero bugs»; mobile 390px — 9 секций без overflow, strip переносится чисто, тач-таргеты ≥44px; язык EN, форма 201 (POST /api/leads), audit-app round-trip — всё работает; lint 0/0, dev.log чист.
+- Артефакты: public/images/og-cover-1200x630.png (+ исходник og-cover.png), переписан src/app/layout.tsx, useScrollSpy в site-chrome.tsx, разметка business-core.tsx / haydev.tsx, +40 строк CSS (блок ROUND 4).
+- Скриншоты: screenshots/r4-*.png (9 шт.).
+- Риски/TODO к запуску: (1) заменить SITE_URL в layout.tsx на прод-домен; (2) переключить robots в index:true при публичном запуске; (3) hreflang указывает на ?lang= query — при прод-архитектуре с /:locale маршрутами заменить на реальные URL.
+- Рекомендации раунда 5: (1) блок «Почему HayDev» / принципы (engineering trust уже есть в showcase — вынести в основной поток?); (2) e2e-дымовой тест (форма + аудит + scrollspy) на Playwright; (3) email-уведомления о лидах; (4) favicon/OG-варианты под светлые мессенджеры-превью.

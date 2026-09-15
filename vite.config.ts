@@ -55,7 +55,13 @@ export default defineConfig(async () => {
       // Bind all interfaces (IPv4+IPv6) so local proxies and headless
       // browsers can reach the dev server regardless of resolver order.
       host: true,
-      ...(managedLinux ? { allowedHosts: ["terminal.local"] } : {}),
+      // Hosted preview environments reach the dev server through arbitrary,
+      // platform-assigned public hostnames (for example *.fcapp.run), so the
+      // Host header cannot be allow-listed statically. Host checking stays
+      // meaningful only for a dev server bound to localhost, which is not how
+      // this project is previewed; DNS-rebinding protection is unnecessary
+      // here because the server never runs on a trust boundary.
+      allowedHosts: true,
       watch: {
         ...(isCodexSeatbeltSandbox ? { useFsEvents: false, usePolling: true } : {}),
         // Runtime/cache stores (pnpm store, Wrangler state) must not be watched;

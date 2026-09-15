@@ -13,7 +13,7 @@ export function EngagementModels() {
   const { t } = useLanguage();
   const { openAudit } = useAppView();
   return <section id="models" className="section container os-models" aria-labelledby="models-heading">
-    <span className="eyebrow">06 / ENGAGEMENT MODELS</span>
+    <span className="eyebrow">07 / ENGAGEMENT MODELS</span>
     <div className="os-section-heading" data-reveal>
       <h2 id="models-heading">{t("С чего начать работу")}<br /><span className="lime-text">{t("три формата сотрудничества")}</span></h2>
       <p>{t("Не важно, есть ли у вас готовое ТЗ. Формат подбирается под задачу — и его можно сменить после первого цикла.")}</p>

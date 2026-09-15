@@ -50,7 +50,7 @@ export function BusinessAudit({ industry, onApply }: { industry: string; onApply
   }
   const QuestionsIcon = factIcons.questions, MinutesIcon = factIcons.minutes, PrivacyIcon = factIcons.privacy;
   return <section id="audit" className="section container os-audit">
-    <span className="eyebrow">08 / BUSINESS AUDIT</span>
+    <span className="eyebrow">09 / BUSINESS AUDIT</span>
     <div className="os-section-heading"><h2>{t('Не знаете, с чего начать?')}<br /><span className="lime-text">{t('Пройдите Business Audit.')}</span></h2><p>{t('8 вопросов — и вы увидите, какие процессы можно улучшить или автоматизировать. Без регистрации, ответы остаются на странице.')}</p></div>
     <ul className="audit-facts" aria-label={t('О формате аудита')}>
       <li><span className="audit-fact-icon" aria-hidden="true"><QuestionsIcon size={18} strokeWidth={1.5} /></span><strong>8</strong><span>{t('вопросов')}</span></li>

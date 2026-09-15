@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
 import { buildPipeline, techStack } from '@/data/business-os';
@@ -14,7 +14,7 @@ export function CustomSoftware() {
       <h2 id="custom-heading">{t('Есть идея?')}<br /><span className="lime-text">{t('Мы превращаем её в продукт.')}</span></h2>
       <p>{t('HayDev может разработать программу под конкретную бизнес-задачу: от внутренней системы компании до полноценной SaaS-платформы. Мы не подбираем шаблон — мы проектируем решение.')}</p>
     </div>
-    <ol className="pipeline-rail" aria-label={t('Путь продукта')} data-reveal>
+    <ol className="pipeline-rail" aria-label={t('Путь продукта')} data-reveal style={{ "--rail-progress": `${((step + 1) / buildPipeline.length) * 100}%` } as CSSProperties}>
       {buildPipeline.map((item, index) => <li key={item.code} className={index === step ? 'current' : ''}>
         <button aria-pressed={step === index} onClick={() => setStep(index)} onFocus={() => setStep(index)}>
           <span className="pipeline-index">{String(index + 1).padStart(2, '0')}</span>

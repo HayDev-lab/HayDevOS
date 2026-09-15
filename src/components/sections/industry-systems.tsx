@@ -17,7 +17,7 @@ export function IndustrySystems({ onSelect }: { onSelect: (name: string) => void
 
   return (
     <section className="section container os-industries" id="industries">
-      <span className="eyebrow">07 / INDUSTRIES</span>
+      <span className="eyebrow">08 / INDUSTRIES</span>
       <div className="os-section-heading">
         <h2>{t("Что мы можем построить для вашей отрасли")}</h2>
         <p>{t("Выберите отрасль — увидите пример системы и продукты, которые можно собрать для неё.")}</p>

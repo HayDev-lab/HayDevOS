@@ -9,7 +9,7 @@ import { whyPrinciples } from "@/data/business-os";
 export function WhyHaydev() {
   const { t } = useLanguage();
   return <section id="why" className="section container os-why" aria-labelledby="why-heading">
-    <span className="eyebrow">05 / WHY HAYDEV</span>
+    <span className="eyebrow">06 / WHY HAYDEV</span>
     <div className="os-section-heading" data-reveal>
       <h2 id="why-heading">{t("Почему HayDev")}<br /><span className="lime-text">{t("и что из этого следует")}</span></h2>
       <p>{t("Четыре инженерных принципа, которые не меняются от проекта к проекту. Это не слоган — это то, как устроена работа.")}</p>

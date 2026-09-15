@@ -20,6 +20,7 @@ const dotSections = [
   { id: "build", label: "Что мы создаём" },
   { id: "custom", label: "Custom Software" },
   { id: "automation", label: "AI и автоматизация" },
+  { id: "scenarios", label: "Что меняется" },
   { id: "products", label: "Продукты" },
   { id: "why", label: "Почему HayDev" },
   { id: "models", label: "Форматы работы" },
@@ -188,10 +189,9 @@ export function BackToTop() {
 
 export function useReveal() {
   useEffect(() => {
-    const targets = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
-    if (targets.length === 0) return;
+    const reveal = (el: HTMLElement) => el.classList.add("revealed");
     if (!("IntersectionObserver" in window)) {
-      targets.forEach((el) => el.classList.add("revealed"));
+      document.querySelectorAll<HTMLElement>("[data-reveal]").forEach(reveal);
       return;
     }
     const observer = new IntersectionObserver((entries) => {
@@ -202,8 +202,14 @@ export function useReveal() {
         }
       }
     }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
-    targets.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    const observeAll = () => document.querySelectorAll<HTMLElement>("[data-reveal]:not(.revealed)")
+      .forEach((el) => observer.observe(el));
+    observeAll();
+    // Dynamically mounted [data-reveal] nodes (e.g. a filtered grid that
+    // re-mounts) are picked up here instead of staying hidden forever.
+    const mutation = new MutationObserver(() => observeAll());
+    mutation.observe(document.body, { childList: true, subtree: true });
+    return () => { observer.disconnect(); mutation.disconnect(); };
   }, []);
 }
 

@@ -1098,3 +1098,138 @@ html{scrollbar-width:thin;scrollbar-color:#33413a #0a0e0c}
 .product-soon::before{content:'';width:5px;height:5px;border-radius:50%;border:1px solid #939f8a;opacity:.85;flex-shrink:0}
 .product-card:hover .product-soon{color:#aeb9a3}
 .product-card:hover .product-soon::before{border-color:#aeb9a3}
+
+/* ============================================================
+   ROUND 7 — scenarios section, products filter, hero spotlight,
+   depth/glow system + VLM style pass across every section
+   ============================================================ */
+
+/* --- Hero: cursor spotlight (desktop pointers, reduced-motion safe). --- */
+.hero-spotlight{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(460px circle at var(--spot-x,72%) var(--spot-y,38%),#c5f5630d,transparent 68%);
+  opacity:0;transition:opacity .6s ease}
+@media (hover:hover) and (pointer:fine){.hero-spotlight{opacity:1}}
+.os-hero .hero-inner,.os-hero .os-data-strip{position:relative;z-index:1}
+@media (prefers-reduced-motion:reduce){.hero-spotlight{background:radial-gradient(600px circle at 70% 30%,#c5f56309,transparent 70%)}}
+
+/* --- 04 WHAT CHANGES — before/after scenario cards. --- */
+.scenarios-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:28px}
+.scenario-card{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:14px;border:1px solid #34463a;background:linear-gradient(160deg,#111915,#0b100e);padding:22px 24px 18px;transition:border-color .28s,box-shadow .28s,background .28s}
+.scenario-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#3d5236 18%,#3d5236 82%,transparent);transition:background .3s}
+.scenario-card.state-after{border-color:#4c6a3c;background:radial-gradient(circle at 88% -12%,#c5f5630c,transparent 52%),linear-gradient(160deg,#131b12,#0b100e)}
+.scenario-card.state-after::before{background:linear-gradient(90deg,transparent,var(--primary) 30%,var(--primary) 70%,transparent)}
+.scenario-card-head{display:flex;align-items:center;gap:12px}
+.scenario-code{font:12px ui-monospace,monospace;letter-spacing:1px;color:var(--primary)}
+.scenario-card.state-before .scenario-code{color:#8ba27e}
+.scenario-label{font:9.5px ui-monospace,monospace;letter-spacing:1.6px;color:#77896f}
+.scenario-flip{margin-left:auto;display:flex;align-items:center;gap:9px;min-height:40px;padding:5px 6px 5px 13px;border:1px solid #2c3a34;border-radius:999px;background:#0a0f0dcc;transition:border-color .22s,background .22s}
+.scenario-flip:hover{border-color:#587049;background:#10181226}
+.scenario-flip:focus-visible{outline:2px solid #d4ff97;outline-offset:3px}
+.scenario-flip-label{font:9.5px ui-monospace,monospace;letter-spacing:1.4px;color:#9bab9e;min-width:38px;text-align:left;transition:color .25s}
+.scenario-flip-label[data-state=after]{color:var(--primary)}
+.scenario-flip-switch{position:relative;width:34px;height:18px;border-radius:999px;background:#263129;transition:background .28s}
+.scenario-flip-switch i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#8ba27e;transition:transform .28s cubic-bezier(.45,0,.2,1),background .28s}
+.scenario-flip[aria-pressed=true] .scenario-flip-switch{background:#3d5230}
+.scenario-flip[aria-pressed=true] .scenario-flip-switch i{transform:translateX(16px);background:var(--primary);box-shadow:0 0 10px #c5f56388}
+.scenario-card h3{font-size:21px;font-weight:400;letter-spacing:-.4px;margin:0;color:#e2eae2}
+.scenario-body{display:flex;flex-direction:column;gap:13px;flex:1}
+.scenario-summary{margin:0;font-size:14.5px;line-height:1.75;color:#c2cec2;transition:color .3s}
+.scenario-card.state-after .scenario-summary{color:#d7e4c9}
+.scenario-points{list-style:none;margin:0;padding:14px 16px;border:1px solid #2a3630;border-radius:8px;display:grid;gap:9px;background:#0a0f0d66;transition:border-color .3s,background .3s}
+.scenario-card.state-after .scenario-points{border-color:#3f5237;background:#c5f56306}
+.scenario-points li{display:flex;align-items:center;gap:10px;font-size:12.5px;line-height:1.5;color:#a4b2a6}
+.scenario-card.state-after .scenario-points li{color:#c4d6b0}
+.scenario-points li svg{flex-shrink:0;width:15px;height:15px;padding:1.5px;border-radius:50%;border:1px solid #5a675c;color:#8d9c8e}
+.scenario-card.state-after .scenario-points li svg{border-color:#587049;color:var(--primary)}
+.scenario-card-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:2px;padding-top:13px;border-top:1px solid #243029}
+.scenario-state-tag{display:inline-flex;align-items:center;gap:6px;font:9.5px ui-monospace,monospace;letter-spacing:1.3px;color:#939f8a;transition:color .3s}
+.scenario-state-tag[data-state=after]{color:var(--primary)}
+.scenario-flip-hint{font:9.5px ui-monospace,monospace;letter-spacing:.5px;color:#4e5c52;transition:color .2s}
+.scenario-card:hover .scenario-flip-hint{color:#7d8f7e}
+.scenarios-note{margin:24px 0 0;font-size:13px;color:#8a978c;line-height:1.75;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.scenarios-note::before{content:'';width:26px;height:1px;background:#587049;flex-shrink:0;margin-right:4px}
+.scenarios-note .text-link{color:var(--primary)}
+@media (max-width:900px){.scenarios-grid{grid-template-columns:1fr}}
+@media (max-width:767px){
+  .scenario-card{padding:18px 16px 15px}
+  .scenario-flip{min-height:44px}
+  .scenarios-note{font-size:12.5px}
+}
+@media (prefers-reduced-motion:reduce){.scenario-flip-switch i,.scenario-flip-switch,.scenario-card{transition:none}}
+
+/* --- 05 PRODUCTS — filter chips + equal-height rhythm. --- */
+.products-filter{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:22px}
+.products-filter button{display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:9px 17px;border:1px solid #2c3a34;border-radius:999px;font:11px ui-monospace,monospace;letter-spacing:1.2px;color:#9bab9e;background:#0a0f0dcc;transition:color .2s,border-color .2s,background .2s}
+.products-filter button:hover{color:#d2ddcf;border-color:#5d7a62}
+.products-filter button:focus-visible{outline:2px solid #d4ff97;outline-offset:3px}
+.products-filter button[aria-pressed=true]{color:#0d1409;background:var(--primary);border-color:var(--primary);box-shadow:0 0 22px #c5f5632e}
+.filter-count{display:grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;font-size:10px;background:#ffffff14;color:inherit}
+.products-filter button[aria-pressed=true] .filter-count{background:#0d140921;color:#0d1409}
+.products-grid{align-items:stretch}
+.product-card{box-shadow:inset 0 1px 0 #ffffff07;animation:product-in .4s cubic-bezier(.25,.46,.45,.94) both}
+.product-card:nth-child(2){animation-delay:.05s}
+.product-card:nth-child(3){animation-delay:.1s}
+.product-card:nth-child(4){animation-delay:.15s}
+.product-card:nth-child(5){animation-delay:.2s}
+.product-card:nth-child(6){animation-delay:.25s}
+@keyframes product-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.product-card{animation:none}}
+@media (max-width:767px){.products-filter button{padding:8px 14px}}
+
+/* --- Global depth system: inner highlight + lime hover glow on card families. --- */
+.product-card,.why-card,.model-card,.build-visual,.stack-block,.scenario-card{box-shadow:inset 0 1px 0 #ffffff08,0 12px 34px #0000003d}
+.product-card:hover,.why-card:hover,.model-card:hover,.build-visual:hover,.scenario-card:hover{box-shadow:inset 0 1px 0 #ffffff0d,0 12px 34px #00000042,0 0 26px #c5f5630f}
+.product-card:hover{transform:translateY(-3px);border-color:#587049}
+.scenario-card:hover{border-color:#4a5f42}
+
+/* --- 01 WHAT WE BUILD — brighter active state + item icons rhythm. --- */
+.build-categories button[aria-pressed=true]{box-shadow:inset 0 0 0 1px #c5f56326,0 0 24px #c5f5630a}
+.build-items li::before{content:'';width:5px;height:5px;margin-right:12px;flex-shrink:0;background:#587049;transition:background .2s}
+.build-items li:hover::before{background:var(--primary)}
+
+/* --- 02 CUSTOM SOFTWARE — rail progress line + vertical link into the detail. --- */
+.pipeline-rail{position:relative}
+.pipeline-connector{position:relative}
+.pipeline-rail::after{content:'';position:absolute;left:0;bottom:-1px;height:2px;width:var(--rail-progress,14%);background:linear-gradient(90deg,#6f8f4c,var(--primary));box-shadow:0 0 12px #c5f56366;transition:width .35s cubic-bezier(.45,0,.2,1);pointer-events:none}
+.pipeline-detail{position:relative;padding-top:30px}
+.pipeline-detail::before{content:'';position:absolute;top:-27px;left:9px;width:1px;height:24px;background:linear-gradient(180deg,var(--primary),transparent);pointer-events:none}
+@media (max-width:1100px){.pipeline-detail::before{display:none}}
+
+/* --- 03 AI & AUTOMATION — circular step badges + spine line in the recipe. --- */
+.automation-recipe ol{position:relative}
+.automation-recipe ol::before{content:'';position:absolute;left:15px;top:26px;bottom:26px;width:1px;background:linear-gradient(180deg,transparent,#3f5237 22%,#3f5237 78%,transparent)}
+.automation-recipe li{position:relative;padding:13px 0}
+.automation-recipe li>span{position:relative;z-index:1;display:grid;place-items:center;width:31px;height:31px;flex-shrink:0;font:10.5px ui-monospace,monospace;color:#b3c69a;border:1px solid #3f5237;border-radius:50%;background:#101810;box-shadow:inset 0 1px 0 #ffffff0a;transition:border-color .2s,color .2s,box-shadow .2s}
+.automation-recipe li:hover>span{border-color:#587049;color:#d6e8bd;box-shadow:0 0 14px #c5f5631f}
+.automation-recipe li:last-child>span{border-color:#587049;color:var(--primary)}
+
+/* --- 05 PRODUCTS — status badge corner-pin consistency (already pill). --- */
+.product-card-head .product-status{margin-left:auto}
+
+/* --- 06 WHY — quieter mono labels so titles breathe. --- */
+.why-label{color:#6d7d70}
+.why-card h3{margin:4px 0 10px}
+
+/* --- 07 ENGAGEMENT MODELS — CTA as a contained ghost action. --- */
+.model-cta{align-self:flex-start;margin-top:auto;padding-top:0;display:inline-flex;align-items:center;gap:9px;min-height:44px;padding-block:10px 10px!important;padding-inline:16px;border:1px solid #3f5237;border-radius:8px;font-size:13px;color:#c8d6b8;background:#c5f56305;transition:border-color .22s,background .22s,color .22s,box-shadow .22s,transform .22s}
+.model-cta:hover{border-color:#587049;background:#c5f5630d;color:#e4f2d2;box-shadow:0 0 20px #c5f56314;transform:translateY(-1px)}
+.model-cta:focus-visible{outline:2px solid #d4ff97;outline-offset:3px}
+.model-card .model-fits{margin-top:16px}
+.model-card{gap:14px}
+
+/* --- 08 INDUSTRIES — solid active pill + row hover anchors. --- */
+.os-industries .industry-desktop button[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:#0d1409;box-shadow:0 0 20px #c5f56333}
+.os-industries .industry-desktop button[aria-pressed=true]:hover{background:#d3f876}
+.industry-builds{border-style:solid;border-color:#3f5237;background:#c5f56304}
+.industry-builds::before{content:''}
+
+/* --- Typography pass: card paragraphs breathe more, mono labels dimmer. --- */
+.model-card>p,.product-card p{line-height:1.78}
+.why-card p{line-height:1.78}
+.model-label{color:#6d7d70}
+
+/* --- Reveal timing for the scenarios block. --- */
+.scenarios-grid[data-reveal]{transition-delay:.06s}
+
+
+/* watcher kick r7 */

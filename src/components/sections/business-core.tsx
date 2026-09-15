@@ -1,5 +1,5 @@
 "use client";
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
 import { useAppView } from '@/components/app-view';
@@ -10,14 +10,36 @@ export function BusinessCore() {
   const { t } = useLanguage(); const { openAudit } = useAppView();
   const [scene, setScene] = useState(0);
   const [active, setActive] = useState(0);
+  const heroRef = useRef<HTMLElement | null>(null);
   const view = heroScenes[scene];
   const nodeCount = view.nodes.length;
+
+  // Cursor spotlight: a soft lime radial glow follows the pointer (desktop
+  // pointers only). Coordinates land on CSS vars; reduced-motion users get
+  // a static centered glow instead of tracking.
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    let frame = 0;
+    const move = (event: PointerEvent) => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const rect = hero.getBoundingClientRect();
+        hero.style.setProperty("--spot-x", `${event.clientX - rect.left}px`);
+        hero.style.setProperty("--spot-y", `${event.clientY - rect.top}px`);
+      });
+    };
+    hero.addEventListener("pointermove", move);
+    return () => { hero.removeEventListener("pointermove", move); if (frame) cancelAnimationFrame(frame); };
+  }, []);
 
   function switchScene(next: number) {
     setScene(next); setActive(0);
   }
 
-  return <section className="hero os-hero" id="home" aria-labelledby="hero-heading">
+  return <section className="hero os-hero" id="home" aria-labelledby="hero-heading" ref={heroRef}>
+    <div className="hero-spotlight" aria-hidden="true" />
     <div className="container hero-inner">
       <div className="hero-copy">
         <div className="hero-kicker">HAYDEV / SOFTWARE · AI · DIGITAL PRODUCTS</div>

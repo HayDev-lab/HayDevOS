@@ -9,6 +9,7 @@ import { BusinessCore } from "@/components/sections/business-core";
 import { WhatWeBuild } from "@/components/sections/what-we-build";
 import { CustomSoftware } from "@/components/sections/custom-software";
 import { AutomationSection } from "@/components/sections/ai-automation";
+import { TransformationScenarios } from "@/components/sections/scenarios";
 import { HaydevProducts } from "@/components/sections/haydev-products";
 import { WhyHaydev } from "@/components/sections/why-haydev";
 import { EngagementModels } from "@/components/sections/engagement-models";
@@ -196,6 +197,7 @@ export default function HayDev() {
       <WhatWeBuild />
       <CustomSoftware />
       <AutomationSection />
+      <TransformationScenarios />
       <HaydevProducts onShowcase={() => openShowcase("erp")} />
       <div className="container">
         <details ref={showcaseRef} className="lite-details" onToggle={(e) => { if (e.currentTarget.open) setDetailsOpened(true); }}>
@@ -222,7 +224,7 @@ export default function HayDev() {
       <section className="contact-section" id="contact" aria-labelledby="contact-heading">
         <div className="container contact-grid">
           <div className="contact-copy">
-            <SectionLabel number="10">{t("РАССКАЖИТЕ О ЗАДАЧЕ")}</SectionLabel>
+            <SectionLabel number="11">{t("РАССКАЖИТЕ О ЗАДАЧЕ")}</SectionLabel>
             <h2 id="contact-heading">{t("Что вы хотите")}<br /><span className="lime-text">{t("создать?")}</span></h2>
             <p>{t("CRM, портал, платформа или AI-система — расскажите задачу.")}<br />{t("HayDev спроектирует решение и покажет, как его реализовать.")}</p>
             <div className="contact-next-steps" aria-label={t("Что дальше")}>

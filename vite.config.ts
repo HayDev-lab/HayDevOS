@@ -52,8 +52,16 @@ export default defineConfig(async () => {
 
   return {
     server: {
-      ...(managedLinux ? { host: "0.0.0.0", allowedHosts: ["terminal.local"] } : {}),
-      ...(isCodexSeatbeltSandbox ? { watch: { useFsEvents: false, usePolling: true } } : {}),
+      // Bind all interfaces (IPv4+IPv6) so local proxies and headless
+      // browsers can reach the dev server regardless of resolver order.
+      host: true,
+      ...(managedLinux ? { allowedHosts: ["terminal.local"] } : {}),
+      watch: {
+        ...(isCodexSeatbeltSandbox ? { useFsEvents: false, usePolling: true } : {}),
+        // Runtime/cache stores (pnpm store, Wrangler state) must not be watched;
+        // containers often have a tiny inotify watch budget (ENOSPC).
+        ignored: ["**/.sites-runtime/**", "**/.wrangler/**", "**/.git/**"],
+      },
     },
     plugins: [
       vinext(),

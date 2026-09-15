@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local sandbox / runtime directories that are not part of the site source.
+    "skills/**",
+    "upload/**",
+    ".zscripts/**",
+    ".sites-runtime/**",
+    ".wrangler/**",
   ]),
   {
     files: ["components/ui/**/*.{ts,tsx}", "hooks/use-mobile.ts"],

@@ -14,7 +14,7 @@ export function WhatWeBuild() {
       <h2 id="build-heading">{t('Что мы создаём')}<br /><span className="lime-text">{t('для вашего бизнеса')}</span></h2>
       <p>{t('Не набор одинаковых карточек — карта направлений. Выберите категорию: мы строим продукты всех этих типов.')}</p>
     </div>
-    <div className="build-map">
+    <div className="build-map" data-reveal>
       <div className="build-categories" role="group" aria-label={t('Категории продуктов')}>
         {buildCategories.map((item, index) => <button key={item.id} aria-pressed={selected === index} onClick={() => setSelected(index)} onPointerEnter={e => { if (e.pointerType === 'mouse') setSelected(index); }} onFocus={() => setSelected(index)}>
           <span className="build-category-code">{item.code}</span>

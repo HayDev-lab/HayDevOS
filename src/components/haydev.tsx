@@ -13,8 +13,10 @@ import { HaydevProducts } from "@/components/sections/haydev-products";
 import { IndustrySystems } from "@/components/sections/industry-systems";
 
 import { BusinessAudit } from "@/components/sections/business-audit";
+import { FaqSection } from "@/components/sections/faq";
 
 import { ContactForm } from "@/components/sections/contact-form";
+import { BackToTop, ScrollProgress, useReveal } from "@/components/site-chrome";
 import { navigation as baseNavigation } from "@/data/site-content";
 
 const SystemDetails = lazy(() => import("@/components/sections/system-details"));
@@ -49,6 +51,7 @@ export default function HayDev() {
   const [auditAttached, setAuditAttached] = useState(false);
   const [detailsOpened, setDetailsOpened] = useState(false);
   const [privacy, setPrivacy] = useState(false);
+  useReveal();
 
   const privacyOpener = useRef<HTMLElement | null>(null);
   const showcaseRef = useRef<HTMLDetailsElement>(null);
@@ -59,10 +62,15 @@ export default function HayDev() {
   function openShowcase(anchor?: string) {
     const details = showcaseRef.current;
     if (details) { details.open = true; setDetailsOpened(true); }
-    requestAnimationFrame(() => {
+    // The showcase content is lazy-loaded (Suspense) and the ERP accordion
+    // mounts asynchronously — poll for the target instead of a single frame.
+    const started = performance.now();
+    const tryScroll = () => {
       const target = anchor ? document.getElementById(anchor) : details;
-      target?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+      if (target) { target.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+      if (performance.now() - started < 3000) requestAnimationFrame(tryScroll);
+    };
+    requestAnimationFrame(tryScroll);
   }
 
   const renderNavItem = (item: { href: string; label: string }) =>
@@ -83,6 +91,7 @@ export default function HayDev() {
     );
 
   return <>
+    <ScrollProgress />
     <a href="#main" className="skip-link">{t("Перейти к содержимому")}</a>
     <header className="site-header">
       <div className="container header-inner">
@@ -157,13 +166,22 @@ export default function HayDev() {
       </div>
       <IndustrySystems onSelect={setIndustry} />
       <BusinessAudit industry={industry} onApply={(value) => { setAuditSummary(value); setAuditAttached(true); }} />
+      <FaqSection />
 
       <section className="contact-section" id="contact" aria-labelledby="contact-heading">
         <div className="container contact-grid">
           <div className="contact-copy">
-            <SectionLabel number="07">{t("РАССКАЖИТЕ О ЗАДАЧЕ")}</SectionLabel>
+            <SectionLabel number="08">{t("РАССКАЖИТЕ О ЗАДАЧЕ")}</SectionLabel>
             <h2 id="contact-heading">{t("Что вы хотите")}<br /><span className="lime-text">{t("создать?")}</span></h2>
             <p>{t("CRM, портал, платформа или AI-система — расскажите задачу.")}<br />{t("HayDev спроектирует решение и покажет, как его реализовать.")}</p>
+            <div className="contact-next-steps" aria-label={t("Что дальше")}>
+              <span className="eyebrow">{t("ЧТО ДАЛЬШЕ")}</span>
+              <ol>
+                <li><span>01</span><div><strong>{t("Ответ")}</strong><p>{t("Отвечаем и уточняем задачу")}</p></div></li>
+                <li><span>02</span><div><strong>{t("Обсуждение")}</strong><p>{t("Формат работы, этапы и оценка")}</p></div></li>
+                <li><span>03</span><div><strong>{t("Архитектура")}</strong><p>{t("План решения и следующий шаг")}</p></div></li>
+              </ol>
+            </div>
             <div className="contact-next"><span className="small-cross">+</span><span>{t("Идея → архитектура → работающий продукт")}</span></div>
           </div>
           <ContactForm onPrivacy={openPrivacy} message={auditSummary} onMessageChange={setAuditSummary} auditAttached={auditAttached} />
@@ -192,6 +210,7 @@ export default function HayDev() {
         <a href="#home">{t("Наверх")} <ArrowUpRight size={14} /></a>
       </div>
     </footer>
+    <BackToTop />
     <Dialog open={privacy} onOpenChange={setPrivacy}>
       <DialogContent
         className="privacy-dialog"

@@ -62,3 +62,29 @@ Stage Summary:
 - Проверено в браузере (agent-browser): переключение сцен (узлы меняются 10/6/6/5, WebGL canvas dataset.scene обновляется, frames растут), клики по нодам, CTA showcase открывает details, Business Audit приложение работает (вход из Products, навигация, возврат «На сайт HayDev»), форма контактов отправляется (POST /api/leads 201, запись в SQLite Lead), локализация ru/en/hy.
 - Адаптив: нет horizontal overflow на 375/390/768/1024/1280/1920. lint чист, tsc чист (ошибки только в examples/skills).
 - Скриншоты в screenshots/ (before-*, after-*, mobile-*, m-*, showcase, full-desktop).
+
+---
+Task ID: 3
+Agent: main-agent (Z.ai Code)
+Task: Оценка статуса проекта, QA через agent-browser, исправление багов, улучшение стиля и добавление новых функций (3-й раунд развития).
+
+Work Log:
+- Прочитан worklog (раунды 1–2: репозиционирование выполнено). Проверены dev.log (чисто), lint (чисто), tsc (ошибки только в skills/examples — не наши).
+- QA через agent-browser (сессия task-03e363425671): hero, WebGL-сцены (CORE/PRODUCTS переключаются, ноды 10/5), все секции desktop 1440 + mobile 390/360, мобильное меню, переключение языков ru/en/hy, Business Audit (in-page: 8 вопросов → карта → apply в форму; standalone app: полный проход + возврат на сайт), форма контактов (POST /api/leads 201), showcase details.
+- НАЙДЕН БАГ: первый клик «Смотреть ERP / CRM» не скроллил к #erp — rAF срабатывал раньше монтирования lazy SystemDetails (Suspense), элемент не находился. ИСПРАВЛЕНО: openShowcase теперь поллит getElementById через rAF до 3 сек.
+- VLM-критика (до правок): products — слабейшая секция («boxy», плотно, runt-строки); footer-bottom — вертикальное смещение копирайта; мобильный pipeline-rail скроллится без affordance.
+- НОВОЕ: FAQ-секция (07/FAQ, компонент sections/faq.tsx, faqItems в business-os.ts): 5 честных вопросов (цена, сроки, интеграции, владение кодом, после запуска) + faq-cta. Contact перенумерован в 08, process в showcase — в 09.
+- НОВОЕ: site-chrome.tsx — ScrollProgress (lime-бар чтения), BackToTop (появляется после 1.2 экрана, safe-area), useReveal (IntersectionObserver → .revealed).
+- НОВОЕ: sticky-хедер (blur 14px, тень), anchor-скролл учтён (scroll-padding-top 100px > 74px хедера).
+- НОВОЕ: reveal-on-scroll — data-reveal на os-section-heading/build-map/pipeline-rail/pipeline-detail/automation-layout/intelligence-layer/industry-system/products-grid/faq-list/faq-cta; prefers-reduced-motion отключает.
+- НОВОЕ: contact «ЧТО ДАЛЬШЕ» — таймлайн 01 Ответ → 02 Обсуждение → 03 Архитектура (в contact-copy).
+- RESTYLE: product-card переработаны (top-accent по статусу, hover-glow + тень, features-теги (добавлены в data), foot с CTA/«дата не обещана»); footer-bottom выравнивание + hover; pipeline-rail scroll-snap + mask-fade на mobile; intelligence-selector glow; build-items hover-стрелка; os-hero-subtitle контраст; scene-mode активное состояние.
+- ПЕРЕВОДЫ: +41 ключ в hy и en (FAQ Q&A, таймлайн, features, chrome, aria). ru = ключи по умолчанию.
+- Верификация после правок: sticky работает, progress-bar scaleX растёт, back-to-top клик → scrollY 0, FAQ аккордеон открывается, showcase скроллит с fresh lazy-загрузкой (erpTop 200), языки en/hy на новых секциях, overflow-тест 390/360 по всем секциям ok, audit + форма 201, lint чист, dev.log без ошибок.
+
+Stage Summary:
+- Состояние: производство-готово; позиционирование SOFTWARE + AI + DIGITAL PRODUCTS сохранено; ни одной регрессии.
+- Ключевые артефакты: src/components/site-chrome.tsx (новый), src/components/sections/faq.tsx (новый), правки haydev.tsx / haydev-products.tsx / system-details.tsx / what-we-build.tsx / custom-software.tsx / ai-automation.tsx / industry-systems.tsx / business-os.ts / translations.json / globals.css (+120 строк).
+- Скриншоты: screenshots/r3-*.png (12 шт.) + qa-*.png.
+- Остаточные риски: WebGL на очень старых GPU (есть fallback-картинка); ru-копирайт обновляется ключами (проверять при новых текстах); honeypot-защита формы минимальна (закрытая демо — ок).
+- Рекомендации следующего раунда: (1) SEO-метаданные Open Graph + JSON-LD Organization; (2) страница/блок «команда и принципы» или кейсы; (3) email-уведомления о лидах (сейчас только SQLite); (4) лёгкий e2e-дымовой тест (форма + аудит) для регрессий.

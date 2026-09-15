@@ -12,7 +12,7 @@ export function AutomationSection() {
       <h2 id="automation-heading">{t('AI там, где он действительно полезен')}</h2>
       <p>{t('Не generic AI promises — рабочие сценарии: анализ документов, обработка лидов, база знаний, автоматизация поддержки.')}</p>
     </div>
-    <div className="automation-layout">
+    <div className="automation-layout" data-reveal>
       <div className="automation-actions" role="group" aria-label={t('Действия для автоматизации')}>
         {automationActions.map((x, i) => <button key={x} onClick={() => setAction(i)} aria-pressed={action === i}><span>{t(x)}</span><span>{i === action ? t('Автоматически') : '↗'}</span></button>)}
       </div>
@@ -29,7 +29,7 @@ export function AutomationSection() {
       </div>
     </div>
     <p className="automation-principle">{t('Автоматизируем то, что действительно мешает бизнесу расти.')}</p>
-    <div className="intelligence-layer">
+    <div className="intelligence-layer" data-reveal>
       <div><span className="eyebrow">HAYDEV INTELLIGENCE LAYER</span><p>{t('Модули, которые можно включить в вашу систему.')}</p></div>
       <div className="intelligence-selector" role="group" aria-label="HayDev Intelligence Layer">{intelligence.map((x, i) => <button key={x.name} onClick={() => setModule(i)} aria-pressed={module === i}>{x.name}</button>)}</div>
       <p className="intelligence-detail" aria-live="polite">{t(intelligence[module].text)}</p>

@@ -14,7 +14,7 @@ export function CustomSoftware() {
       <h2 id="custom-heading">{t('Есть идея?')}<br /><span className="lime-text">{t('Мы превращаем её в продукт.')}</span></h2>
       <p>{t('HayDev может разработать программу под конкретную бизнес-задачу: от внутренней системы компании до полноценной SaaS-платформы. Мы не подбираем шаблон — мы проектируем решение.')}</p>
     </div>
-    <ol className="pipeline-rail" aria-label={t('Путь продукта')}>
+    <ol className="pipeline-rail" aria-label={t('Путь продукта')} data-reveal>
       {buildPipeline.map((item, index) => <li key={item.code} className={index === step ? 'current' : ''}>
         <button aria-pressed={step === index} onClick={() => setStep(index)} onFocus={() => setStep(index)}>
           <span className="pipeline-index">{String(index + 1).padStart(2, '0')}</span>
@@ -23,7 +23,7 @@ export function CustomSoftware() {
         {index < buildPipeline.length - 1 && <span className="pipeline-connector" aria-hidden="true" />}
       </li>)}
     </ol>
-    <div className="pipeline-detail" aria-live="polite">
+    <div className="pipeline-detail" aria-live="polite" data-reveal>
       <div className="pipeline-detail-copy">
         <span className="eyebrow">{stage.code}</span>
         <h3>{t(stage.title)}</h3>

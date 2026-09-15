@@ -31,7 +31,7 @@ export function IndustrySystems({ onSelect }: { onSelect: (name: string) => void
           {industrySystems.map((entry) => <NativeSelectOption key={entry.id} value={entry.id}>{t(entry.name)}</NativeSelectOption>)}
         </NativeSelect>
       </div>
-      <div className="industry-system" aria-live="polite">
+      <div className="industry-system" aria-live="polite" data-reveal>
         <div className="industry-system-header"><span>{t(item.name)}</span><span>{t("ПРИМЕР АРХИТЕКТУРЫ")}</span></div>
         <ol className="industry-pipeline" key={selected}>
           {item.flow.map((step, index) => <li key={step}><span className="pipeline-index">{String(index + 1).padStart(2, "0")}</span><strong>{t(step)}</strong>{index < item.flow.length - 1 && <span className="pipeline-arrow" aria-hidden="true">→</span>}</li>)}

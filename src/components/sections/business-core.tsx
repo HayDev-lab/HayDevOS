@@ -34,6 +34,26 @@ export function BusinessCore() {
     return () => { hero.removeEventListener("pointermove", move); if (frame) cancelAnimationFrame(frame); };
   }, []);
 
+  // Arrow keys cycle the hero scenes while the hero is on screen (typing in
+  // inputs is excluded). Screen-reader users still have the button group.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      const hero = heroRef.current;
+      if (!hero) return;
+      const rect = hero.getBoundingClientRect();
+      if (rect.bottom < window.innerHeight * 0.5 || rect.top > window.innerHeight * 0.5) return;
+      event.preventDefault();
+      const delta = event.key === "ArrowRight" ? 1 : -1;
+      setScene(prev => (prev + delta + heroScenes.length) % heroScenes.length);
+      setActive(0);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   function switchScene(next: number) {
     setScene(next); setActive(0);
   }
@@ -57,6 +77,7 @@ export function BusinessCore() {
         <OrbitalScene active={active} scene={scene} />
         <div className="scene-mode" role="group" aria-label={t('Состояния сцены')}>
           {heroScenes.map((item, index) => <button key={item.id} aria-pressed={scene === index} onClick={() => switchScene(index)}>{t(item.label)}</button>)}
+          <span className="scene-keyhint" aria-hidden="true">←/→</span>
         </div>
         <div className="core-heading"><span>{view.heading}</span><span>{nodeCount} / {t('ПОДКЛЮЧЕНО')}</span></div>
         <div className="core-network" data-scene={view.id}>

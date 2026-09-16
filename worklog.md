@@ -187,3 +187,25 @@ Stage Summary:
 - Скриншоты: screenshots/r7-*.png (17 шт.).
 - Остаточные риски: (1) hero spotlight не виден в headless QA (нет hover media) — в реальных десктоп-браузерах работает, проверен форс-методом; (2) hello@haydev.am — плейсхолдер; (3) при прод-запуске заменить SITE_URL/robots; (4) test-лиды QA (qa7@, qa7ui@, qa7final@haydev.test) остались в SQLite — закрытая демо, ок.
 - Рекомендации раунда 8: (1) email-уведомления о лидах (консольный fallback уже есть); (2) OG-вариант под светлые превью; (3) e2e-дымовой тест (форма + аудит + фильтр + flip) на Playwright; (4) deeper «команда/подход»; (5) анимация появления products-grid при скролле (сейчас только при смене фильтра).
+
+---
+Task ID: 8
+Agent: main-agent (Z.ai Code)
+Task: Раунд 8 — QA-регрессия, НОВАЯ фича live-поиск по FAQ, hero keyboard-навигация сцен стрелками, products scroll-in stagger + VLM стиль-пас (FAQ бейджи/CTA, contact timeline milestone-маркеры, build lime-bar, hero data-strip).
+
+Work Log:
+- QA-оценка статуса: сервер 200, dev.log чист, lint 0/0, tsc чист. agent-browser: 12 секций, WebGL PRODUCTS (узлы 5), полный скролл — 0 JS-ошибок, 0 unrevealed, FAQ-аккордеон работает (первый открыт по умолчанию), языки ru/en/hy, сценарный flip в EN/RU, форма → SUCCESS (POST 201), m390 overflow — 0. Регрессий НЕТ.
+- VLM-аудит (hero/build/faq/contact): слабые места — FAQ без hover-индикаций и «сухие» F-бейджи + dashed-CTA, contact timeline скучный + мелкий helper-text, hero data-strip низкий контраст, build активная категория без визуального «якоря».
+- НОВАЯ ФИЧА: FAQ LIVE-ПОИСК (faq.tsx переписан) — поле поиска с иконкой/каунтером «N / M» (aria-live), clear-кнопка; фильтрация по переведённым Q&A (useMemo, deps needle/locale/t); сниппет-превью «↳ …» из ответа однострочным ellipsis под вопросом, когда совпал только ответ; пустое состояние «404» с CTA-текстом. Проверено: «код»→1 вопрос, «интеграц»→3 (сниппеты), «xyzнетыакого»→404-панель, clear→5/5; EN «code»→"Who owns the code and data?", «price»→404 (слова нет в EN — корректно), HY placeholder переведён.
+- НОВАЯ ФИЧА: HERO KEYBOARD-НАВИГАЦИЯ — стрелки ←/→ листают сцены CORE/BUILD/AUTOMATE/PRODUCTS пока hero в вьюпорте (гвард: input/textarea/contentEditable исключены; preventDefault); mono-хинт «←/→» в scene-mode (только ≥1100px). Проверено: press ArrowRight×2 → сцены 1→2, ArrowLeft → 1.
+- ФИЧА (хвост R7): products scroll-in stagger — анимация product-in теперь срабатывает при reveal обёртки ([data-reveal].revealed .product-card + nth-child задержки .06–.3s) и при смене фильтра (грид ре-маунтится под уже revealed-обёрткой). Базовое animation:none убрано с mount-only.
+- СТИЛЬ-ПАСС по VLM: FAQ — boxed F-бейджи (рамка+bg, lime при hover/open), hover/open фон строк (#c5f56303/05), faq-cta solid-панель с radial-акцентом; CONTACT — timeline переработан в milestone-маркеры: круглые 36px номера с lime-градиентной рельсовой линией, hover-glow маркеров, разделители li+li убраны (рельс сквозной), form-note контраст+размер; HERO — data-strip strong ярче (#e4efe4→#f2faf0 на hover), стрелки-«i» зеленее, breathing room (subtitle 28px, description 22/26, cta 28); BUILD — lime-бар 3px слева у активной категории (glow), count контрастнее (#93a698).
+- ПЕРЕВОДЫ: +5 ключей EN/HY (поиск, placeholder, clear, empty-state).
+- Верификация: faq-search input h=52/48(m), счётчик live, сниппеты/empty/clear ✓, стрелки ✓, products animation product-in delay stagger ✓, lime-bar rgb(197,245,99) ✓, timeline 36px круги + gradient rail ✓; VLM: FAQ/Contact/Build = 3/3 PASS; m390 overflow 0; полный скролл 0 ошибок/0 unrevealed; lint 0/0; tsc чист; dev.log чист.
+
+Stage Summary:
+- Состояние: производство-готово; 12 секций; новые фичи (FAQ поиск, keyboard-сцены, scroll-stagger) работают во всех локалях; регрессий нет.
+- Ключевые артефакты: faq.tsx (переписан: поиск+сниппеты+empty); business-core.tsx (+keydown useEffect, +scene-keyhint); globals.css (+100 строк ROUND 8: faq-search/hit/empty, boxed faq-index, row hover, solid faq-cta, scene-keyhint, products stagger rework, data-strip/hero rhythm, build lime-bar, contact milestone-маркеры); translations.json (+5/+5).
+- Скриншоты: screenshots/r8-*.png (9 шт.).
+- Остаточные риски: (1) поиск FAQ ищет по подстроке (не по морфологии) — «код» не найдёт «кода»; осознанный компромисс для лендинга; (2) стрелки сцен глобальные — при сфокусированном слайдере/карусели в будущем учесть; (3) hello@haydev.am — плейсхолдер; (4) SITE_URL/robots — при запуске.
+- Рекомендации раунда 9: (1) email-уведомления о лидах; (2) e2e-дымовой тест Playwright (форма+аудит+поиск FAQ+фильтр+flip+стрелки); (3) морфологический поиск (минимальный стемминг RU/HY) или поиск по ключевым словам; (4) OG light-вариант; (5) prints styles для PDF-визитки.

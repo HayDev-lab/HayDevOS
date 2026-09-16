@@ -204,8 +204,8 @@ export function InboxView() {
                 </div>
                 <div className="border-t bg-muted/30 px-3 py-2">
                   <div className="flex items-center gap-2">
-                    <Input placeholder="Reply (demo — outbound adapter not connected)…" disabled className="flex-1 bg-background" />
-                    <Button size="sm" disabled>Send</Button>
+                    <Input placeholder={t("inbox.reply_ph")} disabled className="flex-1 bg-background" />
+                    <Button size="sm" disabled>{t("inbox.send")}</Button>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1.5">{t("inbox.architecture_note")}</p>
                 </div>
@@ -256,7 +256,7 @@ function LinkActions({ conv }: { conv: any }) {
       )}
       {mode === "link" && (
         <div className="flex items-center gap-1.5">
-          <Input autoFocus placeholder="Search leads…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 w-44" />
+          <Input autoFocus placeholder={t("inbox.search_leads")} value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 w-44" />
           <Button size="sm" variant="ghost" onClick={() => setMode(null)}>✕</Button>
         </div>
       )}
@@ -271,7 +271,7 @@ function LinkActions({ conv }: { conv: any }) {
               </div>
             </button>
           ))}
-          {(leads.data?.rows ?? []).length === 0 && <div className="px-3 py-3 text-xs text-muted-foreground text-center">No leads found</div>}
+          {(leads.data?.rows ?? []).length === 0 && <div className="px-3 py-3 text-xs text-muted-foreground text-center">{t("inbox.no_leads_found")}</div>}
         </div>
       )}
     </div>

@@ -41,11 +41,11 @@ export function ImportDialog({ children }: { children?: ReactNode }) {
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("leads.import")}</DialogTitle>
-          <DialogDescription>CSV with headers: first_name, last_name, company, phone, email, source, priority, summary. Auto-maps common headers.</DialogDescription>
+          <DialogDescription>{t("importcsv.desc")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-1">
-            <Label className="text-xs">Default source type</Label>
+            <Label className="text-xs">{t("importcsv.source_type")}</Label>
             <Select value={sourceType} onValueChange={setSourceType}>
               <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -54,10 +54,10 @@ export function ImportDialog({ children }: { children?: ReactNode }) {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">CSV data</Label>
+            <Label className="text-xs">{t("importcsv.csv_data")}</Label>
             <Textarea rows={8} value={csv} onChange={(e) => setCsv(e.target.value)} placeholder={SAMPLE} className="font-mono text-xs" />
           </div>
-          <Button variant="ghost" size="sm" onClick={() => setCsv(SAMPLE)}>Use sample</Button>
+          <Button variant="ghost" size="sm" onClick={() => setCsv(SAMPLE)}>{t("importcsv.use_sample")}</Button>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>

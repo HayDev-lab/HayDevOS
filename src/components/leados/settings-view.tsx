@@ -668,7 +668,7 @@ function WebhookEndpointsTab() {
                 <div className="text-[11px] text-muted-foreground truncate font-mono">{ep.url}</div>
               </div>
               <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono">{ep.events}</Badge>
-              {ep.failCount > 0 && <Badge variant="outline" className="text-[9px] px-1 py-0 text-red-600 border-red-300">{ep.failCount} {t("erp.fails")}</Badge>}}
+              {ep.failCount > 0 && <Badge variant="outline" className="text-[9px] px-1 py-0 text-red-600 border-red-300">{ep.failCount} {t("erp.fails")}</Badge>}
               {ep.lastDeliveryAt && <span className="text-[10px] text-muted-foreground shrink-0">{new Date(ep.lastDeliveryAt).toLocaleDateString()}</span>}
               <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => testEp(ep.id)} disabled={testingId === ep.id}>
                 {testingId === ep.id ? <Loader2 className="h-3 w-3 animate-spin" /> : t("erp.test")}

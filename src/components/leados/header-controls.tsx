@@ -32,7 +32,7 @@ export function ThemeToggle() {
 }
 
 export function LangSwitcher() {
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, t } = useLocale();
   const labels: Record<string, string> = { hy: "ՀՅ", ru: "RU", en: "EN" };
   return (
     <DropdownMenu>
@@ -43,7 +43,7 @@ export function LangSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Language</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs text-muted-foreground">{t("app.language")}</DropdownMenuLabel>
         {(["hy", "ru", "en"] as const).map((l) => (
           <DropdownMenuItem key={l} onClick={() => setLocale(l)} className="justify-between">
             <span>{l === "hy" ? "Հայերեն" : l === "ru" ? "Русский" : "English"}</span>
@@ -56,11 +56,12 @@ export function LangSwitcher() {
 }
 
 export function UserSwitcher() {
+  const { t } = useLocale();
   const { data } = useSession();
   const switchUser = useSwitchUser();
   const user = data?.session?.user;
   if (!user) return <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><UserIcon className="h-4 w-4" /></Button>;
-  const roleLabel: Record<string, string> = { OWNER: "Owner", ADMIN: "Admin", MANAGER: "Manager", SALES_MANAGER: "Sales", VIEWER: "Viewer" };
+  const roleLabel: Record<string, string> = { OWNER: t("role.owner"), ADMIN: t("role.admin"), MANAGER: t("role.manager"), SALES_MANAGER: t("role.sales"), VIEWER: t("role.viewer") };
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -76,7 +77,7 @@ export function UserSwitcher() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="text-xs text-muted-foreground">{user.email}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Switch user (demo)</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs text-muted-foreground">{t("app.switch_user")}</DropdownMenuLabel>
         {data?.users?.map((u) => (
           <DropdownMenuItem key={u.id} onClick={() => switchUser.mutate(u.id)} className="justify-between gap-2">
             <span className="flex items-center gap-2">
@@ -92,6 +93,7 @@ export function UserSwitcher() {
 }
 
 export function SearchTrigger() {
+  const { t } = useLocale();
   const [, navigate] = useHashRoute();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -132,7 +134,7 @@ export function SearchTrigger() {
         className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted transition w-[220px]"
       >
         <Search className="h-3.5 w-3.5" />
-        <span>Search leads…</span>
+        <span>{t("common.search")}…</span>
         <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground/80 border rounded px-1 py-px">
           <Command className="h-2.5 w-2.5" />K
         </span>
@@ -154,14 +156,14 @@ export function SearchTrigger() {
                   if (e.key === "ArrowUp") { e.preventDefault(); setIdx((i) => Math.max(0, i - 1)); }
                   if (e.key === "Enter") { const r = rows[idx]; onPick(r?.id); }
                 }}
-                placeholder="Search by name, company, phone, email…"
+                placeholder={t("app.search_hint")}
                 className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
               <span className="text-[10px] text-muted-foreground border rounded px-1 py-px">ESC</span>
             </div>
             <div className="max-h-80 overflow-y-auto p-1">
-              {q.trim().length < 2 && <div className="p-6 text-center text-xs text-muted-foreground">Type at least 2 characters</div>}
-              {q.trim().length >= 2 && rows.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No leads found</div>}
+              {q.trim().length < 2 && <div className="p-6 text-center text-xs text-muted-foreground">{t("app.type_more")}</div>}
+              {q.trim().length >= 2 && rows.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">{t("inbox.no_leads_found")}</div>}
               {rows.slice(0, 8).map((r, i) => (
                 <button
                   key={r.id}
@@ -174,7 +176,7 @@ export function SearchTrigger() {
                 >
                   <LeadAvatar first={r.firstName} last={r.lastName} color={r.owner?.avatarColor} size={28} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{[r.firstName, r.lastName].filter(Boolean).join(" ") || "Unknown"}</div>
+                    <div className="font-medium truncate">{[r.firstName, r.lastName].filter(Boolean).join(" ") || t("app.unknown")}</div>
                     <div className="text-xs text-muted-foreground truncate">{[r.company, r.email, r.phone].filter(Boolean).join(" · ")}</div>
                   </div>
                   {r.stage && <span className="text-xs text-muted-foreground">{r.stage.name}</span>}
@@ -189,6 +191,7 @@ export function SearchTrigger() {
 }
 
 export function NotificationsBell() {
+  const { t } = useLocale();
   const { data } = useNotifications();
   const qc = useQueryClient();
   const [, navigate] = useHashRoute();
@@ -207,9 +210,9 @@ export function NotificationsBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-96">
         <DropdownMenuLabel className="flex items-center justify-between">
-          <span>Notifications</span>
+          <span>{t("app.notifications")}</span>
           {unread > 0 && (
-            <button onClick={markAllRead} className="text-xs font-normal text-primary hover:underline">Mark all read</button>
+            <button onClick={markAllRead} className="text-xs font-normal text-primary hover:underline">{t("app.mark_read")}</button>
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -217,7 +220,7 @@ export function NotificationsBell() {
           {(data?.rows ?? []).length === 0 && (
             <div className="p-8 text-center">
               <Bell className="h-6 w-6 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No notifications</p>
+              <p className="text-xs text-muted-foreground">{t("app.no_notifications")}</p>
             </div>
           )}
           {(data?.rows ?? []).slice(0, 20).map((n: any) => (

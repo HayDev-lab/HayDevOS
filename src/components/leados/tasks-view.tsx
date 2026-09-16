@@ -35,7 +35,7 @@ export function TasksView() {
     } catch (e) { toast.error((e as Error).message); }
   };
   const remove = async (id: string) => {
-    try { await del.mutateAsync(id); toast.success("Task deleted"); } catch (e) { toast.error((e as Error).message); }
+    try { await del.mutateAsync(id); toast.success(t("toast.task_deleted")); } catch (e) { toast.error((e as Error).message); }
   };
 
   return (
@@ -43,13 +43,13 @@ export function TasksView() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t("tasks.title")}</h1>
-          <p className="text-sm text-muted-foreground">{rows.length} tasks</p>
+          <p className="text-sm text-muted-foreground">{t("tasks.count", { n: rows.length })}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg border p-0.5">
             {(["todo", "overdue", "done"] as const).map((f) => (
               <button key={f} onClick={() => setFilter(f)} className={cn("px-3 py-1.5 text-xs font-medium rounded-md transition", filter === f ? "bg-primary text-primary-foreground" : "hover:bg-accent")}>
-                {f === "todo" ? "Active" : f === "overdue" ? "Overdue" : "Done"}
+                {f === "todo" ? t("tasks.f_active") : f === "overdue" ? t("tasks.f_overdue") : t("tasks.f_done")}
               </button>
             ))}
           </div>
@@ -115,17 +115,17 @@ function NewTaskDialog({ children }: { children?: React.ReactNode }) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>{t("tasks.new")}</DialogTitle></DialogHeader>
         <div className="space-y-3 py-2">
-          <div className="space-y-1"><Label className="text-xs">Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
-          <div className="space-y-1"><Label className="text-xs">Description</Label><Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t("task.f_title")}</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t("task.f_desc")}</Label><Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1"><Label className="text-xs">Assignee</Label>
-              <Select value={assignedTo} onValueChange={setAssignedTo}><SelectTrigger><SelectValue placeholder="Me" /></SelectTrigger><SelectContent>{(users.data?.rows ?? []).map((u: any) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent></Select>
+            <div className="space-y-1"><Label className="text-xs">{t("task.f_assignee")}</Label>
+              <Select value={assignedTo} onValueChange={setAssignedTo}><SelectTrigger><SelectValue placeholder={t("task.me")} /></SelectTrigger><SelectContent>{(users.data?.rows ?? []).map((u: any) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent></Select>
             </div>
-            <div className="space-y-1"><Label className="text-xs">Priority</Label>
+            <div className="space-y-1"><Label className="text-xs">{t("common.priority")}</Label>
               <Select value={priority} onValueChange={setPriority}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["LOW", "MEDIUM", "HIGH", "URGENT"].map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select>
             </div>
           </div>
-          <div className="space-y-1"><Label className="text-xs">Due date</Label><Input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t("task.due_date")}</Label><Input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>

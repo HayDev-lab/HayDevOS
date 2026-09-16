@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Phone, MessageSquare, Mail, Calendar, StickyNote, UserPlus, ArrowLeftRight, Trophy, XCircle, FileText, Zap, GitMerge, Archive, Bell, type LucideIcon } from "lucide-react";
 import { timeAgo } from "./primitives";
+import { useT } from "@/lib/leados/locale";
 
 // Activity type → icon + color mapping
 const ACTIVITY_META: Record<string, { icon: LucideIcon; color: string; bg: string }> = {
@@ -30,14 +31,15 @@ export interface TimelineEntry {
 }
 
 export function ActivityTimeline({ entries, max_height = "max-h-96" }: { entries: TimelineEntry[]; max_height?: string }) {
+  const t = useT();
   if (entries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <div className="rounded-full bg-muted p-3 mb-3">
           <Zap className="h-6 w-6 text-muted-foreground/40" />
         </div>
-        <p className="text-sm font-medium text-muted-foreground">No activity yet</p>
-        <p className="text-xs text-muted-foreground/70 mt-1">Log a call, message, or note to start the timeline.</p>
+        <p className="text-sm font-medium text-muted-foreground">{t("timeline.empty")}</p>
+        <p className="text-xs text-muted-foreground/70 mt-1">{t("timeline.empty_hint")}</p>
       </div>
     );
   }
@@ -63,7 +65,7 @@ export function ActivityTimeline({ entries, max_height = "max-h-96" }: { entries
               {/* content */}
               <div className="flex-1 min-w-0 pt-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium truncate">{entry.user?.name ?? "System"}</span>
+                  <span className="text-xs font-medium truncate">{entry.user?.name ?? t("common.system")}</span>
                   <span className={cn("text-[9px] font-semibold uppercase px-1 py-px rounded", meta.bg, meta.color)}>
                     {entry.type.replace(/_/g, " ")}
                   </span>
@@ -72,7 +74,7 @@ export function ActivityTimeline({ entries, max_height = "max-h-96" }: { entries
                 <p className="text-xs text-foreground/80 leading-relaxed">{entry.title}</p>
                 {entry.description && <p className="text-[11px] text-muted-foreground mt-0.5">{entry.description}</p>}
                 {/* timestamp always visible for last entry */}
-                {isLast && <p className="text-[10px] text-muted-foreground mt-0.5">{timeAgo(entry.createdAt)} ago</p>}
+                {isLast && <p className="text-[10px] text-muted-foreground mt-0.5">{timeAgo(entry.createdAt)}</p>}
               </div>
             </div>
           );

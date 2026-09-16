@@ -82,28 +82,28 @@ export function LeadsView() {
   const bulkArchive = async () => {
     try {
       const res = await bulk.mutateAsync({ ids: Array.from(selected), action: "archive" });
-      toast.success(`Archived ${res.updated} lead(s)`);
+      toast.success(t("toast.bulk_archived", { n: res.updated }));
       setSelected(new Set());
     } catch (e) { toast.error((e as Error).message); }
   };
   const bulkAssign = async (ownerId: string) => {
     try {
       const res = await bulk.mutateAsync({ ids: Array.from(selected), action: "assign", ownerId });
-      toast.success(`Assigned ${res.updated} lead(s)`);
+      toast.success(t("toast.bulk_assigned", { n: res.updated }));
       setSelected(new Set());
     } catch (e) { toast.error((e as Error).message); }
   };
   const bulkStage = async (stageId: string) => {
     try {
       const res = await bulk.mutateAsync({ ids: Array.from(selected), action: "stage", stageId });
-      toast.success(`Moved ${res.updated} lead(s)`);
+      toast.success(t("toast.bulk_moved", { n: res.updated }));
       setSelected(new Set());
     } catch (e) { toast.error((e as Error).message); }
   };
   const bulkPriority = async (priority: string) => {
     try {
       const res = await bulk.mutateAsync({ ids: Array.from(selected), action: "priority", priority });
-      toast.success(`Updated ${res.updated} lead(s)`);
+      toast.success(t("toast.bulk_updated", { n: res.updated }));
       setSelected(new Set());
     } catch (e) { toast.error((e as Error).message); }
   };
@@ -124,7 +124,7 @@ export function LeadsView() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t("leads.title")}</h1>
-          <p className="text-sm text-muted-foreground">{leads.data ? `${leads.data.total} total` : ""}</p>
+          <p className="text-sm text-muted-foreground">{leads.data ? t("leads.total_count", { n: leads.data.total }) : ""}</p>
         </div>
         <div className="flex items-center gap-2">
           <DuplicatesScanner />
@@ -166,12 +166,12 @@ export function LeadsView() {
           </Select>
           <div className="flex items-center gap-1">
             {["LOW", "MEDIUM", "HIGH", "URGENT"].map((p) => (
-              <button key={p} onClick={() => { togglePriority(p); setPage(1); }} className={cn("h-9 px-2 rounded-md text-xs font-medium border transition", priority.includes(p) ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent")}>{p[0]}{p.slice(1).toLowerCase()}</button>
+              <button key={p} onClick={() => { togglePriority(p); setPage(1); }} className={cn("h-9 px-2 rounded-md text-xs font-medium border transition", priority.includes(p) ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent")}>{p === "LOW" ? t("priority.low") : p === "MEDIUM" ? t("priority.medium") : p === "HIGH" ? t("priority.high") : t("priority.urgent")}</button>
             ))}
           </div>
           <button onClick={() => { setOverdue((v) => !v); setPage(1); }} className={cn("h-9 px-3 rounded-md text-xs font-medium border transition flex items-center gap-1.5", overdue ? "bg-red-100 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-300" : "bg-background hover:bg-accent")}>⏱ {t("leads.filter.overdue")}</button>
           <button onClick={() => { setUnassigned((v) => !v); setPage(1); }} className={cn("h-9 px-3 rounded-md text-xs font-medium border transition flex items-center gap-1.5", unassigned ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300" : "bg-background hover:bg-accent")}>👤 {t("leads.filter.unassigned")}</button>
-          <button onClick={() => { setShowArchived((v) => !v); setPage(1); }} className={cn("h-9 px-3 rounded-md text-xs font-medium border transition flex items-center gap-1.5", showArchived ? "bg-zinc-200 text-zinc-700 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300" : "bg-background hover:bg-accent")}>📦 Archived</button>
+          <button onClick={() => { setShowArchived((v) => !v); setPage(1); }} className={cn("h-9 px-3 rounded-md text-xs font-medium border transition flex items-center gap-1.5", showArchived ? "bg-zinc-200 text-zinc-700 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300" : "bg-background hover:bg-accent")}>📦 {t("leads.archived_filter")}</button>
           {hasFilters && <Button variant="ghost" size="sm" onClick={reset}><X className="h-3.5 w-3.5 mr-1" />{t("common.clear")}</Button>}
         </div>
         {/* saved filters bar */}
@@ -213,11 +213,11 @@ export function LeadsView() {
                       if (e.key === "Enter" && saveName.trim()) {
                         savedFilters.add(saveName, { q, sourceId, ownerId, stageId, priority, overdue, unassigned });
                         setSaveName(""); setSavePromptOpen(false);
-                        toast.success("Filter saved");
+                        toast.success(t("toast.filter_saved"));
                       }
                       if (e.key === "Escape") { setSavePromptOpen(false); setSaveName(""); }
                     }}
-                    placeholder="Filter name…"
+                    placeholder={t("leads.filter_name_ph")}
                     className="h-7 w-32 text-xs"
                   />
                   <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setSavePromptOpen(false); setSaveName(""); }}>✕</Button>
@@ -227,7 +227,7 @@ export function LeadsView() {
                   onClick={() => setSavePromptOpen(true)}
                   className="inline-flex items-center gap-1 rounded-full border border-dashed px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent transition"
                 >
-                  <Plus className="h-3 w-3" />Save current
+                  <Plus className="h-3 w-3" />{t("leads.save_current")}
                 </button>
               )
             )}
@@ -240,31 +240,31 @@ export function LeadsView() {
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-primary/5 px-3 py-2.5 text-sm shadow-sm">
           <span className="font-medium flex items-center gap-2">
             <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">{selected.size}</span>
-            selected
+            {selected.size} {t("leads.selected")}
           </span>
           <div className="flex flex-wrap gap-2">
             <Select onValueChange={(v) => v !== "__none" && bulkAssign(v)}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Assign to…" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder={t("leads.assign_to")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none">—</SelectItem>
                 {(users.data?.rows ?? []).map((u: any) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select onValueChange={(v) => v !== "__none" && bulkStage(v)}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Move to stage…" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder={t("leads.move_to")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none">—</SelectItem>
                 {stages.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select onValueChange={(v) => v !== "__none" && bulkPriority(v)}>
-              <SelectTrigger className="h-8 w-28 text-xs"><SelectValue placeholder="Priority…" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-28 text-xs"><SelectValue placeholder={t("leads.priority_ph")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none">—</SelectItem>
-                <SelectItem value="LOW">Low</SelectItem>
-                <SelectItem value="MEDIUM">Medium</SelectItem>
-                <SelectItem value="HIGH">High</SelectItem>
-                <SelectItem value="URGENT">Urgent</SelectItem>
+                <SelectItem value="LOW">{t("priority.low")}</SelectItem>
+                <SelectItem value="MEDIUM">{t("priority.medium")}</SelectItem>
+                <SelectItem value="HIGH">{t("priority.high")}</SelectItem>
+                <SelectItem value="URGENT">{t("priority.urgent")}</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" onClick={bulkArchive} disabled={bulk.isPending}><Archive className="h-3.5 w-3.5 mr-1.5" />{t("common.archive")}</Button>
@@ -289,7 +289,7 @@ export function LeadsView() {
                 <th className="text-left font-medium px-3 py-2.5">{t("leads.col.owner")}</th>
                 <th className="text-left font-medium px-3 py-2.5">{t("leads.col.next_action")}</th>
                 <th className="text-left font-medium px-3 py-2.5">{t("leads.col.created")}</th>
-                {showArchived && <th className="text-left font-medium px-3 py-2.5">Actions</th>}
+                {showArchived && <th className="text-left font-medium px-3 py-2.5">{t("common.actions")}</th>}
               </tr>
             </thead>
             <tbody>
@@ -335,16 +335,16 @@ export function LeadsView() {
                           size="sm"
                           variant="outline"
                           className="h-7 text-xs"
-                          onClick={(e) => { e.stopPropagation(); restore.mutate(l.id, { onSuccess: () => toast.success("Lead restored") }); }}
+                          onClick={(e) => { e.stopPropagation(); restore.mutate(l.id, { onSuccess: () => toast.success(t("toast.lead_restored")) }); }}
                           disabled={restore.isPending}
-                        >↩ Restore</Button>
+                        >↩ {t("common.restore")}</Button>
                       </td>
                     )}
                   </tr>
                 );
               })}
               {!leads.isLoading && (leads.data?.rows ?? []).length === 0 && (
-                <tr><td colSpan={showArchived ? 11 : 10} className="px-6 py-12 text-center text-sm text-muted-foreground">{hasFilters ? "No leads match your filters." : "No leads yet. Create one or import a CSV."}</td></tr>
+                <tr><td colSpan={showArchived ? 11 : 10} className="px-6 py-12 text-center text-sm text-muted-foreground">{hasFilters ? t("leads.none_filtered") : t("leads.none")}</td></tr>
               )}
             </tbody>
           </table>
@@ -354,7 +354,7 @@ export function LeadsView() {
       {/* pagination */}
       {leads.data && leads.data.pages > 1 && (
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Page {leads.data.page} of {leads.data.pages} · {leads.data.total} leads</span>
+          <span className="text-xs text-muted-foreground">{t("leads.pagination", { p: leads.data.page, n: leads.data.pages, total: leads.data.total })}</span>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}><ChevronLeft className="h-4 w-4" /></Button>
             <Button variant="outline" size="sm" disabled={page >= leads.data.pages} onClick={() => setPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>

@@ -57,13 +57,13 @@ export function LeadOSApp() {
       seed.mutate(undefined, {
         onSuccess: (r) => {
           if (r.seeded) {
-            toast.success("Demo data loaded");
+            toast.success(t("toast.demo_loaded"));
             session.refetch();
           }
         },
       });
     }
-  }, [session.isError, session.isFetching, seed]);
+  }, [session.isError, session.isFetching, seed, t]);
 
   if (needsSeed) {
     return (
@@ -72,10 +72,10 @@ export function LeadOSApp() {
           <Database className="h-7 w-7 text-primary" />
         </div>
         <h1 className="text-xl font-semibold">HayDev LeadOS</h1>
-        <p className="text-sm text-muted-foreground max-w-md">Initializing the workspace with demo data…</p>
+        <p className="text-sm text-muted-foreground max-w-md">{t("app.init")}</p>
         <Button onClick={() => seed.mutate()} disabled={seed.isPending}>
           <Sparkles className="h-4 w-4 mr-2" />
-          {seed.isPending ? "Loading…" : "Load demo data"}
+          {seed.isPending ? t("common.loading") : t("app.load_demo")}
         </Button>
       </div>
     );
@@ -84,10 +84,10 @@ export function LeadOSApp() {
   const resetDemoAction = () => {
     resetDemo.mutate(undefined, {
       onSuccess: () => {
-        toast.success("Demo data reset");
+        toast.success(t("toast.demo_reset"));
         session.refetch();
       },
-      onError: () => toast.error("Reset failed"),
+      onError: () => toast.error(t("toast.reset_failed")),
     });
   };
 
@@ -156,7 +156,7 @@ export function LeadOSApp() {
             onClick={resetDemoAction}
             className="leados-reset"
             title={t("intro.demo.badge") + " — reset"}
-            aria-label="Reset demo data"
+            aria-label={t("app.reset_demo")}
             disabled={resetDemo.isPending}
           >
             <RotateCcw className="h-3.5 w-3.5" />
@@ -180,7 +180,7 @@ export function LeadOSApp() {
             </button>
             <div className="rounded-lg border bg-muted/40 p-3">
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                <span className="font-semibold text-foreground">EVERY LEAD</span> has an owner. <span className="font-semibold text-foreground">NOTHING</span> gets lost.
+                <span className="font-semibold text-foreground">{t("app.every_lead")}</span> {t("app.has_owner")} <span className="font-semibold text-foreground">{t("app.nothing_lost")}</span> {t("app.gets_lost")}
               </p>
             </div>
           </div>

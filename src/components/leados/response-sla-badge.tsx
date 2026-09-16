@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useT } from "@/lib/leados/locale";
 
 interface SlaProps {
   createdAt?: Date | string | null;
@@ -17,8 +18,10 @@ const SLA_RESPONSE_BREACH = 24; // breach after 24 hours
 /**
  * Response time SLA badge — shows whether a lead was responded to within target.
  * Green: responded < 1h, Amber: 1-4h, Orange: 4-24h, Red: >24h or no response.
+ * Labels are localized via the LeadOS dictionary.
  */
 export function ResponseSlaBadge({ createdAt, lastContactAt, status }: SlaProps) {
+  const t = useT();
   if (status === "WON" || status === "LOST" || status === "ARCHIVED") return null;
 
   const created = createdAt ? new Date(createdAt).getTime() : null;
@@ -51,7 +54,7 @@ export function ResponseSlaBadge({ createdAt, lastContactAt, status }: SlaProps)
     // no contact yet — measure from creation
     hours = (Date.now() - created) / 3600000;
     if (hours <= SLA_RESPONSE_TARGET) {
-      label = "new";
+      label = t("status.new");
       color = "bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300";
     } else if (hours <= SLA_RESPONSE_WARNING) {
       label = `${Math.round(hours)}h`;
@@ -69,7 +72,7 @@ export function ResponseSlaBadge({ createdAt, lastContactAt, status }: SlaProps)
   }
 
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium", color)} title={`Response time: ${label}`}>
+    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium", color)} title={t("sla.badge_title", { v: label })}>
       <Icon className="h-2.5 w-2.5" />
       {label}
     </span>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLead, useLeadActivities, useLeadNotes, useLeadEvents, useLeadDuplicate, useLeadTasks, useUsers, useUpdateLead, useAssignLead, useArchiveLead, useChangeStage, useLogActivity, useAddNote, useCreateTask, useSyncErp, useMergeLead, useRecalcScore, usePipeline } from "@/hooks/leados/use-api";
-import { useLocale } from "@/lib/leados/locale";
+import { useLocale, useT } from "@/lib/leados/locale";
 import { useHashRoute } from "@/lib/leados/hash-route";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ export function LeadDetailView({ leadId }: { leadId: string | null }) {
   const [editOpen, setEditOpen] = useState(false);
 
   if (!leadId) {
-    return <div className="p-6 text-sm text-muted-foreground">No lead selected.</div>;
+    return <div className="p-6 text-sm text-muted-foreground">{t("lead.none_selected")}</div>;
   }
   if (lead.isLoading) {
     return (
@@ -46,7 +46,7 @@ export function LeadDetailView({ leadId }: { leadId: string | null }) {
     return (
       <div className="p-6 space-y-3">
         <Button variant="ghost" size="sm" onClick={() => navigate("leads")}><ArrowLeft className="h-4 w-4 mr-1.5" />{t("nav.leads")}</Button>
-        <p className="text-sm text-muted-foreground">Lead not found or you don't have access.</p>
+        <p className="text-sm text-muted-foreground">{t("lead.not_found")}</p>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export function LeadDetailView({ leadId }: { leadId: string | null }) {
                 {l.audits[0].reportSummary && <p className="text-xs text-muted-foreground">{l.audits[0].reportSummary}</p>}
                 {l.audits[0].priorityAutomations && (
                   <div>
-                    <p className="text-xs font-medium mb-1">Priority automations</p>
+                    <p className="text-xs font-medium mb-1">{t("lead.priority_automations")}</p>
                     <ul className="text-xs space-y-0.5">{(l.audits[0].priorityAutomations as unknown as string[]).map((a, i) => <li key={i} className="flex items-center gap-1.5"><ChevronRight className="h-3 w-3 text-muted-foreground" />{a}</li>)}</ul>
                   </div>
                 )}
@@ -124,7 +124,7 @@ export function LeadDetailView({ leadId }: { leadId: string | null }) {
               <TabsTrigger value="activity">{t("common.activity")}</TabsTrigger>
               <TabsTrigger value="notes">{t("common.notes")}</TabsTrigger>
               <TabsTrigger value="tasks">{t("common.tasks")}</TabsTrigger>
-              <TabsTrigger value="events">Events</TabsTrigger>
+              <TabsTrigger value="events">{t("lead.events")}</TabsTrigger>
             </TabsList>
             <TabsContent value="activity" className="mt-3"><ActivityTab leadId={l.id} /></TabsContent>
             <TabsContent value="notes" className="mt-3"><NotesTab leadId={l.id} /></TabsContent>
@@ -144,6 +144,7 @@ export function LeadDetailView({ leadId }: { leadId: string | null }) {
 }
 
 function Field({ label, value, icon: Icon, action }: { label: string; value?: React.ReactNode; icon?: typeof Phone; action?: string | null }) {
+  const t = useT();
   return (
     <div className="space-y-0.5">
       <p className="text-[11px] text-muted-foreground">{label}</p>
@@ -151,7 +152,7 @@ function Field({ label, value, icon: Icon, action }: { label: string; value?: Re
         {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
         {value ? <span className="truncate">{value}</span> : <span className="text-muted-foreground">—</span>}
         {action && (
-          <a href={action} className="ml-auto text-[11px] text-primary hover:underline shrink-0">{action.startsWith("tel") ? "Call" : "Send"}</a>
+          <a href={action} className="ml-auto text-[11px] text-primary hover:underline shrink-0">{action.startsWith("tel") ? t("lead.call") : t("lead.send")}</a>
         )}
       </div>
     </div>
@@ -166,8 +167,8 @@ function LeadHeader({ lead: l, onEdit }: { lead: any; onEdit: () => void }) {
   const [, navigate] = useHashRoute();
   const logActivity = useLogActivity(l.id);
 
-  const quickLog = async (type: string, title: string) => {
-    try { await logActivity.mutateAsync({ type, title }); toast.success(title); } catch (e) { toast.error((e as Error).message); }
+  const quickLog = async (type: string, titleKey: string) => {
+    try { await logActivity.mutateAsync({ type, title: t(titleKey as any) }); toast.success(t(titleKey as any)); } catch (e) { toast.error((e as Error).message); }
   };
 
   return (
@@ -191,18 +192,18 @@ function LeadHeader({ lead: l, onEdit }: { lead: any; onEdit: () => void }) {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-4">
-          <Button size="sm" variant="default" onClick={() => quickLog("CALL", "Call logged")} disabled={logActivity.isPending}><Phone className="h-3.5 w-3.5 mr-1.5" />{t("lead.call")}</Button>
-          <Button size="sm" variant="outline" onClick={() => quickLog("MESSAGE", "Message sent")} disabled={logActivity.isPending}><MessageSquare className="h-3.5 w-3.5 mr-1.5" />{t("lead.message")}</Button>
-          <Button size="sm" variant="outline" onClick={() => quickLog("EMAIL", "Email sent")} disabled={logActivity.isPending}><Send className="h-3.5 w-3.5 mr-1.5" />Email</Button>
+          <Button size="sm" variant="default" onClick={() => quickLog("CALL", "toast.call_logged")} disabled={logActivity.isPending}><Phone className="h-3.5 w-3.5 mr-1.5" />{t("lead.call")}</Button>
+          <Button size="sm" variant="outline" onClick={() => quickLog("MESSAGE", "toast.message_sent")} disabled={logActivity.isPending}><MessageSquare className="h-3.5 w-3.5 mr-1.5" />{t("lead.message")}</Button>
+          <Button size="sm" variant="outline" onClick={() => quickLog("EMAIL", "toast.email_sent")} disabled={logActivity.isPending}><Send className="h-3.5 w-3.5 mr-1.5" />{t("common.email")}</Button>
           <Button size="sm" variant="outline" onClick={onEdit}><StickyNote className="h-3.5 w-3.5 mr-1.5" />{t("common.edit")}</Button>
           <Button size="sm" variant="outline" onClick={() => sync.mutate()} disabled={sync.isPending}><RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", sync.isPending && "animate-spin")} />{l.integrationSyncs?.some((s: any) => s.status === "SYNCED") ? t("lead.synced_erp") : t("lead.sync_erp")}</Button>
           <Button size="sm" variant="outline" onClick={() => recalc.mutate()} disabled={recalc.isPending}><Zap className="h-3.5 w-3.5 mr-1.5" />{t("common.score")}</Button>
-          <Button size="sm" variant="outline" onClick={() => window.open(`/api/v1/leads/${l.id}/export-activity`, "_blank")} title="Export activity timeline as CSV"><Download className="h-3.5 w-3.5 mr-1.5" />Export</Button>
+          <Button size="sm" variant="outline" onClick={() => window.open(`/api/v1/leads/${l.id}/export-activity`, "_blank")} title={t("lead.export_csv")}><Download className="h-3.5 w-3.5 mr-1.5" />{t("common.export")}</Button>
           <Button size="sm" variant="outline" disabled title={t("lead.create_quote.disabled")}><FileText className="h-3.5 w-3.5 mr-1.5" />{t("lead.create_quote")}</Button>
           <AlertDialog>
             <AlertDialogTrigger asChild><Button size="sm" variant="outline"><Archive className="h-3.5 w-3.5 mr-1.5" />{t("common.archive")}</Button></AlertDialogTrigger>
             <AlertDialogContent>
-              <AlertDialogHeader><AlertDialogTitle>{t("common.archive")}?</AlertDialogTitle><AlertDialogDescription>This will soft-archive the lead. History is preserved.</AlertDialogDescription></AlertDialogHeader>
+              <AlertDialogHeader><AlertDialogTitle>{t("common.archive")}?</AlertDialogTitle><AlertDialogDescription>{t("lead.archive_confirm")}</AlertDialogDescription></AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                 <AlertDialogAction onClick={async () => { await archive.mutateAsync(l.id); toast.success(t("toast.lead_archived")); navigate("leads"); }}>{t("common.archive")}</AlertDialogAction>
@@ -238,23 +239,24 @@ function AuditScores({ audit }: { audit: any }) {
 }
 
 function AiSummary({ lead: l }: { lead: any }) {
+  const t = useT();
   // Deterministic summary — NOT fake AI. Built from lead data.
   const parts: string[] = [];
-  if (l.company) parts.push(`manages ${l.company}.`);
-  if (l.source?.name) parts.push(`Inquiry came via ${l.source.name}.`);
+  if (l.company) parts.push(t("lead.ai.manages", { company: l.company }));
+  if (l.source?.name) parts.push(t("lead.ai.via", { source: l.source.name }));
   if (l.audits?.length) {
     const a = l.audits[0];
-    if (a.automation >= 60) parts.push(`Business Audit shows high automation potential (${a.automation}/100).`);
-    if (a.aiReadiness >= 70) parts.push(`AI readiness is ${a.aiReadiness}/100.`);
+    if (a.automation >= 60) parts.push(t("lead.ai.audit_potential", { score: a.automation }));
+    if (a.aiReadiness >= 70) parts.push(t("lead.ai.ai_ready", { score: a.aiReadiness }));
   } else {
-    parts.push("No Business Audit completed yet.");
+    parts.push(t("lead.ai.no_audit"));
   }
-  if (l.owner) parts.push(`Owner: ${l.owner.name}.`);
-  if (l.nextActionAt) parts.push(`Next action scheduled.`);
+  if (l.owner) parts.push(t("lead.ai.owner", { name: l.owner.name }));
+  if (l.nextActionAt) parts.push(t("lead.ai.next_scheduled"));
   return (
     <div className="space-y-2">
       <p className="text-sm leading-relaxed">{parts.join(" ")}</p>
-      <p className="text-[11px] text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Deterministic summary. AI provider is pluggable — no fake AI claims.</p>
+      <p className="text-[11px] text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {t("lead.ai.disclaimer")}</p>
     </div>
   );
 }
@@ -274,7 +276,7 @@ function DuplicateBanner({ leadId }: { leadId: string }) {
           <GitMerge className="h-4 w-4 text-amber-600" />
           <div className="flex-1 text-sm">
             <span className="font-semibold">{t("lead.duplicate_detected")}</span>
-            <span className="text-muted-foreground ml-2">{dup.data.matches.length} possible match(es) — matched by {match?.reason}</span>
+            <span className="text-muted-foreground ml-2">{t("lead.dup_matches", { n: dup.data.matches.length, reason: match?.reason ?? "" })}</span>
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => navigate("lead", { id: match.id })}><ExternalLink className="h-3.5 w-3.5 mr-1" />{t("lead.merge.open_existing")}</Button>
@@ -285,7 +287,7 @@ function DuplicateBanner({ leadId }: { leadId: string }) {
         </CardContent>
       </Card>
       {showMergeDialog && (
-        <MergeDialog leadId={leadId} matchId={match.id} onClose={() => setShowMergeDialog(false)} onMerged={() => { toast.success("Leads merged"); navigate("lead", { id: leadId }); }} />
+        <MergeDialog leadId={leadId} matchId={match.id} onClose={() => setShowMergeDialog(false)} onMerged={() => { toast.success(t("toast.leads_merged")); navigate("lead", { id: leadId }); }} />
       )}
     </>
   );
@@ -304,15 +306,15 @@ function MergeDialog({ leadId, matchId, onClose, onMerged }: { leadId: string; m
   if (!tl || !sl) return null;
 
   const fields = [
-    { key: "firstName", label: "First name" },
-    { key: "lastName", label: "Last name" },
-    { key: "company", label: "Company" },
-    { key: "phone", label: "Phone" },
-    { key: "email", label: "Email" },
-    { key: "summary", label: "Summary" },
-    { key: "requirements", label: "Requirements" },
-    { key: "estimatedValue", label: "Est. value" },
-    { key: "priority", label: "Priority" },
+    { key: "firstName", label: t("lead.f.first") },
+    { key: "lastName", label: t("lead.f.last") },
+    { key: "company", label: t("common.company") },
+    { key: "phone", label: t("common.phone") },
+    { key: "email", label: t("common.email") },
+    { key: "summary", label: t("common.summary") },
+    { key: "requirements", label: t("lead.requirements") },
+    { key: "estimatedValue", label: t("lead.f.est_value") },
+    { key: "priority", label: t("common.priority") },
   ];
 
   const doMerge = async () => {
@@ -338,19 +340,19 @@ function MergeDialog({ leadId, matchId, onClose, onMerged }: { leadId: string; m
     <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><GitMerge className="h-5 w-5 text-amber-500" />Merge leads</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><GitMerge className="h-5 w-5 text-amber-500" />{t("lead.merge_title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-2">
-          <p className="text-xs text-muted-foreground">The duplicate (source) will be archived. Its activities, tasks, notes, events and tags are moved to this lead. Select fields to copy from the source before merging:</p>
+          <p className="text-xs text-muted-foreground">{t("lead.merge_desc")}</p>
           {/* comparison table */}
           <div className="rounded-lg border overflow-hidden">
             <table className="w-full text-xs">
               <thead className="bg-muted/50 text-muted-foreground">
                 <tr>
-                  <th className="text-left font-medium px-3 py-2">Field</th>
-                  <th className="text-left font-medium px-3 py-2">This lead (target)</th>
-                  <th className="text-left font-medium px-3 py-2">Duplicate (source)</th>
-                  <th className="text-center font-medium px-3 py-2 w-16">Use source</th>
+                  <th className="text-left font-medium px-3 py-2">{t("lead.m_field")}</th>
+                  <th className="text-left font-medium px-3 py-2">{t("lead.m_target")}</th>
+                  <th className="text-left font-medium px-3 py-2">{t("lead.m_source")}</th>
+                  <th className="text-center font-medium px-3 py-2 w-16">{t("lead.m_use")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -377,7 +379,7 @@ function MergeDialog({ leadId, matchId, onClose, onMerged }: { leadId: string; m
                             });
                           }}
                           className="accent-primary disabled:opacity-30"
-                          title={!hasDiff ? "Values are identical" : !sourceVal ? "Source has no value" : "Copy from source"}
+                          title={!hasDiff ? t("lead.m_same") : !sourceVal ? t("lead.m_empty") : t("lead.m_copy")}
                         />
                       </td>
                     </tr>
@@ -388,13 +390,13 @@ function MergeDialog({ leadId, matchId, onClose, onMerged }: { leadId: string; m
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center justify-center h-5 w-5 rounded bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 font-bold">{sourceFields.size}</span>
-            field(s) will be copied from source before merge
+            {t("lead.m_count")}
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
           <Button onClick={doMerge} disabled={merge.isPending} className="bg-amber-600 hover:bg-amber-700 text-white">
-            <GitMerge className="h-3.5 w-3.5 mr-1.5" />Merge & archive source
+            <GitMerge className="h-3.5 w-3.5 mr-1.5" />{t("lead.m_confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -427,7 +429,7 @@ function RightPanel({ lead: l }: { lead: any }) {
           <CardTitle className="text-sm">{t("lead.open_tasks")} ({openTasks.length})</CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-1.5 max-h-48 overflow-y-auto">
-          {openTasks.length === 0 && <p className="text-xs text-muted-foreground">No open tasks.</p>}
+          {openTasks.length === 0 && <p className="text-xs text-muted-foreground">{t("lead.no_open_tasks")}</p>}
           {openTasks.map((task: any) => (
             <div key={task.id} className="rounded border p-2 text-xs">
               <div className="font-medium">{task.title}</div>
@@ -453,7 +455,7 @@ function RightPanel({ lead: l }: { lead: any }) {
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">{t("lead.score_explanation")}</CardTitle></CardHeader>
         <CardContent className="pt-0 space-y-1.5">
-          {(l.scoreComponents ?? []).length === 0 && <p className="text-xs text-muted-foreground">No score components yet. Run recalculation.</p>}
+          {(l.scoreComponents ?? []).length === 0 && <p className="text-xs text-muted-foreground">{t("lead.no_score_components")}</p>}
           {(l.scoreComponents ?? []).map((c: any, i: number) => (
             <div key={i} className="flex items-center gap-2 text-xs">
               <span className={cn("font-semibold tabular-nums", c.delta > 0 ? "text-emerald-600" : "text-red-600")}>{c.delta > 0 ? "+" : ""}{c.delta}</span>
@@ -477,7 +479,7 @@ function RightPanel({ lead: l }: { lead: any }) {
                 <span className={cn("px-1.5 py-0.5 rounded font-medium", s.status === "SYNCED" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" : "bg-red-100 text-red-700")}>{s.status}</span>
               </div>
             ))}
-            <p className="text-[10px] text-muted-foreground">Local-mock ERP adapter. Swap in a real provider later.</p>
+            <p className="text-[10px] text-muted-foreground">{t("lead.erp_mock")}</p>
           </CardContent>
         </Card>
       )}
@@ -548,23 +550,23 @@ function EditLeadDialog({ lead: l, open, onOpenChange }: { lead: any; open: bool
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("common.edit")} · {[l.firstName, l.lastName].filter(Boolean).join(" ")}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3 py-2">
-          <div className="space-y-1"><Label className="text-xs">First name</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
-          <div className="space-y-1"><Label className="text-xs">Last name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>
-          <div className="space-y-1"><Label className="text-xs">Company</Label><Input value={company} onChange={(e) => setCompany(e.target.value)} /></div>
-          <div className="space-y-1"><Label className="text-xs">Priority</Label>
-            <Select value={priority} onValueChange={setPriority}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["LOW", "MEDIUM", "HIGH", "URGENT"].map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select>
+          <div className="space-y-1"><Label className="text-xs">{t("lead.f.first")}</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t("lead.f.last")}</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t("common.company")}</Label><Input value={company} onChange={(e) => setCompany(e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t("common.priority")}</Label>
+            <Select value={priority} onValueChange={setPriority}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["LOW", "MEDIUM", "HIGH", "URGENT"].map((p) => <SelectItem key={p} value={p}>{p === "LOW" ? t("priority.low") : p === "MEDIUM" ? t("priority.medium") : p === "HIGH" ? t("priority.high") : t("priority.urgent")}</SelectItem>)}</SelectContent></Select>
           </div>
-          <div className="space-y-1"><Label className="text-xs">Phone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-          <div className="space-y-1"><Label className="text-xs">Email</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-          <div className="space-y-1"><Label className="text-xs">Estimated value</Label><Input type="number" value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)} /></div>
-          <div className="space-y-1"><Label className="text-xs">Next action date</Label><Input type="datetime-local" value={nextActionAt} onChange={(e) => setNextActionAt(e.target.value)} /></div>
-          <div className="col-span-2 space-y-1"><Label className="text-xs">Next action label</Label><Input value={nextActionLabel} onChange={(e) => setNextActionLabel(e.target.value)} /></div>
-          <div className="col-span-2 space-y-1"><Label className="text-xs">Summary</Label><Input value={summary} onChange={(e) => setSummary(e.target.value)} /></div>
-          <div className="col-span-2 space-y-1"><Label className="text-xs">Requirements</Label><Textarea rows={2} value={requirements} onChange={(e) => setRequirements(e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t("common.phone")}</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t("common.email")}</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t("lead.f.est_value")}</Label><Input type="number" value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t("lead.f.next_date")}</Label><Input type="datetime-local" value={nextActionAt} onChange={(e) => setNextActionAt(e.target.value)} /></div>
+          <div className="col-span-2 space-y-1"><Label className="text-xs">{t("lead.f.next_label")}</Label><Input value={nextActionLabel} onChange={(e) => setNextActionLabel(e.target.value)} /></div>
+          <div className="col-span-2 space-y-1"><Label className="text-xs">{t("common.summary")}</Label><Input value={summary} onChange={(e) => setSummary(e.target.value)} /></div>
+          <div className="col-span-2 space-y-1"><Label className="text-xs">{t("lead.requirements")}</Label><Textarea rows={2} value={requirements} onChange={(e) => setRequirements(e.target.value)} /></div>
           {l.status === "LOST" || l.stage?.type === "lost" ? (
             <>
-              <div className="space-y-1"><Label className="text-xs">Lost reason</Label><Input value={lostReason} onChange={(e) => setLostReason(e.target.value)} placeholder="Price / Timing / Competitor…" /></div>
-              <div className="space-y-1"><Label className="text-xs">Lost notes</Label><Input value={lostNotes} onChange={(e) => setLostNotes(e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-xs">{t("lead.f.lost_reason")}</Label><Input value={lostReason} onChange={(e) => setLostReason(e.target.value)} placeholder={t("lead.f.lost_reason_ph")} /></div>
+              <div className="space-y-1"><Label className="text-xs">{t("lead.f.lost_notes")}</Label><Input value={lostNotes} onChange={(e) => setLostNotes(e.target.value)} /></div>
             </>
           ) : null}
         </div>
@@ -587,7 +589,7 @@ function ActivityTab({ leadId }: { leadId: string }) {
   const r = rows.data?.rows ?? [];
   const submit = async () => {
     if (!title.trim()) return;
-    try { await log.mutateAsync({ type, title }); setTitle(""); toast.success("Activity logged"); } catch (e) { toast.error((e as Error).message); }
+    try { await log.mutateAsync({ type, title }); setTitle(""); toast.success(t("toast.activity_logged")); } catch (e) { toast.error((e as Error).message); }
   };
   return (
     <Card>
@@ -596,9 +598,9 @@ function ActivityTab({ leadId }: { leadId: string }) {
         <div className="flex flex-wrap items-center gap-2 mb-3 pb-3 border-b">
           <Select value={type} onValueChange={setType}>
             <SelectTrigger className="w-32 h-8"><SelectValue /></SelectTrigger>
-            <SelectContent>{[["CALL", "📞 Call"], ["MESSAGE", "💬 Message"], ["EMAIL", "✉️ Email"], ["MEETING", "📅 Meeting"], ["FOLLOW_UP", "🔔 Follow-up"], ["NOTE", "📝 Note"]].map(([v, label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
+            <SelectContent>{([["CALL", t("lead.act.call")], ["MESSAGE", t("lead.act.message")], ["EMAIL", t("lead.act.email")], ["MEETING", t("lead.act.meeting")], ["FOLLOW_UP", t("lead.act.followup")], ["NOTE", t("lead.act.note")]] as [string, string][]).map(([v, label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
           </Select>
-          <Input className="flex-1 min-w-[160px] h-8" placeholder="What happened?" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && title.trim()) submit(); }} />
+          <Input className="flex-1 min-w-[160px] h-8" placeholder={t("lead.what_happened")} value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && title.trim()) submit(); }} />
           <Button size="sm" className="h-8" onClick={submit} disabled={log.isPending || !title.trim()}>{t("common.create")}</Button>
         </div>
         <ActivityTimeline entries={r} />
@@ -633,15 +635,15 @@ function NotesTab({ leadId }: { leadId: string }) {
       <CardContent className="p-3 space-y-3">
         {/* markdown toolbar */}
         <div className="flex items-center gap-1 flex-wrap">
-          <button onClick={() => insertMd("**", "**")} className="h-7 w-7 rounded text-xs font-bold hover:bg-accent border" title="Bold">B</button>
-          <button onClick={() => insertMd("*", "*")} className="h-7 w-7 rounded text-xs italic hover:bg-accent border" title="Italic">I</button>
-          <button onClick={() => insertMd("`", "`")} className="h-7 w-7 rounded text-xs font-mono hover:bg-accent border" title="Code">{`<>`}</button>
-          <button onClick={() => insertMd("- ")} className="h-7 px-2 rounded text-xs hover:bg-accent border" title="Bullet list">• List</button>
-          <button onClick={() => insertMd("## ")} className="h-7 px-2 rounded text-xs hover:bg-accent border" title="Heading">H</button>
-          <button onClick={() => insertMd("[", "](url)")} className="h-7 px-2 rounded text-xs hover:bg-accent border" title="Link">🔗</button>
+          <button onClick={() => insertMd("**", "**")} className="h-7 w-7 rounded text-xs font-bold hover:bg-accent border" title={t("md.bold")}>B</button>
+          <button onClick={() => insertMd("*", "*")} className="h-7 w-7 rounded text-xs italic hover:bg-accent border" title={t("md.italic")}>I</button>
+          <button onClick={() => insertMd("`", "`")} className="h-7 w-7 rounded text-xs font-mono hover:bg-accent border" title={t("md.code")}>{`<>`}</button>
+          <button onClick={() => insertMd("- ")} className="h-7 px-2 rounded text-xs hover:bg-accent border" title={t("md.list")}>• {t("md.list_label")}</button>
+          <button onClick={() => insertMd("## ")} className="h-7 px-2 rounded text-xs hover:bg-accent border" title={t("md.heading")}>H</button>
+          <button onClick={() => insertMd("[", "](url)")} className="h-7 px-2 rounded text-xs hover:bg-accent border" title={t("md.link")}>🔗</button>
           <div className="ml-auto flex items-center gap-1">
-            <button onClick={() => setShowPreview(false)} className={cn("h-7 px-2 rounded text-xs", !showPreview ? "bg-primary text-primary-foreground" : "hover:bg-accent border")}>Write</button>
-            <button onClick={() => setShowPreview(true)} className={cn("h-7 px-2 rounded text-xs", showPreview ? "bg-primary text-primary-foreground" : "hover:bg-accent border")}>Preview</button>
+            <button onClick={() => setShowPreview(false)} className={cn("h-7 px-2 rounded text-xs", !showPreview ? "bg-primary text-primary-foreground" : "hover:bg-accent border")}>{t("md.write")}</button>
+            <button onClick={() => setShowPreview(true)} className={cn("h-7 px-2 rounded text-xs", showPreview ? "bg-primary text-primary-foreground" : "hover:bg-accent border")}>{t("md.preview")}</button>
           </div>
         </div>
         {showPreview ? (
@@ -649,15 +651,15 @@ function NotesTab({ leadId }: { leadId: string }) {
             <MarkdownPreview content={content} />
           </div>
         ) : (
-          <Textarea id="note-textarea" rows={3} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Add a note… (markdown supported)" className="font-mono text-sm" />
+          <Textarea id="note-textarea" rows={3} value={content} onChange={(e) => setContent(e.target.value)} placeholder={t("lead.note_ph")} className="font-mono text-sm" />
         )}
         <Button size="sm" onClick={submit} disabled={add.isPending || !content.trim()} className="self-end">{t("common.save")}</Button>
         <div className="space-y-2 max-h-72 overflow-y-auto">
-          {r.length === 0 && <p className="text-xs text-muted-foreground">No notes.</p>}
+          {r.length === 0 && <p className="text-xs text-muted-foreground">{t("lead.no_notes")}</p>}
           {r.map((n: any) => (
             <div key={n.id} className="rounded-lg border p-2.5">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium flex items-center gap-1.5"><LeadAvatar first={n.user?.name} size={18} />{n.user?.name ?? "System"}</span>
+                <span className="text-xs font-medium flex items-center gap-1.5"><LeadAvatar first={n.user?.name} size={18} />{n.user?.name ?? t("common.system")}</span>
                 <span className="text-[11px] text-muted-foreground">{formatDate(n.createdAt)}</span>
               </div>
               <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
@@ -691,8 +693,8 @@ function TasksTab({ leadId }: { leadId: string }) {
     <Card>
       <CardContent className="p-3 space-y-3">
         <div className="flex flex-wrap gap-2 items-end">
-          <div className="flex-1 min-w-[160px] space-y-1"><Label className="text-xs">Task</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="New task…" /></div>
-          <div className="space-y-1"><Label className="text-xs">Due</Label><Input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
+          <div className="flex-1 min-w-[160px] space-y-1"><Label className="text-xs">{t("task.title")}</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("task.new_ph")} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t("common.due")}</Label><Input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
           <Button size="sm" onClick={submit} disabled={create.isPending || !title.trim()}>{t("common.create")}</Button>
         </div>
         <div className="space-y-1.5 max-h-72 overflow-y-auto">
@@ -712,6 +714,7 @@ function TasksTab({ leadId }: { leadId: string }) {
 }
 
 function EventsTab({ leadId }: { leadId: string }) {
+  const t = useT();
   const rows = useLeadEvents(leadId);
   if (rows.isLoading) return <Skeleton className="h-40 w-full" />;
   const r = rows.data?.rows ?? [];
@@ -719,11 +722,11 @@ function EventsTab({ leadId }: { leadId: string }) {
     <Card>
       <CardContent className="p-3">
         <div className="space-y-1 max-h-72 overflow-y-auto">
-          {r.length === 0 && <p className="text-xs text-muted-foreground">No events.</p>}
+          {r.length === 0 && <p className="text-xs text-muted-foreground">{t("lead.no_events")}</p>}
           {r.map((e: any) => (
             <div key={e.id} className="flex items-center gap-2 rounded border px-2 py-1.5 text-xs">
               <span className="font-mono px-1.5 py-0.5 rounded bg-muted text-[10px]">{e.type}</span>
-              <span className="text-muted-foreground">{e.user?.name ?? "system"}</span>
+              <span className="text-muted-foreground">{e.user?.name ?? t("common.system").toLowerCase()}</span>
               <span className="ml-auto text-muted-foreground">{formatDate(e.createdAt)}</span>
             </div>
           ))}

@@ -1457,3 +1457,73 @@ html{scrollbar-width:thin;scrollbar-color:#33413a #0a0e0c}
   .footer-top{grid-template-columns:1fr 1fr!important;background:#fff!important}
   .footer-email button{border:1px solid #c8c8c8!important;background:#fff!important;color:#161a15!important}
 }
+
+/* ================================================================== */
+/* ROUND 10 — working practice section, VLM style pass (custom,        */
+/* scenarios, why, models, industries), checkbox + footnote contrast. */
+/* ================================================================== */
+
+/* --- 11 Working Practice — practical facts before the contact form. --- */
+.practice-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:28px}
+.practice-card{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:12px;border:1px solid #34463a;background:linear-gradient(150deg,#101815,#0b100e);padding:22px 22px 20px;transition:border-color .2s,transform .2s,box-shadow .2s;box-shadow:inset 0 1px 0 #ffffff07}
+.practice-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#3d5236 18%,#3d5236 82%,transparent);transition:background .3s}
+.practice-card:hover{border-color:#5d7a62;transform:translateY(-2px);box-shadow:0 16px 40px #00000052,0 0 26px #c5f5630f}
+.practice-card:hover::before{background:linear-gradient(90deg,transparent,var(--primary) 30%,var(--primary) 70%,transparent)}
+.practice-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.practice-icon{display:grid;place-items:center;width:42px;height:42px;border:1px solid #4a5f3c;border-radius:9px;color:var(--primary);background:#c5f5630a;transition:box-shadow .2s,border-color .2s}
+.practice-card:hover .practice-icon{border-color:var(--primary);box-shadow:0 0 18px #c5f56326}
+.practice-code{font:11px ui-monospace,monospace;letter-spacing:1.4px;color:#8ba27e}
+.practice-card h3{font-size:17px;font-weight:500;letter-spacing:-.2px;margin:2px 0 0;color:#e2eae2}
+.practice-card p{font-size:13px;line-height:1.68;color:#a9b6ad;margin:0}
+.practice-note{margin:22px 0 0;padding-top:18px;border-top:1px solid #2c3a2e;font:11.5px ui-monospace,monospace;letter-spacing:.4px;color:#93a683;line-height:1.9}
+@media (max-width:1100px){.practice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:767px){.practice-grid{grid-template-columns:1fr}.practice-card{padding:18px 18px 16px}.practice-note{font-size:11px;letter-spacing:.2px}}
+
+/* --- R10 style pass: 02 Custom Software — pipeline step affordances. --- */
+.pipeline-rail button{border-radius:6px;transition:background .2s,box-shadow .2s}
+.pipeline-rail button:hover{background:#c5f56307;box-shadow:inset 0 0 0 1px #4a5f3c88}
+.pipeline-rail button:hover .pipeline-code{color:#d5e8cd}
+.pipeline-rail button[aria-pressed=true]{background:#c5f5630d;box-shadow:inset 0 0 0 1px #58704966}
+.stack-chips li:hover{border-color:#6d8a54;color:#d8e9c9;transform:translateY(-1px)}
+
+/* --- R10 style pass: 04 Scenarios — foot labels brighter + card hover cue. --- */
+.scenario-state-tag{color:#a9b89a}
+.scenario-state-tag[data-state=after]{color:var(--primary)}
+.scenario-flip-hint{color:#71836f}
+.scenario-card:hover .scenario-flip-hint{color:#93a683}
+.scenario-card .scenario-flip{cursor:pointer}
+.scenario-card-foot{border-top-color:#2c3a2e}
+
+/* --- R10 style pass: 06 Why — soft inner depth on hover. --- */
+.why-card{box-shadow:inset 0 1px 0 #ffffff07}
+.why-card:hover{box-shadow:inset 0 1px 0 #ffffff0d,0 16px 40px #0000004d,0 0 24px #c5f5630d}
+
+/* --- R10 style pass: 07 Models — checklist row hover + CTA press. --- */
+.model-fits li{border-radius:6px;padding:7px 9px;margin:-7px -9px;transition:background .18s,color .18s}
+.model-fits li:hover{background:#c5f56307;color:#dce5d4}
+.model-cta:active{transform:translateY(1px)}
+
+/* --- R10 style pass: 08 Industries — panel separation + item hover. --- */
+.industry-system{border-color:#47604e;box-shadow:inset 0 1px 0 #ffffff08,0 20px 55px #00000038}
+.industry-pipeline li{transition:background .18s,border-bottom-color .18s;border-radius:4px}
+.industry-pipeline li:hover{background:#c5f56305}
+.industry-pipeline li:hover .pipeline-index{color:#c9e3a0}
+
+/* --- R10 style pass: consent checkbox visibility. --- */
+.consent-row [data-slot=checkbox]{border-color:#97ac7c}
+.consent-row [data-slot=checkbox]:hover{border-color:var(--primary)}
+.consent-row [data-slot=checkbox][data-state=checked]{border-color:var(--primary)}
+
+/* --- R10: hero-meta z-index guard (keep below palette overlay). --- */
+.hero-meta{position:relative;z-index:1}
+
+/* --- R10 follow-up: practice cards static depth + industries active pill pop. --- */
+.practice-card{border-color:#3d524a;gap:14px}
+.practice-card h3{margin-top:4px}
+.practice-card p{color:#bcc8bd}
+.practice-icon{background:#c5f56312;box-shadow:0 0 22px #c5f56310}
+.practice-code{color:#9db383}
+.industry-desktop button[aria-pressed=true]{box-shadow:0 6px 20px #c5f5633d,inset 0 1px 0 #ffffff2e;transform:translateY(-1px)}
+.industry-desktop button{transition:color .2s,border-color .2s,box-shadow .2s,transform .2s}
+.industry-system>a{text-underline-offset:6px;text-decoration:underline;text-decoration-color:#c5f56355;transition:text-decoration-color .2s}
+.industry-system>a:hover{text-decoration-color:var(--primary)}

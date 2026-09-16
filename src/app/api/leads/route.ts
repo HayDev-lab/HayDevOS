@@ -108,6 +108,24 @@ export async function POST(request: Request) {
         consentVersion: "inquiry-only-preview-v1",
       },
     });
+
+    // Optional notifications: when LEADS_WEBHOOK_URL is configured (e.g. a
+    // Zapier / Make / n8n / Slack-incoming-webhook endpoint), forward the lead
+    // fire-and-forget. Failures never affect the visitor — the row is already
+    // stored and the UI shows success.
+    const webhook = process.env.LEADS_WEBHOOK_URL;
+    if (webhook) {
+      try {
+        await fetch(webhook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source: "haydev-site", requestId, name, email, message, locale: requestedLocale ?? "ru" }),
+          signal: AbortSignal.timeout(5000),
+        });
+      } catch {
+        // Notification is best-effort; never block or reveal the lead result.
+      }
+    }
     return json({ accepted: true }, 201);
   } catch (error) {
     // A duplicate insert from a retried request is a success, not an error.

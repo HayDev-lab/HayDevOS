@@ -1,7 +1,7 @@
 "use client";
 import { useLanguage } from "@/components/language-provider";
 import { useAppView } from "@/components/app-view";
-import { lazy, Suspense, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Check, Copy, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -17,6 +17,7 @@ import { IndustrySystems } from "@/components/sections/industry-systems";
 
 import { BusinessAudit } from "@/components/sections/business-audit";
 import { FaqSection } from "@/components/sections/faq";
+import { WorkingPractice } from "@/components/sections/working-practice";
 
 import { ContactForm } from "@/components/sections/contact-form";
 import { BackToTop, MobileCta, ScrollProgress, SectionDots, useReveal, useScrollSpy } from "@/components/site-chrome";
@@ -93,6 +94,24 @@ export default function HayDev() {
   const [industry, setIndustry] = useState("Не указана");
   const [auditSummary, setAuditSummary] = useState("");
   const [auditAttached, setAuditAttached] = useState(false);
+
+  // The contact message is a draft: it survives a page reload (localStorage)
+  // and is cleared after the lead is successfully submitted. The persist
+  // effect waits for hydration — otherwise it would overwrite the saved
+  // draft with the empty initial value on every mount.
+  const [draftHydrated, setDraftHydrated] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const saved = window.localStorage.getItem("haydev.contact-draft.v1");
+      if (saved) setAuditSummary(saved);
+      setDraftHydrated(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  useEffect(() => {
+    if (!draftHydrated) return;
+    window.localStorage.setItem("haydev.contact-draft.v1", auditSummary);
+  }, [auditSummary, draftHydrated]);
   const [detailsOpened, setDetailsOpened] = useState(false);
   const [privacy, setPrivacy] = useState(false);
   useReveal();
@@ -225,11 +244,12 @@ export default function HayDev() {
       <IndustrySystems onSelect={setIndustry} />
       <BusinessAudit industry={industry} onApply={(value) => { setAuditSummary(value); setAuditAttached(true); }} />
       <FaqSection />
+      <WorkingPractice />
 
       <section className="contact-section" id="contact" aria-labelledby="contact-heading">
         <div className="container contact-grid">
           <div className="contact-copy">
-            <SectionLabel number="11">{t("РАССКАЖИТЕ О ЗАДАЧЕ")}</SectionLabel>
+            <SectionLabel number="12">{t("РАССКАЖИТЕ О ЗАДАЧЕ")}</SectionLabel>
             <h2 id="contact-heading">{t("Что вы хотите")}<br /><span className="lime-text">{t("создать?")}</span></h2>
             <p>{t("CRM, портал, платформа или AI-система — расскажите задачу.")}<br />{t("HayDev спроектирует решение и покажет, как его реализовать.")}</p>
             <div className="contact-next-steps" aria-label={t("Что дальше")}>

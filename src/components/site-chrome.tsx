@@ -27,6 +27,7 @@ export const pageSections = [
   { id: "industries", label: "Отрасли" },
   { id: "audit", label: "Business Audit" },
   { id: "faq", label: "FAQ" },
+  { id: "practice", label: "Как с нами работается" },
   { id: "contact", label: "Контакт" },
 ];
 

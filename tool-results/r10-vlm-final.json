@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "**Image 1 — Working Practice (4 fact cards)**\n**Verdict: NEEDS-WORK**\n\n1. **Flat placeholder-look / weak affordances:** The 4 cards are visually inert—thin 1px borders, no hover states, and the icon containers lack depth (no subtle glow or background fill), making them look like static wireframes rather than polished UI components.\n2. **Alignment/spacing inconsistency:** The mono code labels (`TZ`, `LANG`, `CHANNELS`, `START`) are top-right aligned but have inconsistent optical spacing from the card edge; the vertical rhythm between icon, label, title, and body text feels compressed and uneven across cards.\n3. **Low contrast in body copy:** The descriptive text under each title uses a grey that’s too dark against the `#0a0f0d` background (~`#888`), failing WCAG AA for body text and reducing readability.\n\n---\n\n**Image 2 — Custom Software pipeline**\n**Verdict: PASS**\n\n*(No critical issues found; design is clean, hierarchy is clear, and the active step “01 IDEA” has strong visual weight with the lime accent.)*\n\n1. **Minor: Inactive step contrast:** Steps 02–07 use a very subtle grey that may be hard to distinguish from the background on non-calibrated displays; consider slightly lightening inactive labels.\n2. **Minor: Tech stack grid density:** The pill tags at the bottom are tightly packed; adding 4–8px more horizontal gutter between columns would improve scannability.\n3. **Minor: CTA button affordance:** The “Обсудить идею” button could benefit from a subtle box-shadow or inner highlight to reinforce its clickability against the dark card.\n\n---\n\n**Image 3 — What Changes before/after cards**\n**Verdict: PASS**\n\n*(Strong layout; toggle switches clearly communicate state; pain-point lists are well structured.)*\n\n1. **Toggle switch visual weight:** The green “on” state is clear, but the “off” track is almost invisible against the card background; add a faint border or slightly lighter fill to the off-state track.\n2. **List item spacing:** The three bullet points inside each card (with × icons) have tight line-height; increasing to ~1.6 would improve readability of the Russian text.\n3. **Card footer alignment:** The “MANUAL” label and “нажмите, чтобы переключить” hint are bottom-aligned but feel disconnected from the content above; a subtle separator or more padding would ground them.\n\n---\n\n**Image 4 — Industries with pills + system panel**\n**Verdict: NEEDS-WORK**\n\n1. **Active pill lacks depth:** The selected “Торговля” pill is flat lime (`#c5f563`) with no shadow, elevation, or inner highlight, making it blend into the background rather than pop as the active control.\n2. **System panel internal spacing:** The architecture list (01–08) has generous vertical space between rows, but the horizontal padding inside the panel is tight on the left; the numbers feel cramped against the card edge.\n3. **Weak link affordance:** The “Обсудить систему для отрасли →” link at the bottom relies solely on color (lime) without an underline or arrow animation hint; it risks being missed as interactive text.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1789519243,
+  "id": "20260916084008d271fdf7af1847b7",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20260916084008d271fdf7af1847b7",
+  "usage": {
+    "completion_tokens": 690,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 6787,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 7477
+  }
+}

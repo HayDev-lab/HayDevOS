@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "**Image 1 — Custom Software (Pipeline + Tech Stack)**  \n**Verdict: NEEDS-WORK**\n\n1. **Flat, low‑contrast content area.** The “IDEA” detail block and the Tech Stack container sit on a near‑black background with only a thin border; there is no subtle gradient, inner glow, or elevation to separate them from the page body, so the section looks like a flat placeholder.\n2. **Weak hover affordances on interactive elements.** The pipeline step tabs and the tech‑stack chips show no visible hover state (no brightness shift, border highlight, or scale), making it unclear they are clickable/toggleable.\n3. **Alignment/spacing inconsistency in the rail.** The active “01 IDEA” tab has a different left padding and underline weight than inactive steps; the vertical tick marks under each step are not perfectly aligned to a shared baseline, giving the timeline a slightly ragged appearance.\n\n---\n\n**Image 2 — What Changes (Before/After Flip Cards)**  \n**Verdict: NEEDS-WORK**\n\n1. **Low contrast on secondary text.** The “MANUAL” label at the bottom of each card and the small instructional copy in the right column are too dim against the dark card background, reducing readability and making the UI feel unfinished.\n2. **Weak flip/hover affordance.** The toggle switch (“ДО”) and the card itself lack a clear hover cue (e.g., slight lift, border glow, or cursor change), so users may not realize the card is interactive or that the switch triggers a state change.\n3. **Placeholder‑look layout.** The four cards are evenly spaced with identical internal structure but no visual differentiation between “before” and “after” states beyond text; the absence of icons, progress indicators, or micro‑illustrations makes the grid look like a wireframe rather than a polished component.\n\n---\n\n**Image 3 — Why HayDev (Principles Cards)**  \n**Verdict: PASS**  \n*(Minor notes, no blocking issues)*\n\n1. **Slightly flat card surfaces.** The cards use a uniform dark fill with only a 1px border; a very subtle inner shadow or gradient would add depth without breaking the minimal aesthetic.\n2. **Hover feedback could be stronger.** On mouseover the cards do not exhibit any border‑color shift or background lightening, which would improve perceived interactivity.\n3. **Bottom note line alignment.** The horizontal rule above the footer text (“Принципы проверяются…”) is not perfectly centered relative to the card grid’s outer margins, creating a minor visual imbalance.\n\n---\n\n**Image 4 — Engagement Models (Cards with Checklists)**  \n**Verdict: PASS**  \n*(Overall solid; only polish items)*\n\n1. **Checklist items lack hover emphasis.** Each benefit row does not change background or text color on hover, missing an opportunity to guide the eye and reinforce clickability of the CTA below.\n2. **CTA buttons have weak press state.** The outlined buttons (“Обсудить задачу”, etc.) show only a minimal fill change; adding a more pronounced background tint or scale on hover/active would strengthen affordance.\n3. **Vertical rhythm in lists.** Spacing between checklist rows is slightly tight compared to the padding above the button, making the lower part of each card feel denser than the header area.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1789518627,
+  "id": "20260916083009b2e4a238899f416a",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20260916083009b2e4a238899f416a",
+  "usage": {
+    "completion_tokens": 700,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 6775,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 7475
+  }
+}

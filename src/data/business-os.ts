@@ -158,6 +158,34 @@ export const buildCategories = [
   },
 ];
 
+/** Working practice — practical, operational facts about collaborating with HayDev. */
+export const workingPractice = [
+  {
+    code: "TZ",
+    icon: "clock",
+    title: "GMT+4, Ереван",
+    text: "Часовой пояс Армении. Работаем с Европой и Ближним Востоком в общие часы — без «ответим завтра».",
+  },
+  {
+    code: "LANG",
+    icon: "languages",
+    title: "Русский · Հայերեն · English",
+    text: "Общаемся и документируем на языке вашей команды. Сайт и интерфейсы продукта — на любом из трёх.",
+  },
+  {
+    code: "CHANNELS",
+    icon: "messages",
+    title: "Telegram · WhatsApp · Email",
+    text: "Один канал для рабочих вопросов. Отвечаем в течение рабочего дня — обычно быстрее.",
+  },
+  {
+    code: "START",
+    icon: "flag",
+    title: "Старт без ТЗ",
+    text: "Не нужен готовый документ: начнём с разговора о задаче. Оценка — после обсуждения, бесплатно и без обязательств.",
+  },
+];
+
 /** Why HayDev — engineering principles shown in the main flow (not hidden in showcase). */
 export const whyPrinciples = [
   {

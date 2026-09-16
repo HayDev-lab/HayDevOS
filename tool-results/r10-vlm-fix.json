@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "**Image 1 (Working Practice): PASS**\n*   **Finding 1:** Icon tiles now feature a subtle lime glow, and the body text is noticeably brighter and more legible against the dark background.\n\n**Image 2 (Industries): PASS**\n*   **Finding 1:** The active \"Торговля\" pill displays clear elevation with a shadow effect and appears lifted above the other inactive pills.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1789519283,
+  "id": "2026091608411898c81eadb9234d96",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "2026091608411898c81eadb9234d96",
+  "usage": {
+    "completion_tokens": 86,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 3409,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 3495
+  }
+}

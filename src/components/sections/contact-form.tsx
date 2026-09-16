@@ -50,6 +50,8 @@ export function ContactForm({ onPrivacy, message, onMessageChange, auditAttached
         throw new Error(message);
       }
       setStatus("success"); requestAnimationFrame(() => resultRef.current?.focus());
+      // The draft lived only until submission — clear the stored message.
+      onMessageChange("");
     } catch (cause) {
       setStatus("error");
       setError(cause instanceof Error && cause.name !== "TimeoutError" && cause.name !== "TypeError" ? cause.message : t("Связь прервалась. Данные остались в форме — попробуйте отправить ещё раз."));

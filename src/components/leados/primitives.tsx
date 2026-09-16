@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PRIORITY, SCORE_CATEGORY, type ScoreCategory } from "@/lib/leados/constants";
-import { useT } from "@/lib/leados/locale";
+import { useT, getTimeLocale } from "@/lib/leados/locale";
 import { initials } from "@/lib/leados/normalize";
 
 // ---------- time ----------
@@ -16,13 +16,14 @@ export function timeAgo(d?: Date | string | null): string {
   const future = diff < 0;
   const min = 60_000, hr = 3_600_000, day = 86_400_000;
   let s: string;
-  if (abs < min) s = "now";
-  else if (abs < hr) s = `${Math.round(abs / min)}m`;
-  else if (abs < day) s = `${Math.round(abs / hr)}h`;
-  else if (abs < 30 * day) s = `${Math.round(abs / day)}d`;
-  else s = new Date(t).toLocaleDateString();
-  if (s === "now") return s;
-  return future ? `in ${s}` : `${s} ago`;
+  const loc = getTimeLocale();
+  if (abs < min) return loc === "ru" ? "сейчас" : loc === "hy" ? "հիմա" : "now";
+  else if (abs < hr) s = `${Math.round(abs / min)}${loc === "ru" ? "м" : loc === "hy" ? "ր" : "m"}`;
+  else if (abs < day) s = `${Math.round(abs / hr)}${loc === "ru" ? "ч" : loc === "hy" ? "ժ" : "h"}`;
+  else if (abs < 30 * day) s = `${Math.round(abs / day)}${loc === "ru" ? "д" : loc === "hy" ? "օ" : "d"}`;
+  else return new Date(t).toLocaleDateString();
+  if (future) return loc === "ru" ? `через ${s}` : loc === "hy" ? `${s} հետո` : `in ${s}`;
+  return loc === "ru" ? `${s} назад` : loc === "hy" ? `${s} առաջ` : `${s} ago`;
 }
 
 export function formatDate(d?: Date | string | null): string {

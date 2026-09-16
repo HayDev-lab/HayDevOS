@@ -14,6 +14,7 @@ import { toast } from "sonner";
 const DEFAULT_THRESHOLDS = { target: 1, warning: 4, breach: 24 };
 
 export function SlaConfigTab() {
+  const { t } = useLocale();
   const settings = useSettings();
   const [thresholds, setThresholds] = useState(DEFAULT_THRESHOLDS);
   const [saving, setSaving] = useState(false);
@@ -46,13 +47,13 @@ export function SlaConfigTab() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ key: "sla_thresholds", value: thresholds }),
         });
-        toast.success("SLA thresholds saved");
+        toast.success(t("toast.sla_saved"));
         settings.refetch();
       } else {
-        toast.error("Save failed");
+        toast.error(t("toast.save_failed"));
       }
     } catch {
-      toast.error("Save failed");
+      toast.error(t("toast.save_failed"));
     } finally {
       setSaving(false);
     }
@@ -63,15 +64,15 @@ export function SlaConfigTab() {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2"><Clock className="h-4 w-4" />SLA Response Time Thresholds</CardTitle>
-        <CardDescription className="text-xs">Configure when response time badges change color. Thresholds are in hours.</CardDescription>
+        <CardTitle className="text-sm flex items-center gap-2"><Clock className="h-4 w-4" />{t("sla.title")}</CardTitle>
+        <CardDescription className="text-xs">{t("sla.desc")}</CardDescription>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1">
             <Label className="text-xs flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Target (green)
+              {t("sla.target")}
             </Label>
             <Input
               type="number"
@@ -81,12 +82,12 @@ export function SlaConfigTab() {
               onChange={(e) => setThresholds((t) => ({ ...t, target: Number(e.target.value) || 0 }))}
               className="h-8"
             />
-            <p className="text-[10px] text-muted-foreground">Respond within this time</p>
+            <p className="text-[10px] text-muted-foreground">{t("sla.target_hint")}</p>
           </div>
           <div className="space-y-1">
             <Label className="text-xs flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-amber-500" />
-              Warning (amber)
+              {t("sla.warning")}
             </Label>
             <Input
               type="number"
@@ -96,12 +97,12 @@ export function SlaConfigTab() {
               onChange={(e) => setThresholds((t) => ({ ...t, warning: Number(e.target.value) || 0 }))}
               className="h-8"
             />
-            <p className="text-[10px] text-muted-foreground">Slipping — needs attention</p>
+            <p className="text-[10px] text-muted-foreground">{t("sla.warning_hint")}</p>
           </div>
           <div className="space-y-1">
             <Label className="text-xs flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-red-500" />
-              Breach (red)
+              {t("sla.breach")}
             </Label>
             <Input
               type="number"
@@ -111,12 +112,12 @@ export function SlaConfigTab() {
               onChange={(e) => setThresholds((t) => ({ ...t, breach: Number(e.target.value) || 0 }))}
               className="h-8"
             />
-            <p className="text-[10px] text-muted-foreground">Critical — likely lost</p>
+            <p className="text-[10px] text-muted-foreground">{t("sla.breach_hint")}</p>
           </div>
         </div>
         {/* preview */}
         <div className="rounded-lg border bg-muted/30 p-3">
-          <p className="text-xs text-muted-foreground mb-2">Preview:</p>
+          <p className="text-xs text-muted-foreground mb-2">{t("sla.preview")}</p>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">✓ &lt; {thresholds.target}h</span>
             <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">{thresholds.target}–{thresholds.warning}h</span>
@@ -126,7 +127,7 @@ export function SlaConfigTab() {
         </div>
         <Button size="sm" onClick={save} disabled={saving}>
           <Save className="h-3.5 w-3.5 mr-1.5" />
-          {saving ? "Saving…" : "Save thresholds"}
+          {saving ? t("sla.saving") : t("sla.save")}
         </Button>
       </CardContent>
     </Card>

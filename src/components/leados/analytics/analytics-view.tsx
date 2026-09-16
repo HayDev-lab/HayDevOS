@@ -72,8 +72,8 @@ export function AnalyticsView() {
       {/* leads over 7 days */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" />Leads · last 7 days</CardTitle>
-          <CardDescription className="text-xs">Daily incoming volume</CardDescription>
+          <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" />{t("analytics.leads_7d")}</CardTitle>
+          <CardDescription className="text-xs">{t("analytics.daily_volume")}</CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="h-56 w-full">
@@ -93,7 +93,7 @@ export function AnalyticsView() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* funnel */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Pipeline funnel</CardTitle><CardDescription className="text-xs">Lead count & estimated value per stage</CardDescription></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">{t("analytics.funnel")}</CardTitle><CardDescription className="text-xs">{t("analytics.funnel_desc")}</CardDescription></CardHeader>
           <CardContent className="pt-0">
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -101,7 +101,7 @@ export function AnalyticsView() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} allowDecimals={false} />
                   <YAxis dataKey="stage" type="category" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={80} />
-                  <Tooltip contentStyle={{ background: "var(--background)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} formatter={(v: number) => [v, "leads"]} />
+                  <Tooltip contentStyle={{ background: "var(--background)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} formatter={(v: number) => [v, t("analytics.leads_short")]} />
                   <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                     {data.funnel.map((s: any, i: number) => <Cell key={i} fill={s.color ?? "#94a3b8"} />)}
                   </Bar>
@@ -121,7 +121,7 @@ export function AnalyticsView() {
 
         {/* wins by source */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Trophy className="h-4 w-4" />{t("analytics.wins_by_source")}</CardTitle><CardDescription className="text-xs">Count & value of WON leads per source</CardDescription></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Trophy className="h-4 w-4" />{t("analytics.wins_by_source")}</CardTitle><CardDescription className="text-xs">{t("analytics.wins_desc")}</CardDescription></CardHeader>
           <CardContent className="pt-0">
             {data.winsBySource.length === 0 ? (
               <EmptyState icon={Trophy} title={t("analytics.no_data")} />
@@ -151,10 +151,10 @@ export function AnalyticsView() {
 
       {/* lost reasons */}
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><AlertCircle className="h-4 w-4 text-rose-500" />{t("analytics.lost_reasons")}</CardTitle><CardDescription className="text-xs">Why leads are being lost — for funnel improvement</CardDescription></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><AlertCircle className="h-4 w-4 text-rose-500" />{t("analytics.lost_reasons")}</CardTitle><CardDescription className="text-xs">{t("analytics.lost_desc")}</CardDescription></CardHeader>
         <CardContent className="pt-0">
           {data.lostReasons.length === 0 ? (
-            <EmptyState icon={AlertCircle} title={t("analytics.no_data")} hint="No lost leads recorded yet." />
+            <EmptyState icon={AlertCircle} title={t("analytics.no_data")} hint={t("analytics.no_lost_hint")} />
           ) : (
             <div className="space-y-2">
               {data.lostReasons.map((r: any) => {
@@ -181,8 +181,8 @@ export function AnalyticsView() {
         {data.trend30 && (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Activity className="h-4 w-4" />30-day activity trend</CardTitle>
-              <CardDescription className="text-xs">New leads (blue) vs won (green) per day</CardDescription>
+              <CardTitle className="text-sm flex items-center gap-2"><Activity className="h-4 w-4" />{t("analytics.trend30")}</CardTitle>
+              <CardDescription className="text-xs">{t("analytics.trend30_desc")}</CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-10 gap-1">
@@ -193,7 +193,7 @@ export function AnalyticsView() {
                   return (
                     <div
                       key={d.date}
-                      title={`${d.date}: ${d.count} new, ${d.won} won`}
+                      title={t("analytics.trend30_tip", { date: d.date, n: d.count, w: d.won })}
                       className="aspect-square rounded relative group"
                       style={{ backgroundColor: `color-mix(in oklch, var(--primary) ${Math.round(intensity * 80)}%, transparent)` }}
                     >
@@ -208,15 +208,15 @@ export function AnalyticsView() {
                 })}
               </div>
               <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
-                <span>30 days ago</span>
+                <span>{t("analytics.days_ago30")}</span>
                 <div className="flex items-center gap-1">
-                  <span>less</span>
+                  <span>{t("analytics.less")}</span>
                   <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: "color-mix(in oklch, var(--primary) 20%, transparent)" }} />
                   <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: "color-mix(in oklch, var(--primary) 50%, transparent)" }} />
                   <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: "color-mix(in oklch, var(--primary) 80%, transparent)" }} />
-                  <span>more</span>
+                  <span>{t("analytics.more")}</span>
                 </div>
-                <span>today</span>
+                <span>{t("analytics.today")}</span>
               </div>
             </CardContent>
           </Card>
@@ -225,18 +225,18 @@ export function AnalyticsView() {
         {data.respBuckets && (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Clock className="h-4 w-4" />Response time distribution</CardTitle>
-              <CardDescription className="text-xs">Time from lead creation to first contact</CardDescription>
+              <CardTitle className="text-sm flex items-center gap-2"><Clock className="h-4 w-4" />{t("analytics.resp_dist")}</CardTitle>
+              <CardDescription className="text-xs">{t("analytics.resp_dist_desc")}</CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-2">
                 {[
-                  { key: "0-1h", label: "Under 1 hour", color: "#16a34a" },
-                  { key: "1-4h", label: "1–4 hours", color: "#0ea5e9" },
-                  { key: "4-24h", label: "4–24 hours", color: "#f59e0b" },
-                  { key: "1-3d", label: "1–3 days", color: "#f97316" },
-                  { key: "3d+", label: "Over 3 days", color: "#dc2626" },
-                  { key: "none", label: "No contact yet", color: "#94a3b8" },
+                  { key: "0-1h", label: t("analytics.resp.u1h"), color: "#16a34a" },
+                  { key: "1-4h", label: t("analytics.resp.h1_4"), color: "#0ea5e9" },
+                  { key: "4-24h", label: t("analytics.resp.h4_24"), color: "#f59e0b" },
+                  { key: "1-3d", label: t("analytics.resp.d1_3"), color: "#f97316" },
+                  { key: "3d+", label: t("analytics.resp.d3p"), color: "#dc2626" },
+                  { key: "none", label: t("analytics.resp.none"), color: "#94a3b8" },
                 ].map((b) => {
                   const val = data.respBuckets[b.key] ?? 0;
                   const total = Object.values(data.respBuckets).reduce((a: number, x: any) => a + (x as number), 0);
@@ -266,20 +266,20 @@ export function AnalyticsView() {
       {data.sourceRoi && data.sourceRoi.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" />Source ROI</CardTitle>
-            <CardDescription className="text-xs">Which sources bring leads, wins & revenue — for ad spend decisions</CardDescription>
+            <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" />{t("analytics.source_roi")}</CardTitle>
+            <CardDescription className="text-xs">{t("analytics.source_roi_desc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b text-xs text-muted-foreground">
                   <tr>
-                    <th className="text-left font-medium px-2 py-2">Source</th>
-                    <th className="text-right font-medium px-2 py-2">Leads</th>
-                    <th className="text-right font-medium px-2 py-2">Won</th>
-                    <th className="text-right font-medium px-2 py-2">Lost</th>
-                    <th className="text-right font-medium px-2 py-2">Conv.</th>
-                    <th className="text-right font-medium px-2 py-2">Won value</th>
+                    <th className="text-left font-medium px-2 py-2">{t("common.source")}</th>
+                    <th className="text-right font-medium px-2 py-2">{t("leads.title")}</th>
+                    <th className="text-right font-medium px-2 py-2">{t("metric.won")}</th>
+                    <th className="text-right font-medium px-2 py-2">{t("metric.lost")}</th>
+                    <th className="text-right font-medium px-2 py-2">{t("analytics.conv_short")}</th>
+                    <th className="text-right font-medium px-2 py-2">{t("analytics.won_value")}</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -6,6 +6,15 @@ import { DEFAULT_LOCALE, type Locale } from "@/lib/leados/constants";
 
 const LOCALE_COOKIE = "leados_locale";
 
+// Module-level locale mirror — lets non-hook utilities (timeAgo) format per active locale.
+let activeTimeLocale: Locale = DEFAULT_LOCALE;
+export function setTimeLocale(l: Locale) {
+  activeTimeLocale = l;
+}
+export function getTimeLocale(): Locale {
+  return activeTimeLocale;
+}
+
 interface LocaleCtx {
   locale: Locale;
   setLocale: (l: Locale) => void;
@@ -16,6 +25,7 @@ const Ctx = createContext<LocaleCtx | null>(null);
 
 export function LocaleProvider({ initialLocale, children }: { initialLocale?: Locale; children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale ?? DEFAULT_LOCALE);
+  setTimeLocale(locale);
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);

@@ -1,0 +1,690 @@
+     1→"use client";
+     2→
+     3→import { useState } from "react";
+     4→import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+     5→import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+     6→import { CSS } from "@dnd-kit/utilities";
+     7→import { useSettings, useTags, useSources, useUsers, usePipeline, useIngestAudit, useCustomFields, useCreateCustomField, useDeleteCustomField, useCreateStage, useUpdateStage, useDeleteStage, useAssignmentRules, useCreateAssignmentRule, useUpdateAssignmentRule, useDeleteAssignmentRule, useWebhookEvents, useWebhookEndpoints, useCreateWebhookEndpoint, useDeleteWebhookEndpoint, useTestWebhookEndpoint } from "@/hooks/leados/use-api";
+     8→import { useLocale } from "@/lib/leados/locale";
+     9→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+    10→import { Button } from "@/components/ui/button";
+    11→import { Input, Input as TextInput } from "@/components/ui/input";
+    12→import { Textarea } from "@/components/ui/textarea";
+    13→import { Label } from "@/components/ui/label";
+    14→import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    15→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+    16→import { Skeleton } from "@/components/ui/skeleton";
+    17→import { Badge } from "@/components/ui/badge";
+    18→import { Brain, Check, Plus, RefreshCw, Save, Sparkles, Webhook, Trash2, Settings2, GripVertical, Loader2 } from "lucide-react";
+    19→import { cn } from "@/lib/utils";
+    20→import { toast } from "sonner";
+    21→import { LeadAvatar, formatDate, timeAgo } from "./primitives";
+    22→import { SlaConfigTab } from "./sla-config-tab";
+    23→
+    24→export function SettingsView() {
+    25→  const { t } = useLocale();
+    26→  const settings = useSettings();
+    27→  const [tab, setTab] = useState("org");
+    28→
+    29→  if (settings.isLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
+    30→
+    31→  return (
+    32→    <div className="px-4 md:px-6 py-5 space-y-4">
+    33→      <div>
+    34→        <h1 className="text-2xl font-bold tracking-tight">{t("settings.title")}</h1>
+    35→        <p className="text-sm text-muted-foreground">{settings.data?.org?.name} · {settings.data?.org?.slug}</p>
+    36→      </div>
+    37→
+    38→      <Tabs value={tab} onValueChange={setTab}>
+    39→        <TabsList className="flex-wrap h-auto">
+    40→          <TabsTrigger value="org">{t("settings.organization")}</TabsTrigger>
+    41→          <TabsTrigger value="users">{t("settings.users")}</TabsTrigger>
+    42→          <TabsTrigger value="pipeline">{t("settings.pipeline")}</TabsTrigger>
+    43→          <TabsTrigger value="sources">{t("settings.sources")}</TabsTrigger>
+    44→          <TabsTrigger value="tags">{t("settings.tags")}</TabsTrigger>
+    45→          <TabsTrigger value="custom">{t("settings.custom_fields")}</TabsTrigger>
+    46→          <TabsTrigger value="scoring">{t("settings.scoring")}</TabsTrigger>
+    47→          <TabsTrigger value="sla">SLA</TabsTrigger>
+    48→          <TabsTrigger value="rules">Assignment Rules</TabsTrigger>
+    49→          <TabsTrigger value="audit">Audit Ingest</TabsTrigger>
+    50→          <TabsTrigger value="erp">ERP / Events</TabsTrigger>
+    51→        </TabsList>
+    52→        <TabsContent value="org" className="mt-4"><OrgTab /></TabsContent>
+    53→        <TabsContent value="users" className="mt-4"><UsersTab /></TabsContent>
+    54→        <TabsContent value="pipeline" className="mt-4"><PipelineTab /></TabsContent>
+    55→        <TabsContent value="sources" className="mt-4"><SourcesTab /></TabsContent>
+    56→        <TabsContent value="tags" className="mt-4"><TagsTab /></TabsContent>
+    57→        <TabsContent value="custom" className="mt-4"><CustomFieldsTab /></TabsContent>
+    58→        <TabsContent value="scoring" className="mt-4"><ScoringTab /></TabsContent>
+    59→        <TabsContent value="sla" className="mt-4"><SlaConfigTab /></TabsContent>
+    60→        <TabsContent value="rules" className="mt-4"><AssignmentRulesTab /></TabsContent>
+    61→        <TabsContent value="audit" className="mt-4"><AuditIngestTab /></TabsContent>
+    62→        <TabsContent value="erp" className="mt-4"><ErpTab /></TabsContent>
+    63→      </Tabs>
+    64→    </div>
+    65→  );
+    66→}
+    67→
+    68→function OrgTab() {
+    69→  const settings = useSettings();
+    70→  const org = settings.data?.org;
+    71→  const [name, setName] = useState(org?.name ?? "");
+    72→  const [locale, setLocale] = useState(org?.locale ?? "hy");
+    73→  const [timezone, setTimezone] = useState(org?.timezone ?? "Asia/Yerevan");
+    74→  const [currency, setCurrency] = useState(org?.currency ?? "AMD");
+    75→  const save = async () => {
+    76→    try {
+    77→      const res = await fetch("/api/v1/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ org: { name, locale, timezone, currency } }) });
+    78→      if (res.ok) toast.success("Saved"); else toast.error("Save failed");
+    79→      settings.refetch();
+    80→    } catch { toast.error("Save failed"); }
+    81→  };
+    82→  if (settings.isLoading || !org) return <Skeleton className="h-48 w-full" />;
+    83→  return (
+    84→    <Card><CardContent className="p-4 grid grid-cols-2 gap-3 max-w-xl">
+    85→      <div className="space-y-1 col-span-2"><Label className="text-xs">Organization name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+    86→      <div className="space-y-1"><Label className="text-xs">Locale</Label>
+    87→        <Select value={locale} onValueChange={setLocale}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["hy", "ru", "en"].map((l) => <SelectItem key={l} value={l}>{l === "hy" ? "Հայերեն" : l === "ru" ? "Русский" : "English"}</SelectItem>)}</SelectContent></Select>
+    88→      </div>
+    89→      <div className="space-y-1"><Label className="text-xs">Timezone</Label><Input value={timezone} onChange={(e) => setTimezone(e.target.value)} /></div>
+    90→      <div className="space-y-1"><Label className="text-xs">Currency</Label><Input value={currency} onChange={(e) => setCurrency(e.target.value)} /></div>
+    91→      <div className="col-span-2"><Button size="sm" onClick={save}><Save className="h-3.5 w-3.5 mr-1.5" />Save</Button></div>
+    92→    </CardContent></Card>
+    93→  );
+    94→}
+    95→
+    96→function UsersTab() {
+    97→  const users = useUsers();
+    98→  if (users.isLoading) return <Skeleton className="h-48 w-full" />;
+    99→  return (
+   100→    <Card>
+   101→      <CardContent className="p-0 divide-y">
+   102→        {(users.data?.rows ?? []).map((u: any) => (
+   103→          <div key={u.id} className="flex items-center gap-3 px-4 py-3">
+   104→            <LeadAvatar first={u.name} color={u.avatarColor} size={32} />
+   105→            <div className="flex-1 min-w-0"><div className="text-sm font-medium">{u.name}</div><div className="text-xs text-muted-foreground">{u.email} · {u.title || "—"}</div></div>
+   106→            <Badge variant="outline" className="text-xs">{u.role}</Badge>
+   107→            <Badge variant="secondary" className="text-xs">{u.status}</Badge>
+   108→          </div>
+   109→        ))}
+   110→      </CardContent>
+   111→    </Card>
+   112→  );
+   113→}
+   114→
+   115→function PipelineTab() {
+   116→  const { t } = useLocale();
+   117→  const settings = useSettings();
+   118→  const createStage = useCreateStage();
+   119→  const updateStage = useUpdateStage();
+   120→  const delStage = useDeleteStage();
+   121→  const [newStage, setNewStage] = useState<{ name: string; type: string; color: string }>({ name: "", type: "open", color: "#94a3b8" });
+   122→
+   123→  const sensors = useSensors(
+   124→    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+   125→    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+   126→  );
+   127→
+   128→  if (settings.isLoading) return <Skeleton className="h-48 w-full" />;
+   129→  const pipelines = settings.data?.pipelines ?? [];
+   130→
+   131→  const addStage = async (pipelineId: string) => {
+   132→    if (!newStage.name.trim()) return;
+   133→    try {
+   134→      await createStage.mutateAsync({ pipelineId, name: newStage.name, type: newStage.type, color: newStage.color });
+   135→      toast.success("Stage added");
+   136→      setNewStage({ name: "", type: "open", color: "#94a3b8" });
+   137→    } catch (e) { toast.error((e as Error).message); }
+   138→  };
+   139→  const renameStage = async (id: string, name: string) => {
+   140→    try { await updateStage.mutateAsync({ id, body: { name } }); } catch (e) { toast.error((e as Error).message); }
+   141→  };
+   142→  const recolorStage = async (id: string, color: string) => {
+   143→    try { await updateStage.mutateAsync({ id, body: { color } }); } catch (e) { toast.error((e as Error).message); }
+   144→  };
+   145→  const removeStage = async (id: string) => {
+   146→    try { await delStage.mutateAsync(id); toast.success("Stage deleted"); } catch (e) { toast.error((e as Error).message); }
+   147→  };
+   148→  const onDragEnd = async (pipelineId: string, event: DragEndEvent) => {
+   149→    const { active, over } = event;
+   150→    if (!over || active.id === over.id) return;
+   151→    const p = pipelines.find((pp: any) => pp.id === pipelineId);
+   152→    if (!p) return;
+   153→    const oldIndex = p.stages.findIndex((s: any) => s.id === active.id);
+   154→    const newIndex = p.stages.findIndex((s: any) => s.id === over.id);
+   155→    if (oldIndex === -1 || newIndex === -1) return;
+   156→    const reordered = arrayMove(p.stages as any[], oldIndex, newIndex) as any[];
+   157→    // persist new positions
+   158→    for (let i = 0; i < reordered.length; i++) {
+   159→      if (reordered[i].position !== i) {
+   160→        try { await updateStage.mutateAsync({ id: reordered[i].id, body: { position: i } }); } catch {}
+   161→      }
+   162→    }
+   163→    toast.success("Stages reordered");
+   164→  };
+   165→
+   166→  return (
+   167→    <div className="space-y-3">
+   168→      {pipelines.map((p: any) => (
+   169→        <Card key={p.id}>
+   170→          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+   171→            <CardTitle className="text-sm">{p.name}</CardTitle>
+   172→            {p.isDefault && <Badge>Default</Badge>}
+   173→          </CardHeader>
+   174→          <CardContent className="pt-0 space-y-2">
+   175→            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => onDragEnd(p.id, e)}>
+   176→              <SortableContext items={p.stages.map((s: any) => s.id)} strategy={verticalListSortingStrategy}>
+   177→                <div className="space-y-1.5">
+   178→                  {p.stages.map((s: any) => (
+   179→                    <SortableStage
+   180→                      key={s.id}
+   181→                      stage={s}
+   182→                      onRecolor={recolorStage}
+   183→                      onRename={renameStage}
+   184→                      onRemove={removeStage}
+   185→                      updating={updateStage.isPending}
+   186→                    />
+   187→                  ))}
+   188→                </div>
+   189→              </SortableContext>
+   190→            </DndContext>
+   191→            {/* add new stage */}
+   192→            <div className="flex items-center gap-2 pt-1 border-t">
+   193→              <input
+   194→                type="color"
+   195→                value={newStage.color}
+   196→                onChange={(e) => setNewStage((s) => ({ ...s, color: e.target.value }))}
+   197→                className="h-6 w-6 rounded cursor-pointer border-0 bg-transparent p-0"
+   198→              />
+   199→              <Input
+   200→                value={newStage.name}
+   201→                onChange={(e) => setNewStage((s) => ({ ...s, name: e.target.value }))}
+   202→                placeholder="New stage name…"
+   203→                className="h-8 flex-1 text-sm"
+   204→              />
+   205→              <Select value={newStage.type} onValueChange={(v) => setNewStage((s) => ({ ...s, type: v }))}>
+   206→                <SelectTrigger className="h-8 w-24 text-xs"><SelectValue /></SelectTrigger>
+   207→                <SelectContent>
+   208→                  <SelectItem value="open">open</SelectItem>
+   209→                  <SelectItem value="won">won</SelectItem>
+   210→                  <SelectItem value="lost">lost</SelectItem>
+   211→                </SelectContent>
+   212→              </Select>
+   213→              <Button size="sm" variant="outline" onClick={() => addStage(p.id)} disabled={!newStage.name.trim() || createStage.isPending}>
+   214→                <Plus className="h-3.5 w-3.5 mr-1" />{t("common.create")}
+   215→              </Button>
+   216→            </div>
+   217→          </CardContent>
+   218→        </Card>
+   219→      ))}
+   220→      <p className="text-xs text-muted-foreground px-1 flex items-center gap-1.5">
+   221→        <GripVertical className="h-3 w-3" />
+   222→        Drag the handle to reorder · rename inline · recolor via swatch · delete (blocked if leads are in the stage). Changes reflect immediately in the Kanban.
+   223→      </p>
+   224→    </div>
+   225→  );
+   226→}
+   227→
+   228→function SortableStage({ stage, onRecolor, onRename, onRemove, updating }: { stage: any; onRecolor: (id: string, c: string) => void; onRename: (id: string, n: string) => void; onRemove: (id: string) => void; updating: boolean }) {
+   229→  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: stage.id });
+   230→  const style = {
+   231→    transform: CSS.Transform.toString(transform),
+   232→    transition,
+   233→    zIndex: isDragging ? 10 : "auto",
+   234→  };
+   235→  return (
+   236→    <div ref={setNodeRef} style={style} className={cn("flex items-center gap-2 rounded-lg border px-2 py-1.5 bg-card", isDragging && "shadow-lg ring-2 ring-primary/30 opacity-90")}>
+   237→      <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none" title="Drag to reorder">
+   238→        <GripVertical className="h-4 w-4" />
+   239→      </button>
+   240→      <input
+   241→        type="color"
+   242→        value={stage.color ?? "#94a3b8"}
+   243→        onChange={(e) => onRecolor(stage.id, e.target.value)}
+   244→        className="h-6 w-6 rounded cursor-pointer border-0 bg-transparent p-0"
+   245→        title="Stage color"
+   246→      />
+   247→      <input
+   248→        defaultValue={stage.name}
+   249→        onBlur={(e) => { if (e.target.value !== stage.name) onRename(stage.id, e.target.value); }}
+   250→        className="flex-1 bg-transparent text-sm font-medium outline-none border-b border-transparent focus:border-primary"
+   251→      />
+   252→      <Badge variant="outline" className="text-[10px] px-1 py-0">{stage.type}</Badge>
+   253→      {updating && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+   254→      <button
+   255→        onClick={() => onRemove(stage.id)}
+   256→        className="text-muted-foreground hover:text-red-500 text-xs px-1"
+   257→        title="Delete stage"
+   258→      >✕</button>
+   259→    </div>
+   260→  );
+   261→}
+   262→
+   263→function SourcesTab() {
+   264→  const sources = useSources();
+   265→  return (
+   266→    <Card><CardContent className="p-0 divide-y">
+   267→      {(sources.data?.rows ?? []).map((s: any) => (
+   268→        <div key={s.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+   269→          <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-muted">{s.type}</span>
+   270→          <span className="font-medium flex-1">{s.name}</span>
+   271→          {s.isSystem && <Badge variant="secondary" className="text-[10px]">system</Badge>}
+   272→          <Badge variant={s.active ? "default" : "outline"} className="text-[10px]">{s.active ? "active" : "off"}</Badge>
+   273→        </div>
+   274→      ))}
+   275→    </CardContent></Card>
+   276→  );
+   277→}
+   278→
+   279→function TagsTab() {
+   280→  const tags = useTags();
+   281→  return (
+   282→    <Card><CardContent className="p-4 flex flex-wrap gap-2">
+   283→      {(tags.data?.rows ?? []).map((tag: any) => (
+   284→        <span key={tag.id} className="inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs">
+   285→          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: tag.color ?? "#64748b" }} />
+   286→          {tag.name}
+   287→        </span>
+   288→      ))}
+   289→    </CardContent></Card>
+   290→  );
+   291→}
+   292→
+   293→function ScoringTab() {
+   294→  const settings = useSettings();
+   295→  const [rules, setRules] = useState<any[]>([]);
+   296→  // local copy once loaded
+   297→  useState(() => { if (settings.data?.scoring) setRules(settings.data.scoring); });
+   298→  if (settings.isLoading) return <Skeleton className="h-48 w-full" />;
+   299→  const list = rules.length ? rules : settings.data?.scoring ?? [];
+   300→  const update = (idx: number, patch: Partial<any>) => setRules((cur) => cur.map((r, i) => i === idx ? { ...r, ...patch } : r));
+   301→  const save = async () => {
+   302→    try {
+   303→      const res = await fetch("/api/v1/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scoring: list.map((r: any) => ({ key: r.key, points: r.points, enabled: r.enabled })) }) });
+   304→      if (res.ok) toast.success("Scoring saved"); else toast.error("Save failed");
+   305→      settings.refetch();
+   306→    } catch { toast.error("Save failed"); }
+   307→  };
+   308→  return (
+   309→    <Card>
+   310→      <CardContent className="p-4 space-y-2">
+   311→        {list.map((r: any, i: number) => (
+   312→          <div key={r.key} className="flex items-center gap-2">
+   313→            <button onClick={() => update(i, { enabled: !r.enabled })} className={cn("h-5 w-5 rounded flex items-center justify-center border", r.enabled ? "bg-primary border-primary text-primary-foreground" : "bg-background")}><Check className="h-3 w-3" /></button>
+   314→            <span className="flex-1 text-sm">{r.label}</span>
+   315→            <Input type="number" value={r.points} onChange={(e) => update(i, { points: Number(e.target.value) })} className="w-20" />
+   316→            <span className="text-xs text-muted-foreground">pts</span>
+   317→          </div>
+   318→        ))}
+   319→        <Button size="sm" onClick={save}><Save className="h-3.5 w-3.5 mr-1.5" />Save scoring</Button>
+   320→      </CardContent>
+   321→    </Card>
+   322→  );
+   323→}
+   324→
+   325→function AuditIngestTab() {
+   326→  const ingest = useIngestAudit();
+   327→  const [payload, setPayload] = useState(JSON.stringify({
+   328→    companyName: "Demo Co",
+   329→    contactName: "Narek Test",
+   330→    contactEmail: "narek@democo.am",
+   331→    contactPhone: "+37499123456",
+   332→    locale: "hy",
+   333→    scores: { acquisition: 60, sales: 50, operations: 70, data: 55, automation: 65, aiReadiness: 75 },
+   334→    reportSummary: "Audit completed — high automation potential",
+   335→  }, null, 2));
+   336→  const submit = async () => {
+   337→    try {
+   338→      const parsed = JSON.parse(payload);
+   339→      const r = await ingest.mutateAsync(parsed);
+   340→      toast.success(`Audit ingested → lead ${r.leadId} (${r.created ? "new" : "updated"})`);
+   341→    } catch (e) { toast.error((e as Error).message); }
+   342→  };
+   343→  return (
+   344→    <Card>
+   345→      <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Brain className="h-4 w-4 text-violet-500" />Business Audit Ingestion</CardTitle></CardHeader>
+   346→      <CardContent className="space-y-3">
+   347→        <p className="text-xs text-muted-foreground">POST /api/v1/business-audit — accepts a completed audit payload, creates/updates the matching lead, attaches the audit, recomputes the score.</p>
+   348→        <Textarea rows={12} value={payload} onChange={(e) => setPayload(e.target.value)} className="font-mono text-xs" />
+   349→        <Button size="sm" onClick={submit} disabled={ingest.isPending}><RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", ingest.isPending && "animate-spin")} />Ingest audit</Button>
+   350→      </CardContent>
+   351→    </Card>
+   352→  );
+   353→}
+   354→
+   355→function ErpTab() {
+   356→  const settings = useSettings();
+   357→  if (settings.isLoading) return <Skeleton className="h-48 w-full" />;
+   358→  return (
+   359→    <div className="space-y-3">
+   360→      <Card>
+   361→        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Webhook className="h-4 w-4" />Integration Events (published)</CardTitle></CardHeader>
+   362→        <CardContent className="pt-0 text-xs text-muted-foreground">
+   363→          LeadOS publishes these events for the future Automation Engine / Owner AI:
+   364→          <div className="flex flex-wrap gap-1.5 mt-2">
+   365→            {["lead.created", "lead.assigned", "lead.stage_changed", "lead.qualified", "lead.won", "lead.lost", "task.created", "task.overdue", "audit.completed"].map((e) => (
+   366→              <Badge key={e} variant="outline" className="font-mono text-[10px]">{e}</Badge>
+   367→            ))}
+   368→          </div>
+   369→        </CardContent>
+   370→      </Card>
+   371→      <Card>
+   372→        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><RefreshCw className="h-4 w-4" />ERP Adapter</CardTitle></CardHeader>
+   373→        <CardContent className="pt-0 text-xs text-muted-foreground">
+   374→          <p>Provider: <code className="font-mono">HAYDEV_ERP</code> (local-mock). Sync status is tracked per lead. Swap in a real provider by implementing the <code>ErpAdapter</code> interface — no fake production claims.</p>
+   375→        </CardContent>
+   376→      </Card>
+   377→      <WebhookEventsTab />
+   378→      <WebhookEndpointsTab />
+   379→    </div>
+   380→  );
+   381→}
+   382→
+   383→function CustomFieldsTab() {
+   384→  const { t } = useLocale();
+   385→  const fields = useCustomFields();
+   386→  const create = useCreateCustomField();
+   387→  const del = useDeleteCustomField();
+   388→  const [name, setName] = useState("");
+   389→  const [key, setKey] = useState("");
+   390→  const [type, setType] = useState("text");
+   391→  const [options, setOptions] = useState("");
+   392→
+   393→  const submit = async () => {
+   394→    if (!name.trim() || !key.trim()) return;
+   395→    try {
+   396→      const opts = type === "select" || type === "multiselect"
+   397→        ? options.split(",").map((s) => s.trim()).filter(Boolean)
+   398→        : undefined;
+   399→      await create.mutateAsync({ name, key, type, options: opts });
+   400→      toast.success("Custom field created");
+   401→      setName(""); setKey(""); setType("text"); setOptions("");
+   402→    } catch (e) { toast.error((e as Error).message); }
+   403→  };
+   404→  const remove = async (id: string) => {
+   405→    try { await del.mutateAsync(id); toast.success("Field deleted"); } catch (e) { toast.error((e as Error).message); }
+   406→  };
+   407→
+   408→  return (
+   409→    <div className="space-y-3">
+   410→      <Card>
+   411→        <CardHeader className="pb-2">
+   412→          <CardTitle className="text-sm flex items-center gap-2"><Settings2 className="h-4 w-4" />{t("settings.custom_fields")}</CardTitle>
+   413→        </CardHeader>
+   414→        <CardContent className="pt-0">
+   415→          <p className="text-xs text-muted-foreground mb-3">{t("settings.custom_fields.hint")}</p>
+   416→          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+   417→            <div className="space-y-1">
+   418→              <Label className="text-xs">{t("custom.name")}</Label>
+   419→              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Industry" />
+   420→            </div>
+   421→            <div className="space-y-1">
+   422→              <Label className="text-xs">{t("custom.key")}</Label>
+   423→              <Input value={key} onChange={(e) => setKey(e.target.value)} placeholder="industry" className="font-mono" />
+   424→            </div>
+   425→            <div className="space-y-1">
+   426→              <Label className="text-xs">{t("custom.type")}</Label>
+   427→              <Select value={type} onValueChange={setType}>
+   428→                <SelectTrigger><SelectValue /></SelectTrigger>
+   429→                <SelectContent>
+   430→                  <SelectItem value="text">{t("custom.text")}</SelectItem>
+   431→                  <SelectItem value="number">{t("custom.number")}</SelectItem>
+   432→                  <SelectItem value="select">{t("custom.select")}</SelectItem>
+   433→                  <SelectItem value="date">{t("custom.date")}</SelectItem>
+   434→                  <SelectItem value="bool">{t("custom.bool")}</SelectItem>
+   435→                </SelectContent>
+   436→              </Select>
+   437→            </div>
+   438→            <div className="space-y-1">
+   439→              <Label className="text-xs">{t("custom.options")}</Label>
+   440→              <Input value={options} onChange={(e) => setOptions(e.target.value)} placeholder="Construction, Retail,…" disabled={type !== "select" && type !== "multiselect"} />
+   441→            </div>
+   442→          </div>
+   443→          <Button size="sm" onClick={submit} disabled={create.isPending || !name.trim() || !key.trim()}>
+   444→            <Plus className="h-3.5 w-3.5 mr-1.5" />{t("custom.create")}
+   445→          </Button>
+   446→        </CardContent>
+   447→      </Card>
+   448→
+   449→      <Card>
+   450→        <CardContent className="p-0 divide-y">
+   451→          {(fields.data?.rows ?? []).length === 0 && (
+   452→            <div className="px-4 py-8 text-center text-sm text-muted-foreground">No custom fields yet. Add one above — it becomes available on every lead without migrations.</div>
+   453→          )}
+   454→          {(fields.data?.rows ?? []).map((f: any) => {
+   455→            const opts = Array.isArray(f.options) ? f.options : [];
+   456→            return (
+   457→              <div key={f.id} className="flex items-center gap-3 px-4 py-3">
+   458→                <div className="flex-1 min-w-0">
+   459→                  <div className="flex items-center gap-2">
+   460→                    <span className="text-sm font-medium">{f.name}</span>
+   461→                    <Badge variant="outline" className="font-mono text-[10px]">{f.key}</Badge>
+   462→                    <Badge variant="secondary" className="text-[10px]">{f.type}</Badge>
+   463→                  </div>
+   464→                  {opts.length > 0 && (
+   465→                    <div className="mt-1 flex flex-wrap gap-1">
+   466→                      {opts.map((o: string) => <span key={o} className="text-[10px] px-1.5 py-0.5 rounded bg-muted">{o}</span>)}
+   467→                    </div>
+   468→                  )}
+   469→                </div>
+   470→                <Button size="sm" variant="ghost" onClick={() => remove(f.id)} className="text-muted-foreground hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></Button>
+   471→              </div>
+   472→            );
+   473→          })}
+   474→        </CardContent>
+   475→      </Card>
+   476→    </div>
+   477→  );
+   478→}
+   479→
+   480→function AssignmentRulesTab() {
+   481→  const { t } = useLocale();
+   482→  const rules = useAssignmentRules();
+   483→  const users = useUsers();
+   484→  const sources = useSources();
+   485→  const create = useCreateAssignmentRule();
+   486→  const update = useUpdateAssignmentRule();
+   487→  const del = useDeleteAssignmentRule();
+   488→  const [newRule, setNewRule] = useState<{ name: string; sourceType: string; priority: string; assigneeId: string }>({ name: "", sourceType: "", priority: "", assigneeId: "" });
+   489→
+   490→  const addRule = async () => {
+   491→    if (!newRule.name.trim() || !newRule.assigneeId) return;
+   492→    try {
+   493→      await create.mutateAsync({
+   494→        name: newRule.name,
+   495→        sourceType: newRule.sourceType || null,
+   496→        priority: newRule.priority || null,
+   497→        assigneeId: newRule.assigneeId,
+   498→        enabled: true,
+   499→      });
+   500→      toast.success("Rule created");
+   501→      setNewRule({ name: "", sourceType: "", priority: "", assigneeId: "" });
+   502→    } catch (e) { toast.error((e as Error).message); }
+   503→  };
+   504→  const toggleRule = async (id: string, enabled: boolean) => {
+   505→    try { await update.mutateAsync({ id, body: { enabled } }); } catch (e) { toast.error((e as Error).message); }
+   506→  };
+   507→  const removeRule = async (id: string) => {
+   508→    try { await del.mutateAsync(id); toast.success("Rule deleted"); } catch (e) { toast.error((e as Error).message); }
+   509→  };
+   510→
+   511→  return (
+   512→    <div className="space-y-3">
+   513→      <Card>
+   514→        <CardHeader className="pb-2">
+   515→          <CardTitle className="text-sm flex items-center gap-2"><Settings2 className="h-4 w-4" />Assignment Rules</CardTitle>
+   516→        </CardHeader>
+   517→        <CardContent className="pt-0">
+   518→          <p className="text-xs text-muted-foreground mb-3">When a new lead arrives without an explicit owner, LeadOS evaluates these rules in order. First match wins. This is deterministic routing — not AI.</p>
+   519→          {(rules.data?.rows ?? []).length === 0 && (
+   520→            <div className="px-4 py-8 text-center text-sm text-muted-foreground">No rules yet. New leads stay unassigned until someone claims them.</div>
+   521→          )}
+   522→          <div className="space-y-1.5">
+   523→            {(rules.data?.rows ?? []).map((r: any) => (
+   524→              <div key={r.id} className={cn("flex items-center gap-2 rounded-lg border px-2.5 py-2 transition", !r.enabled && "opacity-50")}>
+   525→                <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-muted text-[10px] font-bold">{r.position + 1}</span>
+   526→                <div className="flex-1 min-w-0">
+   527→                  <div className="text-sm font-medium truncate">{r.name}</div>
+   528→                  <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-1.5">
+   529→                    {r.sourceType && <Badge variant="outline" className="text-[9px] px-1 py-0">source: {r.sourceType}</Badge>}
+   530→                    {r.priority && <Badge variant="outline" className="text-[9px] px-1 py-0">priority: {r.priority}</Badge>}
+   531→                    <span className="flex items-center gap-1">→ <LeadAvatar first={r.assignee?.name} color={r.assignee?.avatarColor} size={16} /> {r.assignee?.name}</span>
+   532→                  </div>
+   533→                </div>
+   534→                <button
+   535→                  onClick={() => toggleRule(r.id, !r.enabled)}
+   536→                  className={cn("relative h-5 w-9 rounded-full transition shrink-0", r.enabled ? "bg-primary" : "bg-muted")}
+   537→                  title={r.enabled ? "Disable" : "Enable"}
+   538→                >
+   539→                  <span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-background shadow transition-transform", r.enabled ? "translate-x-4" : "translate-x-0.5")} />
+   540→                </button>
+   541→                <button onClick={() => removeRule(r.id)} className="text-muted-foreground hover:text-red-500 text-xs px-1 shrink-0" title="Delete rule">✕</button>
+   542→              </div>
+   543→            ))}
+   544→          </div>
+   545→          {/* add new rule */}
+   546→          <div className="mt-3 pt-3 border-t space-y-2">
+   547→            <div className="text-xs font-medium text-muted-foreground">Add new rule</div>
+   548→            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+   549→              <Input value={newRule.name} onChange={(e) => setNewRule((s) => ({ ...s, name: e.target.value }))} placeholder="Rule name…" className="h-8 text-sm" />
+   550→              <Select value={newRule.sourceType || "__any"} onValueChange={(v) => setNewRule((s) => ({ ...s, sourceType: v === "__any" ? "" : v }))}>
+   551→                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Any source" /></SelectTrigger>
+   552→                <SelectContent>
+   553→                  <SelectItem value="__any">Any source</SelectItem>
+   554→                  {(sources.data?.rows ?? []).map((s: any) => <SelectItem key={s.id} value={s.type}>{s.name}</SelectItem>)}
+   555→                </SelectContent>
+   556→              </Select>
+   557→              <Select value={newRule.priority || "__any"} onValueChange={(v) => setNewRule((s) => ({ ...s, priority: v === "__any" ? "" : v }))}>
+   558→                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Any priority" /></SelectTrigger>
+   559→                <SelectContent>
+   560→                  <SelectItem value="__any">Any priority</SelectItem>
+   561→                  <SelectItem value="LOW">Low</SelectItem>
+   562→                  <SelectItem value="MEDIUM">Medium</SelectItem>
+   563→                  <SelectItem value="HIGH">High</SelectItem>
+   564→                  <SelectItem value="URGENT">Urgent</SelectItem>
+   565→                </SelectContent>
+   566→              </Select>
+   567→              <Select value={newRule.assigneeId} onValueChange={(v) => setNewRule((s) => ({ ...s, assigneeId: v }))}>
+   568→                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Assignee…" /></SelectTrigger>
+   569→                <SelectContent>
+   570→                  {(users.data?.rows ?? []).map((u: any) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+   571→                </SelectContent>
+   572→              </Select>
+   573→            </div>
+   574→            <Button size="sm" onClick={addRule} disabled={!newRule.name.trim() || !newRule.assigneeId || create.isPending}>
+   575→              <Plus className="h-3.5 w-3.5 mr-1.5" />{t("common.create")}
+   576→            </Button>
+   577→          </div>
+   578→        </CardContent>
+   579→      </Card>
+   580→    </div>
+   581→  );
+   582→}
+   583→
+   584→function WebhookEventsTab() {
+   585→  const events = useWebhookEvents(undefined, 50);
+   586→  return (
+   587→    <Card>
+   588→      <CardHeader className="pb-2">
+   589→        <CardTitle className="text-sm flex items-center gap-2"><Webhook className="h-4 w-4" />Outgoing Webhook Events</CardTitle>
+   590→      </CardHeader>
+   591→      <CardContent className="pt-0">
+   592→        <p className="text-xs text-muted-foreground mb-3">Events LeadOS publishes for external subscribers (Automation Engine, Owner AI, custom webhooks). In production, a background worker delivers these to registered URLs.</p>
+   593→        {events.data?.byEvent && Object.keys(events.data.byEvent).length > 0 && (
+   594→          <div className="mb-3 flex flex-wrap gap-1.5">
+   595→            {Object.entries(events.data.byEvent).map(([ev, count]) => (
+   596→              <Badge key={ev} variant="outline" className="font-mono text-[10px]">{ev}: {count as number}</Badge>
+   597→            ))}
+   598→          </div>
+   599→        )}
+   600→        <div className="max-h-80 overflow-y-auto space-y-1">
+   601→          {(events.data?.rows ?? []).map((e: any) => (
+   602→            <div key={e.id} className="flex items-center gap-2 rounded border px-2 py-1.5 text-xs">
+   603→              <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", e.published ? "bg-emerald-500" : "bg-muted-foreground")} />
+   604→              <span className="font-mono text-[10px] px-1 py-0.5 rounded bg-muted">{e.event}</span>
+   605→              {e.lead && <span className="text-muted-foreground truncate">{e.lead.company || [e.lead.firstName, e.lead.lastName].filter(Boolean).join(" ")}</span>}
+   606→              <span className="ml-auto text-muted-foreground shrink-0">{new Date(e.createdAt).toLocaleString()}</span>
+   607→            </div>
+   608→          ))}
+   609→          {(events.data?.rows ?? []).length === 0 && <div className="px-4 py-8 text-center text-sm text-muted-foreground">No events published yet.</div>}
+   610→        </div>
+   611→      </CardContent>
+   612→    </Card>
+   613→  );
+   614→}
+   615→
+   616→function WebhookEndpointsTab() {
+   617→  const { t } = useLocale();
+   618→  const endpoints = useWebhookEndpoints();
+   619→  const create = useCreateWebhookEndpoint();
+   620→  const del = useDeleteWebhookEndpoint();
+   621→  const test = useTestWebhookEndpoint();
+   622→  const [newEp, setNewEp] = useState<{ name: string; url: string; events: string }>({ name: "", url: "", events: "*" });
+   623→  const [testingId, setTestingId] = useState<string | null>(null);
+   624→
+   625→  const addEndpoint = async () => {
+   626→    if (!newEp.name.trim() || !newEp.url.trim()) return;
+   627→    try {
+   628→      await create.mutateAsync({ name: newEp.name, url: newEp.url, events: newEp.events || "*", enabled: true });
+   629→      toast.success("Endpoint registered");
+   630→      setNewEp({ name: "", url: "", events: "*" });
+   631→    } catch (e) { toast.error((e as Error).message); }
+   632→  };
+   633→  const removeEp = async (id: string) => {
+   634→    try { await del.mutateAsync(id); toast.success("Endpoint deleted"); } catch (e) { toast.error((e as Error).message); }
+   635→  };
+   636→  const testEp = async (id: string) => {
+   637→    setTestingId(id);
+   638→    try {
+   639→      const res = await test.mutateAsync(id);
+   640→      if (res.ok) toast.success(`Test delivered (HTTP ${res.status ?? "?"})`);
+   641→      else toast.error(`Test failed: ${res.error ?? "no response"}`);
+   642→    } catch (e) { toast.error((e as Error).message); }
+   643→    finally { setTestingId(null); }
+   644→  };
+   645→
+   646→  return (
+   647→    <Card>
+   648→      <CardHeader className="pb-2">
+   649→        <CardTitle className="text-sm flex items-center gap-2"><Webhook className="h-4 w-4" />Webhook Endpoints</CardTitle>
+   650→      </CardHeader>
+   651→      <CardContent className="pt-0">
+   652→        <p className="text-xs text-muted-foreground mb-3">Register external URLs to receive LeadOS events. Events are signed with HMAC-SHA256 (X-Leados-Signature header) when a secret is set. Use events="*" for all, or comma-separated like "lead.created,lead.won".</p>
+   653→        {(endpoints.data?.rows ?? []).length === 0 && (
+   654→          <div className="px-4 py-6 text-center text-sm text-muted-foreground">No endpoints registered. Add one below to start receiving events.</div>
+   655→        )}
+   656→        <div className="space-y-1.5 mb-3">
+   657→          {(endpoints.data?.rows ?? []).map((ep: any) => (
+   658→            <div key={ep.id} className={cn("flex items-center gap-2 rounded-lg border px-2.5 py-2", !ep.enabled && "opacity-50")}>
+   659→              <span className={cn("h-2 w-2 rounded-full shrink-0", ep.enabled ? (ep.lastStatus === "FAILED" ? "bg-red-500" : ep.lastStatus === "OK" ? "bg-emerald-500" : "bg-muted-foreground") : "bg-muted-foreground")} />
+   660→              <div className="flex-1 min-w-0">
+   661→                <div className="text-sm font-medium truncate">{ep.name}</div>
+   662→                <div className="text-[11px] text-muted-foreground truncate font-mono">{ep.url}</div>
+   663→              </div>
+   664→              <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono">{ep.events}</Badge>
+   665→              {ep.failCount > 0 && <Badge variant="outline" className="text-[9px] px-1 py-0 text-red-600 border-red-300">{ep.failCount} fail</Badge>}
+   666→              {ep.lastDeliveryAt && <span className="text-[10px] text-muted-foreground shrink-0">{new Date(ep.lastDeliveryAt).toLocaleDateString()}</span>}
+   667→              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => testEp(ep.id)} disabled={testingId === ep.id}>
+   668→                {testingId === ep.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Test"}
+   669→              </Button>
+   670→              <button onClick={() => removeEp(ep.id)} className="text-muted-foreground hover:text-red-500 text-xs px-1 shrink-0" title="Delete">✕</button>
+   671→            </div>
+   672→          ))}
+   673→        </div>
+   674→        {/* add new endpoint */}
+   675→        <div className="pt-3 border-t space-y-2">
+   676→          <div className="text-xs font-medium text-muted-foreground">Register new endpoint</div>
+   677→          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+   678→            <Input value={newEp.name} onChange={(e) => setNewEp((s) => ({ ...s, name: e.target.value }))} placeholder="Name (e.g. Automation Engine)" className="h-8 text-sm" />
+   679→            <Input value={newEp.url} onChange={(e) => setNewEp((s) => ({ ...s, url: e.target.value }))} placeholder="https://…" className="h-8 text-sm font-mono" />
+   680→            <Input value={newEp.events} onChange={(e) => setNewEp((s) => ({ ...s, events: e.target.value }))} placeholder="* or lead.created,lead.won" className="h-8 text-sm font-mono" />
+   681→          </div>
+   682→          <Button size="sm" onClick={addEndpoint} disabled={!newEp.name.trim() || !newEp.url.trim() || create.isPending}>
+   683→            <Plus className="h-3.5 w-3.5 mr-1.5" />{t("common.create")}
+   684→          </Button>
+   685→        </div>
+   686→      </CardContent>
+   687→    </Card>
+   688→  );
+   689→}
+   690→

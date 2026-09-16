@@ -115,7 +115,7 @@ export function DashboardView() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2"><Layers className="h-4 w-4" /> {t("dashboard.by_source")}</CardTitle>
-            <CardDescription className="text-xs">{totalActive} active leads</CardDescription>
+            <CardDescription className="text-xs">{t("dashboard.active_leads", { n: totalActive })}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2.5 pt-1">
             {dash.isLoading && Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-7 w-full" />)}
@@ -129,7 +129,7 @@ export function DashboardView() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2"><Activity className="h-4 w-4" /> {t("dashboard.by_stage")}</CardTitle>
-            <CardDescription className="text-xs">Conversion funnel</CardDescription>
+            <CardDescription className="text-xs">{t("dashboard.funnel")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2.5 pt-1">
             {dash.isLoading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-7 w-full" />)}
@@ -148,7 +148,7 @@ export function DashboardView() {
           </CardHeader>
           <CardContent className="space-y-1.5 pt-0 max-h-80 overflow-y-auto">
             {lost.isLoading && Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-            {!lost.isLoading && (lost.data?.flags ?? []).length === 0 && <EmptyState icon={CheckCircle2} title="All clear" hint="No leads need attention right now." />}
+            {!lost.isLoading && (lost.data?.flags ?? []).length === 0 && <EmptyState icon={CheckCircle2} title={t("dashboard.all_clear")} hint={t("dashboard.all_clear_hint")} />}
             {(lost.data?.flags ?? []).slice(0, 10).map((f: any) => (
               <button
                 key={f.id}
@@ -193,7 +193,7 @@ export function DashboardView() {
           </CardHeader>
           <CardContent className="space-y-1.5 pt-0 max-h-80 overflow-y-auto">
             {dash.isLoading && Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-            {!dash.isLoading && (dash.data?.overdueTasks ?? []).length === 0 && <EmptyState icon={CheckCircle2} title="No overdue tasks" />}
+            {!dash.isLoading && (dash.data?.overdueTasks ?? []).length === 0 && <EmptyState icon={CheckCircle2} title={t("dashboard.no_overdue")} />}
             {(dash.data?.overdueTasks ?? []).slice(0, 8).map((task: any) => (
               <button key={task.id} onClick={() => task.lead?.id && navigate("lead", { id: task.lead.id })} className="w-full flex items-start gap-2.5 rounded-lg border bg-card p-2.5 text-left hover:bg-accent/60 transition">
                 <Timer className="h-4 w-4 mt-0.5 text-red-500 shrink-0" />
@@ -220,7 +220,7 @@ export function DashboardView() {
               <div key={a.id} className="relative pb-3 last:pb-0">
                 <span className="absolute -left-[11px] top-1.5 h-2.5 w-2.5 rounded-full bg-background border-2 border-primary/60" />
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium">{a.user?.name ?? "System"}</span>
+                  <span className="text-xs font-medium">{a.user?.name ?? t("common.system")}</span>
                   <Badge variant="outline" className="text-[10px] py-0 px-1.5">{a.type}</Badge>
                   <span className="text-[11px] text-muted-foreground ml-auto">{timeAgo(a.createdAt)}</span>
                 </div>

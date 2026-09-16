@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { faqItems } from "@/data/business-os";
+import { getTranslator } from "@/lib/i18n";
 
 /**
  * SEO: full Open Graph / Twitter / JSON-LD structure is in place, but the
@@ -115,6 +117,18 @@ const websiteJsonLd = {
   inLanguage: ["ru", "en", "hy"],
 };
 
+/** FAQ rich-result schema, generated from the same data the FAQ section renders (ru = default locale). */
+const ru = getTranslator("ru");
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqItems.map((item) => ({
+    "@type": "Question",
+    name: ru(item.q),
+    acceptedAnswer: { "@type": "Answer", text: ru(item.a) },
+  })),
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -125,7 +139,7 @@ export default function RootLayout({
       <body className="antialiased">
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify([organizationJsonLd, websiteJsonLd]) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify([organizationJsonLd, websiteJsonLd, faqJsonLd]) }}
         />
         {children}
       </body>

@@ -58,6 +58,17 @@ export function BusinessCore() {
     setScene(next); setActive(0);
   }
 
+  // The command palette (and any future remote control) can switch the hero
+  // scene through this window event — keeps BusinessCore decoupled.
+  useEffect(() => {
+    const onScene = (event: Event) => {
+      const index = (event as CustomEvent<number>).detail;
+      if (typeof index === "number" && index >= 0 && index < heroScenes.length) switchScene(index);
+    };
+    window.addEventListener("haydev:scene", onScene);
+    return () => window.removeEventListener("haydev:scene", onScene);
+  }, []);
+
   return <section className="hero os-hero" id="home" aria-labelledby="hero-heading" ref={heroRef}>
     <div className="hero-spotlight" aria-hidden="true" />
     <div className="container hero-inner">
@@ -72,6 +83,14 @@ export function BusinessCore() {
           <a className="text-link" href="#products">{t('Посмотреть наши продукты')}<ArrowUpRight size={18} /></a>
         </div>
         <p className="hero-footnote"><a className="text-link hero-task-link" href="#contact">{t('Есть задача? Покажите её')} <ArrowUpRight size={14} /></a></p>
+        <div className="hero-meta" aria-label="HayDev">
+          <span>RU / EN / HY</span>
+          <i aria-hidden="true">·</i>
+          <span>YEREVAN, AM</span>
+          <i aria-hidden="true">·</i>
+          <span className="hero-meta-dot" aria-hidden="true" />
+          <span>SOFTWARE · AI · DIGITAL PRODUCTS</span>
+        </div>
       </div>
       <div className="hero-scene business-core">
         <OrbitalScene active={active} scene={scene} />

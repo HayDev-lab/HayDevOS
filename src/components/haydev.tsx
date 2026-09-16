@@ -20,6 +20,7 @@ import { FaqSection } from "@/components/sections/faq";
 
 import { ContactForm } from "@/components/sections/contact-form";
 import { BackToTop, MobileCta, ScrollProgress, SectionDots, useReveal, useScrollSpy } from "@/components/site-chrome";
+import { CommandPalette, CommandTrigger } from "@/components/command-palette";
 import { navigation as baseNavigation } from "@/data/site-content";
 
 const SystemDetails = lazy(() => import("@/components/sections/system-details"));
@@ -166,6 +167,7 @@ export default function HayDev() {
           >
             {t("Начать проект")} ↗
           </a>
+          <CommandTrigger />
           <Button
             className="menu-toggle"
             variant="ghost"
@@ -189,6 +191,9 @@ export default function HayDev() {
         >
           {navigation.map(renderNavItem)}
           <a href="#contact" onClick={() => setMenuOpen(false)}>{t("Обсудить проект")}<ArrowUpRight size={18} /></a>
+          <button type="button" className="mobile-palette-link" onClick={() => { setMenuOpen(false); window.dispatchEvent(new CustomEvent("haydev:palette-open")); }}>
+            {t("Быстрый поиск по сайту")} <span className="mobile-palette-kbd" aria-hidden="true">Ctrl K</span>
+          </button>
         </nav>
       )}
     </header>
@@ -267,6 +272,7 @@ export default function HayDev() {
     <BackToTop />
     <SectionDots />
     <MobileCta />
+    <CommandPalette />
     <Dialog open={privacy} onOpenChange={setPrivacy}>
       <DialogContent
         className="privacy-dialog"

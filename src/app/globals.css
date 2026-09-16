@@ -1320,3 +1320,140 @@ html{scrollbar-width:thin;scrollbar-color:#33413a #0a0e0c}
 .faq-search[data-reveal]{transition-delay:.04s}
 
 /* watcher kick r8 */
+
+/* ================================================================== */
+/* ROUND 9 — command palette, hero meta, VLM style pass, print styles */
+/* ================================================================== */
+
+/* --- Command palette: header trigger chip (desktop). --- */
+.command-trigger{display:inline-flex;align-items:center;gap:9px;min-height:43px;padding:0 13px;border:1px solid #33413a;border-radius:8px;background:#c5f56308;color:#9fb39a;font:11px ui-monospace,monospace;letter-spacing:1px;transition:color .2s,border-color .2s,background .2s}
+.command-trigger:hover{border-color:#5d7a62;color:var(--primary);background:#c5f5630d}
+.command-trigger:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+.command-trigger-kbd{padding:2.5px 6px;border:1px solid #ffffff17;border-radius:4px;background:#0a0f0d;color:#7e927a;font-size:10px;letter-spacing:.8px}
+@media (max-width:1100px){.command-trigger{display:none}}
+
+/* --- Command palette: dialog skin (dark + lime, matches the site). --- */
+.command-palette{max-width:600px;border:1px solid #3c4f3e;border-radius:14px;background:#0d1210;box-shadow:0 44px 130px #000c,0 0 0 1px #c5f5630a;padding:0}
+.command-palette [data-slot=dialog-overlay]{background:#05070699}
+.command-palette [data-slot=command-input-wrapper]{border-color:#2c3a2e;gap:11px}
+.command-palette [cmdk-input]{font-size:15px;color:#e7eee4}
+.command-palette [cmdk-input]::placeholder{color:#74836f}
+.command-palette [cmdk-list]{max-height:440px;scrollbar-width:thin}
+.command-palette [cmdk-group-heading]{font:10px ui-monospace,monospace;letter-spacing:1.6px;color:#8fa383;padding:10px 12px 6px}
+.command-palette [cmdk-item]{min-height:46px;border-radius:8px;font-size:14.5px;color:#cfd9cd;gap:11px}
+.command-palette [cmdk-item][data-selected=true]{background:#c5f56312;color:#e9f4e4;box-shadow:inset 2px 0 0 var(--primary)}
+.command-palette [cmdk-item] svg{color:#9db38e}
+.command-palette [cmdk-item][data-selected=true] svg{color:var(--primary)}
+.command-palette [cmdk-separator]{background:#243024}
+.command-palette [data-slot=command-empty]{color:#8a9a85;padding:22px 0;font-size:14px}
+.command-palette [data-slot=command-shortcut]{font:10.5px ui-monospace,monospace;letter-spacing:1px;color:#71816c}
+.command-palette [cmdk-item][data-selected=true] [data-slot=command-shortcut]{color:#a9c07f}
+.command-foot{display:flex;gap:22px;padding:11px 16px;border-top:1px solid #243024;font:10.5px ui-monospace,monospace;letter-spacing:1px;color:#74836f}
+.command-foot span:first-child{color:#93a683}
+@media (max-width:640px){.command-palette{width:calc(100vw - 24px);max-width:none;margin:0 auto}[cmdk-list]{max-height:62vh}}
+
+/* --- Command palette: mobile menu entry. --- */
+.mobile-palette-link{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:52px;padding-block:15px;border-bottom:1px solid var(--border);font-size:15px;color:#cdd6cd;text-align:left}
+.mobile-palette-link:hover{color:var(--primary)}
+.mobile-palette-kbd{padding:3px 7px;border:1px solid #ffffff17;border-radius:4px;font:10px ui-monospace,monospace;letter-spacing:.8px;color:#7e927a}
+
+/* --- Hero: meta row (balance for the text column). --- */
+.hero-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-top:34px;padding-top:24px;border-top:1px solid #ffffff0d;font:10.5px ui-monospace,monospace;letter-spacing:1.7px;color:#82978b}
+.hero-meta span{white-space:nowrap}
+.hero-meta i{font-style:normal;color:#525f4d}
+.hero-meta-dot{width:5px;height:5px;border-radius:50%;background:var(--primary);box-shadow:0 0 10px #c5f56399}
+@media (max-width:959px){.hero-meta{margin-top:26px;padding-top:20px;letter-spacing:1.2px}}
+
+/* --- R9 style pass: 01 What We Build — stronger active/inactive split. --- */
+.build-categories button strong{transition:color .18s}
+.build-categories button:not([aria-pressed=true]) strong{color:#c5d2c8}
+.build-categories button:not([aria-pressed=true]):hover strong{color:#e6efe5}
+.build-category-count{font:11px ui-monospace,monospace;letter-spacing:1px}
+.build-categories button:not([aria-pressed=true]) .build-category-count{color:#75887a}
+.build-categories button:not([aria-pressed=true]):hover{transform:translateX(3px) translateY(-1px)}
+.build-categories button:not([aria-pressed=true]):hover .build-category-count{color:#93a698}
+.build-categories button{transition:border-color .18s,background .18s,transform .22s;border-color:#3a4a41}
+.build-categories button:not([aria-pressed=true]){box-shadow:inset 0 1px 0 #ffffff08}
+.build-categories button:not([aria-pressed=true]):hover{border-color:#5d7466}
+.build-category-code{transition:color .18s}
+.build-categories button:not([aria-pressed=true]) .build-category-code{color:#7f948a}
+.build-categories button:not([aria-pressed=true]):hover .build-category-code{color:#b9d48f}
+.build-visual-head p{color:#c2cfbf}
+.build-items li{color:#dde7da;border-color:#3a4d3f;gap:10px}
+.build-items li::before{content:'';width:4px;height:4px;border-radius:50%;background:#6d8a54;flex-shrink:0;transition:background .18s,box-shadow .18s}
+.build-items li:hover{background:#12201699;border-color:#6a8a5c}
+.build-items li:hover::before{background:var(--primary);box-shadow:0 0 8px #c5f56388}
+.build-stack{margin-top:auto;padding-top:22px;border-top:1px solid #2c4034}
+.build-stack-list span{border-color:#465c3e}
+
+/* --- R9 style pass: automation action list — row affordances. --- */
+.automation-actions button{position:relative;transition:color .18s,padding-left .18s,background .18s;border-bottom-color:#33413a}
+.automation-actions button:first-child{border-top:1px solid #33413a}
+.automation-actions button::before{content:'';position:absolute;left:-18px;top:12px;bottom:12px;width:2px;border-radius:2px;background:transparent;transition:background .2s}
+.automation-actions button[aria-pressed=true]::before{background:var(--primary);box-shadow:0 0 12px #c5f56355}
+.automation-actions button:hover{background:#c5f56306}
+.automation-actions button[aria-pressed=true]{background:#c5f56308}
+.automation-recipe li{border-bottom-color:#2c3c2e}
+.automation-recipe>p{color:#b8c5ad}
+
+/* --- R9 style pass: products — contrast + active filter depth. --- */
+.product-card p{color:#b7c3ba}
+.product-features li{color:#a9b8ac}
+.products-filter button[aria-pressed=true]{transform:translateY(-1px);box-shadow:0 6px 22px #c5f56330}
+.products-filter button[aria-pressed=true]:hover{transform:translateY(-2px)}
+.products-filter button{transition:color .2s,border-color .2s,background .2s,transform .2s,box-shadow .2s}
+
+/* --- R9 style pass: FAQ — row boundaries + search focus ring. --- */
+.faq-list [data-slot=accordion-item]{border-color:#3d493d}
+.faq-list [data-slot=accordion-item]:hover,.faq-list [data-slot=accordion-item][data-state=open]{border-color:#4d5c4c}
+.faq-search{border-color:#43543f;background:linear-gradient(160deg,#131b1799,#0d1310e0)}
+.faq-search:focus-within{border-color:#6d8a54;box-shadow:inset 0 1px 0 #ffffff07,0 0 0 3px #c5f56317}
+.faq-search input{color:#e7eee4}
+.faq-search svg{color:#8ba27e}
+.faq-list [data-slot=accordion-trigger]{padding:30px 0}
+
+/* --- R9 style pass: contact — input underlines + chips breathing room. --- */
+.contact-form input,.contact-form textarea{border-bottom:2px solid #7d8766;transition:border-color .2s,box-shadow .2s}
+.contact-form input::placeholder,.contact-form textarea::placeholder{color:#b0bea4}
+.contact-form input:focus,.contact-form textarea:focus{box-shadow:0 6px 18px -8px #c5f56333}
+.project-types-list{row-gap:10px}
+.os-section-heading>p{color:#b3bfb5}
+
+/* --- Print: clean typographic PDF of the page. --- */
+@media print{
+  @page{margin:14mm}
+  html{scroll-behavior:auto;background:#fff}
+  body{background:#fff!important;color:#161a15!important;font-size:12px}
+  *,*::before,*::after{box-shadow:none!important;text-shadow:none!important;background-image:none!important}
+  .site-header,.scroll-progress,.section-dots,.mobile-cta,.back-to-top,.skip-link,
+  .hero-ticker,.hero-scroll-hint,.hero-spotlight,.command-trigger,.mobile-palette-link,
+  .mobile-nav,.faq-search,.products-filter,.lite-details,.audit-shell,.command-palette,
+  .os-data-strip>a,[role=dialog],.hero-scene,.scene-mode,.hero-scroll-hint{display:none!important}
+  [data-reveal]{opacity:1!important;transform:none!important}
+  .hero{background:none!important;min-height:0!important}
+  .hero-inner{grid-template-columns:1fr!important;min-height:0!important}
+  .hero-copy{padding-top:0!important}
+  h1,h2,h3,h4,strong{color:#161a15!important;letter-spacing:-.5px}
+  h1>span,h2 .lime-text,.lime-text{color:#39540f!important}
+  .eyebrow,.section-label,.section-number{color:#39540f!important}
+  p,li,small,label,.hero-kicker,.os-hero-subtitle,.hero-description{color:#333!important}
+  a,.text-link{color:#161a15!important}
+  .button,.button-primary,.os-cta,.submit-button{background:#fff!important;color:#161a15!important;border:2px solid #161a15!important}
+  .section{padding-block:16px!important;break-inside:avoid-page}
+  /* Flatten the dark panels into outlined print blocks. */
+  .product-card,.build-visual,.build-categories button,.build-items li,.automation-recipe,
+  .automation-actions button,.why-card,.model-card,.industry-system,.scenario-card,
+  .faq-list,.faq-cta,.contact-copy,.contact-form,.stack-block,.stack-chips li,
+  .contact-next-steps li>span,.product-icon,.product-status,.filter-count,.audit-facts,
+  .project-types-list,.field-row,.char-counter{break-inside:avoid;border-color:#c8c8c8!important;background:#fff!important;color:#161a15!important}
+  .build-categories button{border:1px solid #c8c8c8!important}
+  .build-items li{border:1px solid #c8c8c8!important;color:#161a15!important}
+  .product-card p,.product-features li,.build-visual-head p,.automation-recipe>p,
+  .why-card p,.model-card p{color:#333!important}
+  .product-card h3,.build-categories strong,.automation-recipe h3{color:#161a15!important}
+  .product-status,.product-code,.faq-index,.stack-group-code,.layer-detail,.pipeline-index{color:#39540f!important}
+  .contact-form input,.contact-form textarea{border-bottom:1px solid #999!important;color:#161a15!important;background:#fff!important}
+  .site-footer{border-top:2px solid #161a15!important;color:#333!important;background:#fff!important}
+  .footer-top{grid-template-columns:1fr 1fr!important;background:#fff!important}
+  .footer-email button{border:1px solid #c8c8c8!important;background:#fff!important;color:#161a15!important}
+}

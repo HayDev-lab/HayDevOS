@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "**Screenshot 1 — Hero**\n**Verdict: PASS**\n1. **Meta row**: Bottom‑left mono row (RU/EN/HY, tags, section label) is present, correctly styled in small caps/mono, and aligned to the grid.\n2. **Contrast & affordance**: Body text sits at ~80–90 % lightness on #0a0f0d—well above WCAG AA for large text; primary CTA has solid fill + arrow, secondary link has arrow + underline cue.\n3. **Alignment**: Title block, CTA stack, and meta row share a consistent left margin; the 3D visual panel on the right respects the same vertical rhythm and does not bleed into the text column.\n\n---\n\n**Screenshot 2 — What We Build**\n**Verdict: NEEDS-WORK**\n1. **Inactive list items look flat**: The three non‑active categories (Digital Products / Customer Products / AI Products) are nearly indistinguishable from the background—only a faint border and low‑contrast label separate them. Add a subtle hover lift or slightly brighter border so they don’t read as dead placeholders.\n2. **Right‑panel internal alignment drifts**: Inside the “Business Software” card, the sub‑grid of CRM / ERP / Internal systems / Dashboards is not perfectly flush with the card’s left padding; the tag list (“01 · Roles…”) also appears a few pixels off the baseline compared to the description above.\n3. **Missing hover affordance on sub‑items**: The CRM/ERP/etc. blocks have no cursor change or background shift on hover; users can’t tell they’re interactive without trial and error.\n\n---\n\n**Screenshot 3 — AI & Automation**\n**Verdict: PASS**\n1. **Action list clarity**: Each action row has a right‑aligned arrow icon that clearly signals “expand/go”; the active item (“Получать заявку”) is highlighted with accent color + left bar, while others remain legible but subdued.\n2. **Recipe panel structure**: Step numbers (01–04) use circled badges with consistent spacing; horizontal rules between steps align with the text baselines, and the summary paragraph has comfortable line height (~1.6).\n3. **Contrast & micro‑copy**: Body copy in both columns stays above 12:1 against the dark ground; the “Автоматически” label and example header are distinct but don’t fight with the main headline.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1789518203,
+  "id": "2026091608231019d5a5a31dd243d1",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "2026091608231019d5a5a31dd243d1",
+  "usage": {
+    "completion_tokens": 503,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 5119,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 5622
+  }
+}

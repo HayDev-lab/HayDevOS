@@ -14,8 +14,8 @@ import { useLanguage } from "@/components/language-provider";
  *   viewport (subtle fade-up; disabled by prefers-reduced-motion in CSS).
  */
 
-/** Sections tracked by the dot navigation, in page order. */
-const dotSections = [
+/** Sections tracked by the dot navigation and the command palette, in page order. */
+export const pageSections = [
   { id: "home", label: "Главная" },
   { id: "build", label: "Что мы создаём" },
   { id: "custom", label: "Custom Software" },
@@ -33,7 +33,7 @@ const dotSections = [
 function useActiveSection() {
   const [active, setActive] = useState<string>("");
   useEffect(() => {
-    const sections = dotSections
+    const sections = pageSections
       .map((entry) => document.getElementById(entry.id))
       .filter((el): el is HTMLElement => el !== null);
     if (sections.length === 0) return;
@@ -68,7 +68,7 @@ export function SectionDots() {
   const active = useActiveSection();
   return (
     <nav className="section-dots" aria-label={t("Разделы страницы")}>
-      {dotSections.map((entry) => (
+      {pageSections.map((entry) => (
         <a
           key={entry.id}
           href={`#${entry.id}`}

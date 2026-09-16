@@ -945,7 +945,15 @@
     "NDA подписываем до обсуждения деталей. Первый разговор ни к чему не обязывает — но обычно с него всё начинается.": "NDA ստորագրում ենք մանրամասների քննարկումից առաջ։ Առաջին խոսակցությունը ոչ մի բանի չի պարտավորեցնում — բայց սովորաբար ամեն ինչ սկսվում է դրանից։",
     "Хочу ранний доступ": "Վաղ հասանելիություն եմ ուզում",
     "Интересует ранний доступ к {name}. Хочу узнать о сроках и возможностях.": "Հետաքրքրված եմ {name} վաղ հասանելիությամբ։ Կցանկանայի իմանալ ժամկետների և հնարավորությունների մասին։",
-    "Текущее время в Ереване": "Ընթացիկ ժամանակը Երևանում"
+    "Текущее время в Ереване": "Ընթացիկ ժամանակը Երևանում",
+    "PRIVATE DEMO": "ՄԱՍՆԱՎՈՐ ԴԵՄՈ",
+    "ДЕМО": "ԴԵՄՈ",
+    "Система для управления лидами, коммуникациями, SLA и процессом продаж.": "Համակարգ լիդերի, հաղորդակցության, SLA-ի և վաճառքի գործընթացի կառավարման համար։",
+    "Открыть демо": "Բացել դեմոն",
+    "Lead Pipeline": "Լիդերի խողովակ",
+    "SLA Control": "SLA վերահսկողություն",
+    "Activity Timeline": "Գործողությունների պատմություն",
+    "Automation-ready": "Ավտոմատացման պատրաստ"
   },
   "en": {
     "HayDev — на главную": "HayDev — home",
@@ -1892,7 +1900,15 @@
     "NDA подписываем до обсуждения деталей. Первый разговор ни к чему не обязывает — но обычно с него всё начинается.": "We sign an NDA before discussing details. The first talk commits you to nothing — but that's usually where it all starts.",
     "Хочу ранний доступ": "Request early access",
     "Интересует ранний доступ к {name}. Хочу узнать о сроках и возможностях.": "Interested in early access to {name}. I'd like to know about timelines and capabilities.",
-    "Текущее время в Ереване": "Current time in Yerevan"
+    "Текущее время в Ереване": "Current time in Yerevan",
+    "PRIVATE DEMO": "PRIVATE DEMO",
+    "ДЕМО": "DEMO",
+    "Система для управления лидами, коммуникациями, SLA и процессом продаж.": "A system for managing leads, communications, SLA and the sales process.",
+    "Открыть демо": "Open the demo",
+    "Lead Pipeline": "Lead Pipeline",
+    "SLA Control": "SLA Control",
+    "Activity Timeline": "Activity Timeline",
+    "Automation-ready": "Automation-ready"
   },
   "ru": {
     "HAYDEV / GROWTH CORE": "HAYDEV / ЦЕНТР РОСТА",

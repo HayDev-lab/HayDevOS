@@ -88,7 +88,7 @@ function CopyEmail() {
 
 export default function HayDev() {
   const { t, localize, locale, setLocale } = useLanguage();
-  const { openAudit } = useAppView();
+  const { openAudit, openLeados } = useAppView();
   const navigation = localize(baseNavigation);
   const [menuOpen, setMenuOpen] = useState(false);
   const [industry, setIndustry] = useState("Не указана");
@@ -143,6 +143,10 @@ export default function HayDev() {
     const line = t("Интересует ранний доступ к {name}. Хочу узнать о сроках и возможностях.").replace("{name}", product);
     setAuditSummary(current => (current.trim() ? `${line}\n\n${current}` : line));
     document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function openLeadosDemo() {
+    openLeados();
   }
 
   const renderNavItem = (item: { href: string; label: string }) =>
@@ -230,7 +234,7 @@ export default function HayDev() {
       <CustomSoftware />
       <AutomationSection />
       <TransformationScenarios />
-      <HaydevProducts onShowcase={() => openShowcase("erp")} onEarlyAccess={requestEarlyAccess} />
+      <HaydevProducts onShowcase={() => openShowcase("erp")} onEarlyAccess={requestEarlyAccess} onOpenLeados={openLeadosDemo} />
       <div className="container">
         <details ref={showcaseRef} className="lite-details" onToggle={(e) => { if (e.currentTarget.open) setDetailsOpened(true); }}>
           <summary>

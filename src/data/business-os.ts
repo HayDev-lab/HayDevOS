@@ -64,7 +64,7 @@ export const heroScenes: HeroScene[] = [
   },
 ];
 
-export type ProductStatus = "LIVE" | "BETA" | "PRIVATE BETA" | "IN DEVELOPMENT" | "CONCEPT";
+export type ProductStatus = "LIVE" | "BETA" | "PRIVATE BETA" | "PRIVATE DEMO" | "IN DEVELOPMENT" | "CONCEPT";
 
 /** Icon ids map to lucide-react components in haydev-products.tsx. */
 export const productIcons: Record<string, "boxes" | "scan-search" | "activity" | "inbox" | "receipt-text" | "file-scan"> = {
@@ -76,7 +76,7 @@ export const productIcons: Record<string, "boxes" | "scan-search" | "activity" |
   "DOC AI": "file-scan",
 };
 
-export const products: { code: string; name: string; status: ProductStatus; text: string; features: string[]; cta?: { label: string; href?: string; audit?: boolean } }[] = [
+export const products: { code: string; name: string; status: ProductStatus; text: string; features: string[]; cta?: { label: string; href?: string; audit?: boolean; leados?: boolean } }[] = [
   {
     code: "ERP / CRM",
     name: "HayDev ERP / CRM",
@@ -103,9 +103,10 @@ export const products: { code: string; name: string; status: ProductStatus; text
   {
     code: "LEADOS",
     name: "HayDev LeadOS",
-    status: "IN DEVELOPMENT",
-    text: "Система обработки обращений: сбор из каналов, маршрутизация и следующий шаг без потерянных заявок.",
-    features: ["Каналы обращений", "Маршрутизация", "Напоминания"],
+    status: "PRIVATE DEMO",
+    text: "Система для управления лидами, коммуникациями, SLA и процессом продаж.",
+    features: ["Lead Pipeline", "SLA Control", "Activity Timeline", "Задачи", "Аудит", "Automation-ready"],
+    cta: { label: "Открыть демо", leados: true },
   },
   {
     code: "QUOTEFLOW",

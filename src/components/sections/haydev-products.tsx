@@ -16,20 +16,22 @@ const iconMap: Record<string, LucideIcon> = {
 
 type Filter = "ALL" | ProductStatus;
 
-export function HaydevProducts({ onShowcase, onEarlyAccess }: { onShowcase?: () => void; onEarlyAccess?: (product: string) => void }) {
+export function HaydevProducts({ onShowcase, onEarlyAccess, onOpenLeados }: { onShowcase?: () => void; onEarlyAccess?: (product: string) => void; onOpenLeados?: () => void }) {
   const { t } = useLanguage();
   const { openAudit } = useAppView();
   const [filter, setFilter] = useState<Filter>("ALL");
 
   const counts = useMemo(() => {
     const live = products.filter(p => p.status === "LIVE").length;
-    return { ALL: products.length, LIVE: live, "IN DEVELOPMENT": products.length - live };
+    const demo = products.filter(p => p.status === "PRIVATE DEMO").length;
+    return { ALL: products.length, LIVE: live, "PRIVATE DEMO": demo, "IN DEVELOPMENT": products.length - live - demo };
   }, []);
 
   const visible = filter === "ALL" ? products : products.filter(p => p.status === filter);
   const filters: { key: Filter; label: string }[] = [
     { key: "ALL", label: t("ВСЕ") },
     { key: "LIVE", label: t("LIVE") },
+    { key: "PRIVATE DEMO", label: t("ДЕМО") },
     { key: "IN DEVELOPMENT", label: t("В РАЗРАБОТКЕ") },
   ];
 
@@ -62,7 +64,9 @@ export function HaydevProducts({ onShowcase, onEarlyAccess }: { onShowcase?: () 
           <div className="product-card-foot">
             {product.cta && (product.cta.audit
               ? <a className="text-link" href="#audit" onClick={event => { event.preventDefault(); openAudit(); }}>{t(product.cta.label)} <ArrowUpRight size={16} /></a>
-              : <a className="text-link" href="#erp" onClick={event => { if (onShowcase) { event.preventDefault(); onShowcase(); } }}>{t(product.cta.label)} <ArrowUpRight size={16} /></a>)}
+              : product.cta?.leados
+                ? <a className="text-link product-early" href="#products" onClick={event => { event.preventDefault(); onOpenLeados?.(); }}>{t(product.cta.label)} <ArrowUpRight size={16} /></a>
+                : <a className="text-link" href="#erp" onClick={event => { if (onShowcase) { event.preventDefault(); onShowcase(); } }}>{t(product.cta.label)} <ArrowUpRight size={16} /></a>)}
             {!product.cta && <>
               <span className="product-soon">{t('В разработке — дата не обещана')}</span>
               <a className="text-link product-early" href="#contact" onClick={event => { event.preventDefault(); onEarlyAccess?.(product.name); }}>{t('Хочу ранний доступ')} <ArrowUpRight size={16} /></a>

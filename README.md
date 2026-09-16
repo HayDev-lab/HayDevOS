@@ -18,13 +18,17 @@
 src/
   app/                    # единственный роут "/" (SPA-подход, ?lang= для локали)
     api/leads/            # приём и валидация заявок (+ webhook-форвардинг)
+    api/v1/               # HAYDEV LEADOS — demo product API (leads/pipeline/sla/tasks/…)
   components/
+    leados/               # HAYDEV LEADOS — in-page demo (intro + workspace)
     sections/             # 13 секций лендинга
     business-audit/       # in-page Business Audit (8 вопросов → карта → форма)
     command-palette.tsx   # Ctrl+K навигация
     site-chrome.tsx       # dots, scroll-progress, mobile CTA, reveal
   data/                   # контент + translations.json (hy/en/ru)
-  lib/                    # i18n, audit-engine, db
+  lib/
+    leados/               # бизнес-логика LeadOS (scoring, SLA, lost-detector, seed…)
+    i18n, audit-engine, db
 ```
 
 ## Возможности
@@ -34,7 +38,8 @@ src/
 - **Business Audit** — интерактивная диагностика, перенос ответов в форму заявки
 - **Command Palette** (Ctrl+K / «/») — разделы, язык, сцены, действия
 - FAQ-поиск с русским стеммингом + keyword-алиасами, JSON-LD FAQPage
-- Фильтр продуктов LIVE / IN DEVELOPMENT, ранний доступ из карточек
+- Фильтр продуктов LIVE / ДЕМО / IN DEVELOPMENT, ранний доступ из карточек
+- **HayDev LeadOS demo** — рабочий CRM-продукт прямо на сайте: intro-страница, лиды, пайплайн, SLA, задачи, activity timeline, синтетические демо-данные + reset
 - Draft-persistence формы, honeypot, rate-limit, LEADS_WEBHOOK_URL форвардинг
 - SEO: OG-изображение, hreflang, sitemap.xml, динамический robots.txt
 - Print-стили, prefers-reduced-motion, focus-visible, aria-разметка

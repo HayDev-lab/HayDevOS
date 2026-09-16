@@ -1586,3 +1586,116 @@ html{scrollbar-width:thin;scrollbar-color:#33413a #0a0e0c}
 
 /* Print: keep the new accent lines out of the paper version. */
 @media print{.build-visual::before{display:none}}
+
+/* ============================================================
+   HAYDEV LEADOS — in-page product demo (scoped HayDev theme).
+   The LeadOS workspace keeps its shadcn/ui utility classes, but the
+   .leados-root scope re-maps the tokens onto the HayDev product
+   palette: dark #0b100e base, lime #c5f563 accent, green-tinted
+   borders. Operational, calmer than the marketing site.
+   ============================================================ */
+.leados-root{
+  --background:#0b100e;
+  --foreground:#e4efe4;
+  --card:#111815;
+  --card-foreground:#e4efe4;
+  --popover:#0f1512;
+  --popover-foreground:#e4efe4;
+  --primary:#c5f563;
+  --primary-foreground:#10180c;
+  --secondary:#161d19;
+  --secondary-foreground:#dfe9df;
+  --muted:#141a16;
+  --muted-foreground:#9fae9f;
+  --accent:#1a241d;
+  --accent-foreground:#c5f563;
+  --destructive:#ff8d85;
+  --border:#28352c;
+  --input:#33413a;
+  --ring:#c5f563;
+  --radius:.5rem;
+  --chart-1:#c5f563;
+  --chart-2:#8fd7a0;
+  --chart-3:#e3c797;
+  --chart-4:#8fd7d2;
+  --chart-5:#b3a7e8;
+  color-scheme:dark;
+  min-height:100vh;
+  background:var(--background);
+  font-family:var(--font-sans);
+}
+.leados-root ::selection{background:#c5f56333}
+
+/* --- shell details: back link, reset, sidebar CTA --- */
+.leados-back{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border:1px solid #2c3a30;border-radius:8px;background:#141b16;color:#c2cfc4;font-size:12.5px;letter-spacing:.3px;transition:color .2s,border-color .2s,background .2s;white-space:nowrap}
+.leados-back:hover{color:var(--primary);border-color:#4a6440;background:#182019}
+.leados-reset{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid #2c3a30;border-radius:8px;background:#141b16;color:#9fae9f;transition:color .2s,border-color .2s}
+.leados-reset:hover:not(:disabled){color:var(--primary);border-color:#4a6440}
+.leados-reset:disabled{opacity:.45;cursor:wait}
+.leados-cta{display:flex;flex-direction:column;gap:8px;width:100%;padding:13px 14px;border:1px solid #33473a;border-radius:10px;background:linear-gradient(150deg,#131b15,#0e130f);text-align:left;transition:border-color .25s,box-shadow .25s}
+.leados-cta:hover{border-color:#4f6a4f;box-shadow:0 0 22px #c5f56312}
+.leados-cta-title{font-size:12.5px;line-height:1.5;color:#d4dfd4;font-weight:500}
+.leados-cta-button{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--primary);letter-spacing:.3px}
+
+/* --- intro screen (product page) --- */
+.leados-intro{min-height:100vh;display:flex;flex-direction:column;background:radial-gradient(ellipse 80% 60% at 70% -10%,#12232933,transparent 60%),radial-gradient(ellipse 60% 50% at 15% 110%,#c5f56308,transparent 65%),var(--background);color:#e4efe4}
+.leados-intro-top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px clamp(18px,4vw,56px);border-bottom:1px solid #1f2a24}
+.leados-demo-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border:1px solid #5a4a2e;border-radius:999px;background:#f5deb30d;font:11px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:1.6px;color:#e3c797}
+.leados-demo-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.leados-intro-hero{padding:clamp(48px,8vh,96px) clamp(18px,4vw,56px) clamp(36px,6vh,64px);max-width:1020px}
+.leados-intro-kicker{display:inline-flex;align-items:center;gap:12px;font:12px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:2.6px;color:var(--primary)}
+.leados-intro-kicker::before{content:'';width:26px;height:1.5px;background:var(--primary)}
+.leados-intro-hero h1{margin:22px 0 0;font-size:clamp(40px,5.4vw,72px);line-height:1.04;letter-spacing:-1.6px;font-weight:700;color:#f2faf0}
+.leados-intro-hero>p{margin:24px 0 0;max-width:640px;font-size:clamp(17px,1.6vw,21px);line-height:1.6;color:#a9b89a}
+.leados-intro-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:36px}
+.leados-button-primary{display:inline-flex;align-items:center;gap:10px;min-height:50px;padding:0 26px;border-radius:10px;background:var(--primary);color:#10180c;font-size:15.5px;font-weight:600;letter-spacing:.2px;transition:transform .18s,box-shadow .18s,background .18s;box-shadow:0 10px 30px #c5f5632e}
+.leados-button-primary:hover{transform:translateY(-2px);box-shadow:0 14px 38px #c5f56342;background:#d5ff88}
+.leados-button-primary:active{transform:translateY(0)}
+.leados-button-ghost{display:inline-flex;align-items:center;gap:9px;min-height:50px;padding:0 22px;border-radius:10px;border:1px solid #3a4a41;background:#141b16;color:#cdd9cc;font-size:14.5px;transition:color .2s,border-color .2s,background .2s}
+.leados-button-ghost:hover{color:var(--primary);border-color:#4a6440;background:#182019}
+
+/* --- problem flow diagram --- */
+.leados-intro-problem{padding:clamp(30px,5vh,52px) clamp(18px,4vw,56px);border-top:1px solid #1f2a24;border-bottom:1px solid #1f2a24;background:#0d1310}
+.leados-intro-problem h2{margin:0 0 26px;font-size:clamp(22px,2.6vw,32px);letter-spacing:-.6px;color:#e9f2e6;font-weight:600}
+.leados-flow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;font:12px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.8px}
+.leados-flow-node{display:inline-flex;align-items:center;min-height:38px;padding:0 15px;border:1px solid #33413a;border-radius:8px;background:#121914;color:#b9c6b9;transition:border-color .2s,color .2s}
+.leados-flow-node:hover{border-color:#4a6440;color:#dcE9d9}
+.leados-flow-hub{display:inline-flex;align-items:center;gap:9px;min-height:46px;padding:0 19px;border:1px solid var(--primary);border-radius:9px;background:linear-gradient(120deg,#1d2a16,#131b12);color:var(--primary);font-weight:600;box-shadow:0 0 26px #c5f5631f}
+.leados-flow-hub::before{content:'●';font-size:8px}
+.leados-flow-arrow{color:#4d5c4c;font-size:15px}
+
+/* --- capabilities grid --- */
+.leados-intro-caps{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;padding:clamp(34px,6vh,60px) clamp(18px,4vw,56px);max-width:1280px}
+.leados-cap-card{display:flex;gap:16px;padding:22px;border:1px solid #2a3a2e;border-radius:12px;background:linear-gradient(155deg,#111815,#0c110e);transition:border-color .25s,transform .2s,box-shadow .25s}
+.leados-cap-card:hover{border-color:#435a45;transform:translateY(-2px);box-shadow:0 14px 34px #00000042}
+.leados-cap-icon{display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;border:1px solid #3d524a;border-radius:10px;color:var(--primary);background:#c5f56308}
+.leados-cap-card h3{margin:0 0 7px;font-size:16.5px;font-weight:600;letter-spacing:-.2px;color:#e6efe4}
+.leados-cap-card p{margin:0;font-size:13.5px;line-height:1.65;color:#a3b2a4}
+
+/* --- try-it guide --- */
+.leados-intro-try{padding:clamp(30px,5vh,52px) clamp(18px,4vw,56px) clamp(44px,8vh,80px);border-top:1px solid #1f2a24;max-width:1020px}
+.leados-intro-try h2{margin:0 0 22px;font-size:clamp(20px,2.4vw,28px);letter-spacing:-.4px;font-weight:600;color:#e9f2e6}
+.leados-intro-try ol{list-style:none;margin:0 0 28px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.leados-intro-try li{display:flex;align-items:center;gap:13px;min-height:52px;padding:12px 16px;border:1px solid #28352c;border-radius:10px;background:#0f1512;font-size:13.5px;color:#c3cfc3}
+.leados-intro-try li>span{font:12px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--primary);letter-spacing:1px}
+.leados-intro-note{margin:18px 0 0;font-size:12.5px;line-height:1.7;color:#8a978c}
+
+/* --- LeadOS density tweaks (workspace, HayDev tint) --- */
+.leados-root .leados-fade-in{animation:leados-fade .25s ease-out}
+@keyframes leados-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.leados-root .leados-fade-in{animation:none}.leados-button-primary{transition:none}}
+
+@media print{.leados-root{display:none}}
+
+
+/* --- LeadOS product status pill (PRIVATE DEMO — amber demo tint). --- */
+.product-status[data-status="PRIVATE DEMO"]{color:#e9d9a8;border-color:#82704a8c;background:#f5deb314}
+
+/* --- LeadOS mobile density: keep the 14-topbar within small screens. --- */
+/* r11b-marker */
+@media (max-width:480px){
+  .leados-root .leados-top-hide-sm{display:none!important}
+  .leados-root .leados-back span{display:none}
+  .leados-root .leados-back{width:34px;padding:0;justify-content:center}
+  .leados-root .leados-reset{width:30px}
+}

@@ -7,6 +7,11 @@ export type AppView = {
   openAudit: () => void;
   /** Returns to the home view, optionally scrolling to a section afterwards. */
   closeAudit: (scrollTarget?: string) => void;
+  /** Opens the full HayDev LeadOS product demo (in-page workspace view). */
+  leadosOpen: boolean;
+  openLeados: () => void;
+  /** Returns to the home view, optionally scrolling to a section afterwards. */
+  closeLeados: (scrollTarget?: string) => void;
 };
 
 export const AppViewContext = createContext<AppView | null>(null);

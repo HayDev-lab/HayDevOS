@@ -1,9 +1,40 @@
 "use client";
 import { Clock, Flag, Languages, MessageCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useLanguage } from "@/components/language-provider";
 import { workingPractice } from "@/data/business-os";
 
 const iconMap = { clock: Clock, languages: Languages, messages: MessageCircle, flag: Flag } as const;
+
+/**
+ * Live Yerevan time — ticks every second in the Asia/Yerevan zone (UTC+4,
+ * no DST). Rendered only after mount (the placeholder avoids an SSR/CSR
+ * hydration mismatch).
+ */
+function YerevanClock() {
+  const { t } = useLanguage();
+  const [time, setTime] = useState("--:--:--");
+  useEffect(() => {
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Yerevan",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    const tick = () => setTime(formatter.format(new Date()));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <span className="practice-clock" role="timer" aria-label={t("Текущее время в Ереване")}>
+      <span className="practice-clock-dot" aria-hidden="true" />
+      {time}
+      <span className="practice-clock-zone" aria-hidden="true">GMT+4</span>
+    </span>
+  );
+}
 
 /** 11 / Working practice — practical operational facts before the contact form. */
 export function WorkingPractice() {
@@ -24,6 +55,7 @@ export function WorkingPractice() {
           </div>
           <h3>{t(fact.title)}</h3>
           <p>{t(fact.text)}</p>
+          {fact.code === "TZ" && <YerevanClock />}
         </article>;
       })}
     </div>

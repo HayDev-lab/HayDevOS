@@ -137,6 +137,14 @@ export default function HayDev() {
     requestAnimationFrame(tryScroll);
   }
 
+  // Early-access request from an IN DEVELOPMENT product card: pre-fills the
+  // contact message (keeping any existing draft) and scrolls to the form.
+  function requestEarlyAccess(product: string) {
+    const line = t("Интересует ранний доступ к {name}. Хочу узнать о сроках и возможностях.").replace("{name}", product);
+    setAuditSummary(current => (current.trim() ? `${line}\n\n${current}` : line));
+    document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   const renderNavItem = (item: { href: string; label: string }) =>
     item.href === "#audit" ? (
       <a
@@ -222,7 +230,7 @@ export default function HayDev() {
       <CustomSoftware />
       <AutomationSection />
       <TransformationScenarios />
-      <HaydevProducts onShowcase={() => openShowcase("erp")} />
+      <HaydevProducts onShowcase={() => openShowcase("erp")} onEarlyAccess={requestEarlyAccess} />
       <div className="container">
         <details ref={showcaseRef} className="lite-details" onToggle={(e) => { if (e.currentTarget.open) setDetailsOpened(true); }}>
           <summary>

@@ -16,7 +16,7 @@ const iconMap: Record<string, LucideIcon> = {
 
 type Filter = "ALL" | ProductStatus;
 
-export function HaydevProducts({ onShowcase }: { onShowcase?: () => void }) {
+export function HaydevProducts({ onShowcase, onEarlyAccess }: { onShowcase?: () => void; onEarlyAccess?: (product: string) => void }) {
   const { t } = useLanguage();
   const { openAudit } = useAppView();
   const [filter, setFilter] = useState<Filter>("ALL");
@@ -63,7 +63,10 @@ export function HaydevProducts({ onShowcase }: { onShowcase?: () => void }) {
             {product.cta && (product.cta.audit
               ? <a className="text-link" href="#audit" onClick={event => { event.preventDefault(); openAudit(); }}>{t(product.cta.label)} <ArrowUpRight size={16} /></a>
               : <a className="text-link" href="#erp" onClick={event => { if (onShowcase) { event.preventDefault(); onShowcase(); } }}>{t(product.cta.label)} <ArrowUpRight size={16} /></a>)}
-            {!product.cta && <span className="product-soon">{t('В разработке — дата не обещана')}</span>}
+            {!product.cta && <>
+              <span className="product-soon">{t('В разработке — дата не обещана')}</span>
+              <a className="text-link product-early" href="#contact" onClick={event => { event.preventDefault(); onEarlyAccess?.(product.name); }}>{t('Хочу ранний доступ')} <ArrowUpRight size={16} /></a>
+            </>}
           </div>
         </article>;
         })}

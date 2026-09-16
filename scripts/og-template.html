@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden;
+    background: #0c120d;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #e4efe4;
+    position: relative;
+  }
+  /* faint grid like the site's technical feel */
+  .grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(197,245,99,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(197,245,99,0.045) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 90% 80% at 50% 45%, #000 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 45%, #000 30%, transparent 75%);
+  }
+  /* orbital ellipse — echo of the WebGL core */
+  .orbit {
+    position: absolute; right: -140px; top: 50%; transform: translateY(-50%);
+    width: 700px; height: 700px; border-radius: 50%;
+    border: 1.5px solid rgba(197,245,99,0.22);
+  }
+  .orbit.o2 { width: 520px; height: 520px; border-color: rgba(197,245,99,0.14); }
+  .orbit.o3 { width: 340px; height: 340px; border-color: rgba(197,245,99,0.10); }
+  .node {
+    position: absolute; width: 10px; height: 10px; border-radius: 50%;
+    background: #c5f563; box-shadow: 0 0 18px rgba(197,245,99,0.8);
+  }
+  .n1 { right: 198px; top: 96px; }
+  .n2 { right: 84px; top: 315px; }
+  .n3 { right: 232px; bottom: 118px; }
+  .core {
+    position: absolute; right: 228px; top: 50%; transform: translateY(-50%);
+    width: 148px; height: 148px; border-radius: 50%;
+    background: radial-gradient(circle at 34% 30%, #e2ff9e 0%, #c5f563 38%, #7f9c3d 100%);
+    box-shadow: 0 0 90px rgba(197,245,99,0.35), 0 0 200px rgba(197,245,99,0.12);
+  }
+  .core::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background: repeating-conic-gradient(rgba(0,0,0,0.05) 0 6deg, transparent 6deg 24deg);
+  }
+  .wrap { position: relative; z-index: 2; height: 100%; padding: 72px 84px; display: flex; flex-direction: column; }
+  .topline { display: flex; align-items: center; gap: 14px; margin-bottom: 40px; }
+  .mark {
+    width: 40px; height: 40px; border-radius: 10px; background: #c5f563;
+    display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-weight: 700; font-size: 19px; color: #10180c; letter-spacing: 0.5px;
+  }
+  .brand { font-size: 22px; font-weight: 700; letter-spacing: 3px; color: #f2faf0; }
+  .brand span { color: #c5f563; }
+  .tag {
+    margin-left: auto; font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 12.5px; letter-spacing: 2.2px; color: #93a698;
+    border: 1px solid #33413a; border-radius: 999px; padding: 8px 18px;
+  }
+  .kicker {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 14px; letter-spacing: 3px; color: #c5f563; margin-bottom: 22px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .kicker::before { content: ""; width: 26px; height: 1.5px; background: #c5f563; }
+  h1 { font-size: 66px; line-height: 1.08; font-weight: 700; color: #f2faf0; max-width: 660px; letter-spacing: -0.5px; }
+  h1 em { font-style: normal; color: #c5f563; }
+  .h1-sub { margin-top: 20px; font-size: 22px; line-height: 1.5; color: #a9b89a; max-width: 560px; }
+  .bottom { margin-top: auto; display: flex; align-items: center; gap: 26px; }
+  .chip {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 13px; letter-spacing: 1.6px; color: #c9d6c2;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .chip b { color: #c5f563; font-weight: 400; font-size: 15px; }
+  .sep { color: #3a4a41; }
+  .url {
+    margin-left: auto; font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 14px; letter-spacing: 2px; color: #93a698;
+  }
+  .url b { color: #c5f563; font-weight: 400; }
+</style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="orbit"></div>
+  <div class="orbit o2"></div>
+  <div class="orbit o3"></div>
+  <div class="node n1"></div>
+  <div class="node n2"></div>
+  <div class="node n3"></div>
+  <div class="core"></div>
+
+  <div class="wrap">
+    <div class="topline">
+      <div class="mark">H</div>
+      <div class="brand">HAY<span>DEV</span></div>
+      <div class="tag">SOFTWARE · AI · DIGITAL PRODUCTS</div>
+    </div>
+
+    <div class="kicker">CUSTOM SOFTWARE · YEREVAN, AM</div>
+    <h1>We build software <em>businesses run on.</em></h1>
+    <div class="h1-sub">Web-платформы, AI-системы, ERP/CRM и автоматизация — от идеи до работающего продукта.</div>
+
+    <div class="bottom">
+      <div class="chip"><b>●</b> SOFTWARE</div><span class="sep">/</span>
+      <div class="chip"><b>●</b> AI &amp; AUTOMATION</div><span class="sep">/</span>
+      <div class="chip"><b>●</b> DIGITAL PRODUCTS</div>
+      <div class="url"><b>haydev.am</b></div>
+    </div>
+  </div>
+</body>
+</html>

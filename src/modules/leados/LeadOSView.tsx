@@ -1,0 +1,362 @@
+"use client";
+
+/**
+ * LeadOS — main module view.
+ *
+ * Layout:
+ *  - Module header (icon + title + subtitle)
+ *  - Tabs nav: Dashboard | Leads | Pipeline | Tasks | Sources | Analytics | Team | Settings
+ *  - Secondary toolbar (New Lead button → Dialog, search input, export button)
+ *  - Content area renders active tab with framer-motion transitions
+ *
+ * The LeadDetail Sheet is owned here so any tab that selects a lead (e.g. the
+ * leads table) can open it.
+ */
+
+import { useCallback, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Target,
+  Plus,
+  Search,
+  Download,
+  LayoutDashboard,
+  Table2,
+  KanbanSquare,
+  CheckSquare,
+  PieChart,
+  BarChart3,
+  Users,
+  Settings,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { useLocale } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { allLeads, LEAD_STAGES, LEAD_SOURCES, STAGE_BY_ID, type MockLead, type LeadStage } from "./data";
+import { LeadsDashboard } from "./components/LeadsDashboard";
+import { LeadsTable } from "./components/LeadsTable";
+import { PipelineKanban } from "./components/PipelineKanban";
+import { LeadDetail } from "./components/LeadDetail";
+import { TasksView } from "./components/TasksView";
+import { SourcesView } from "./components/SourcesView";
+import { AnalyticsView } from "./components/AnalyticsView";
+import { TeamView } from "./components/TeamView";
+import { SettingsView } from "./components/SettingsView";
+import type { LucideIcon } from "lucide-react";
+
+type TabId =
+  | "dashboard"
+  | "leads"
+  | "pipeline"
+  | "tasks"
+  | "sources"
+  | "analytics"
+  | "team"
+  | "settings";
+
+interface TabDef {
+  id: TabId;
+  labelKey: string;
+  icon: LucideIcon;
+}
+
+const TABS: TabDef[] = [
+  { id: "dashboard", labelKey: "leados.tabs.dashboard", icon: LayoutDashboard },
+  { id: "leads", labelKey: "leados.tabs.leads", icon: Table2 },
+  { id: "pipeline", labelKey: "leados.tabs.pipeline", icon: KanbanSquare },
+  { id: "tasks", labelKey: "leados.tabs.tasks", icon: CheckSquare },
+  { id: "sources", labelKey: "leados.tabs.sources", icon: PieChart },
+  { id: "analytics", labelKey: "leados.tabs.analytics", icon: BarChart3 },
+  { id: "team", labelKey: "leados.tabs.team", icon: Users },
+  { id: "settings", labelKey: "leados.tabs.settings", icon: Settings },
+];
+
+export function LeadOSView() {
+  const { t } = useLocale();
+  const [tab, setTab] = useState<TabId>("dashboard");
+  const [search, setSearch] = useState("");
+  const [newLeadOpen, setNewLeadOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<MockLead | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  // New lead form state
+  const [formName, setFormName] = useState("");
+  const [formCompany, setFormCompany] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formValue, setFormValue] = useState("");
+  const [formStage, setFormStage] = useState<LeadStage>("new");
+  const [formSource, setFormSource] = useState<MockLead["source"]>("web");
+
+  const onSelectLead = useCallback((lead: MockLead) => {
+    setSelectedLead(lead);
+    setDetailOpen(true);
+  }, []);
+
+  const onStageChange = useCallback(
+    (leadId: string, newStage: LeadStage) => {
+      setSelectedLead((prev) =>
+        prev && prev.id === leadId ? { ...prev, stage: newStage } : prev,
+      );
+    },
+    [],
+  );
+
+  function submitNewLead() {
+    if (!formName.trim()) {
+      toast.error(t("common.empty"));
+      return;
+    }
+    toast.success(t("leados.toast.leadCreated"));
+    setNewLeadOpen(false);
+    setFormName("");
+    setFormCompany("");
+    setFormEmail("");
+    setFormValue("");
+    setFormStage("new");
+    setFormSource("web");
+  }
+
+  function exportLeads() {
+    toast.success(t("leados.toast.exported", { n: allLeads.length }));
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
+      {/* Module header */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="mb-5 flex flex-col gap-3"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-lime ring-1 ring-primary/20">
+              <Target className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                {t("leados.title")}
+              </h1>
+              <p className="text-xs text-muted-foreground">{t("leados.subtitle")}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse-dot" />
+            {allLeads.length} leads · {LEAD_STAGES.length} stages
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Tabs nav */}
+      <div className="mb-4 flex overflow-x-auto border-b border-border pb-px">
+        <div className="flex min-w-max items-center gap-1">
+          {TABS.map((tabDef) => {
+            const Icon = tabDef.icon;
+            const isActive = tab === tabDef.id;
+            return (
+              <button
+                key={tabDef.id}
+                type="button"
+                onClick={() => setTab(tabDef.id)}
+                className={cn(
+                  "relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors",
+                  isActive
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Icon className={cn("h-3.5 w-3.5", isActive && "text-lime")} />
+                <span className="whitespace-nowrap">{t(tabDef.labelKey)}</span>
+                {isActive && (
+                  <motion.span
+                    layoutId="leados-tab-indicator"
+                    className="absolute inset-x-1 -bottom-px h-0.5 rounded-full bg-primary"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Secondary toolbar */}
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("leados.search.placeholder")}
+            className="pl-8"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+              aria-label={t("common.close")}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={exportLeads}>
+            <Download className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{t("leados.actions.export")}</span>
+          </Button>
+          <Button size="sm" onClick={() => setNewLeadOpen(true)}>
+            <Plus className="h-3.5 w-3.5" />
+            {t("leados.actions.newLead")}
+          </Button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          {tab === "dashboard" && <LeadsDashboard />}
+          {tab === "leads" && <LeadsTable onSelectLead={onSelectLead} externalQuery={search} />}
+          {tab === "pipeline" && <PipelineKanban onStageChange={(id, s) => onStageChange(id, s)} />}
+          {tab === "tasks" && <TasksView />}
+          {tab === "sources" && <SourcesView />}
+          {tab === "analytics" && <AnalyticsView />}
+          {tab === "team" && <TeamView />}
+          {tab === "settings" && <SettingsView />}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* New Lead Dialog */}
+      <Dialog open={newLeadOpen} onOpenChange={setNewLeadOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("leados.actions.newLead")}</DialogTitle>
+            <DialogDescription>{t("leados.subtitle")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="nl-name">{t("leados.table.name")}</Label>
+              <Input
+                id="nl-name"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="Anna Petrosyan"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="nl-company">{t("leados.table.company")}</Label>
+              <Input
+                id="nl-company"
+                value={formCompany}
+                onChange={(e) => setFormCompany(e.target.value)}
+                placeholder="Acme Inc."
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="nl-email">{t("leados.detail.email")}</Label>
+              <Input
+                id="nl-email"
+                type="email"
+                value={formEmail}
+                onChange={(e) => setFormEmail(e.target.value)}
+                placeholder="anna@acme.com"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="nl-value">{t("leados.table.value")} (USD)</Label>
+              <Input
+                id="nl-value"
+                type="number"
+                min={0}
+                value={formValue}
+                onChange={(e) => setFormValue(e.target.value)}
+                placeholder="25000"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="nl-stage">{t("leados.table.stage")}</Label>
+              <Select value={formStage} onValueChange={(v) => setFormStage(v as LeadStage)}>
+                <SelectTrigger id="nl-stage" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEAD_STAGES.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {t(STAGE_BY_ID[s.id].labelKey)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="nl-source">{t("leados.table.source")}</Label>
+              <Select value={formSource} onValueChange={(v) => setFormSource(v as MockLead["source"])}>
+                <SelectTrigger id="nl-source" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEAD_SOURCES.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {t(s.labelKey)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewLeadOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={submitNewLead}>
+              <Plus className="h-3.5 w-3.5" />
+              {t("common.create")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lead detail Sheet */}
+      <LeadDetail
+        lead={selectedLead}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onStageChange={onStageChange}
+      />
+    </div>
+  );
+}
+
+export default LeadOSView;

@@ -1,0 +1,815 @@
+     1→/**
+     2→ * HayDevOS — Global Activity Timeline feed (Task 13c).
+     3→ *
+     4→ * A unified, time-ordered activity feed aggregating events from every module's
+     5→ * mock data: leads created/stage-changed/SLA-breach, quotes sent/accepted/
+     6→ * expiring, documents uploaded/approved/failed, automations ran/succeeded/
+     7→ * failed, invoices issued/paid/overdue, payments received, integrations
+     8→ * connected/failed/reauth, audit runs completed, task overdue + Owner AI
+     9→ * proposals.
+    10→ *
+    11→ * Each event carries:
+    12→ *   - id: stable unique id
+    13→ *   - ts: ISO timestamp (string) — sorted descending in the UI. The event ts
+    14→ *     is the underlying entity's real timestamp (e.g. lead.createdAt,
+    15→ *     automation.runs.lastRunAt, payment.paidAt). Events whose ts falls
+    16→ *     outside the configured 7-day window are filtered out by
+    17→ *     `buildActivityFeed({ days: 7 })`, so the timeline always shows what
+    18→ *     actually happened in the last week.
+    19→ *   - module: registry module id ("leados", "quoteflow", …)
+    20→ *   - type: domain event type (e.g. "lead.created", "invoice.paid")
+    21→ *   - titleKey: i18n key resolved by the sheet UI ("activity.event.lead.created")
+    22→ *   - titleParams: interpolation params for that key
+    23→ *   - actor: { name, color } — the user or "System" that performed the event
+    24→ *   - severity: info | success | warning | critical
+    25→ *   - entityId: stable id for the underlying entity (for CSV / drilldown)
+    26→ *   - entityLabel: human label (English fallback) shown in tooltips/CSV
+    27→ *   - deepLink: { moduleId, context? } — module to switch to when the user
+    28→ *      drills down (context may carry an entity id for the module to resolve)
+    29→ *
+    30→ * `buildActivityFeed(filter)` returns the filtered + sorted feed.
+    31→ * `getActivityStats()` returns counts by module/severity/day plus today +
+    32→ *   critical totals + modules-touched count — used by the sheet's stats strip.
+    33→ *
+    34→ * NO indigo / blue — severity colours map to cyan / lime / amber / rose.
+    35→ */
+    36→
+    37→export type ActivitySeverity = "info" | "success" | "warning" | "critical";
+    38→
+    39→export interface ActivityActor {
+    40→  name: string;
+    41→  /** Tailwind accent token used for the avatar chip. */
+    42→  color: "lime" | "cyan" | "amber" | "rose" | "violet";
+    43→  /** Pre-computed initials ("Aram H" → "AH") for the avatar chip. */
+    44→  initials: string;
+    45→}
+    46→
+    47→export interface ActivityDeepLink {
+    48→  moduleId: string;
+    49→  /** Optional entity context (e.g. "ld_005"). Modules can use this to scroll/highlight. */
+    50→  context?: string;
+    51→}
+    52→
+    53→export interface ActivityEvent {
+    54→  id: string;
+    55→  ts: string;
+    56→  module: string;
+    57→  type: string;
+    58→  titleKey: string;
+    59→  titleParams?: Record<string, string | number>;
+    60→  actor: ActivityActor;
+    61→  severity: ActivitySeverity;
+    62→  entityId: string;
+    63→  entityLabel: string;
+    64→  deepLink: ActivityDeepLink;
+    65→}
+    66→
+    67→// ─────────────────────────────────────────────────────────────────────────────
+    68→// Time helpers (kept local to keep this module self-contained). The "now"
+    69→// value is captured once at module load so the relative ordering stays stable
+    70→// across re-renders within a session — the timeline always shows events
+    71→// "spread across the last 7 days" relative to that anchor.
+    72→// ─────────────────────────────────────────────────────────────────────────────
+    73→
+    74→const NOW = Date.now();
+    75→const MS_DAY = 86_400_000;
+    76→const MS_HOUR = 3_600_000;
+    77→const MS_MIN = 60_000;
+    78→const WINDOW_DAYS = 7;
+    79→const WINDOW_MS = WINDOW_DAYS * MS_DAY;
+    80→
+    81→const iso = (msAgo: number) => new Date(NOW - msAgo).toISOString();
+    82→const daysAgoMs = (d: number) => d * MS_DAY;
+    83→const hoursAgoMs = (h: number) => h * MS_HOUR;
+    84→const minsAgoMs = (m: number) => m * MS_MIN;
+    85→
+    86→// ─────────────────────────────────────────────────────────────────────────────
+    87→// Actors
+    88→// ─────────────────────────────────────────────────────────────────────────────
+    89→
+    90→function makeActor(name: string, color: ActivityActor["color"]): ActivityActor {
+    91→  const parts = name.split(" ").filter(Boolean).slice(0, 2);
+    92→  const init = parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "?";
+    93→  return { name, color, initials: init };
+    94→}
+    95→
+    96→const ACTOR_OWNER = makeActor("Aram Hayrapetyan", "lime");
+    97→const ACTOR_REP1 = makeActor("Rep 1", "cyan");
+    98→const ACTOR_REP2 = makeActor("Rep 2", "amber");
+    99→const ACTOR_SYSTEM = makeActor("System", "violet");
+   100→
+   101→// ─────────────────────────────────────────────────────────────────────────────
+   102→// Derived helpers — produce an ActivityEvent from a mock record. We do NOT
+   103→// mutate the original mock objects; we read stable fields from them.
+   104→// ─────────────────────────────────────────────────────────────────────────────
+   105→
+   106→interface CurrencyFmt {
+   107→  amount: number;
+   108→  currency: string;
+   109→}
+   110→
+   111→function money(v: CurrencyFmt): string {
+   112→  const symbols: Record<string, string> = { USD: "$", EUR: "€", RUB: "₽", AMD: "֏", GBP: "£", JPY: "¥" };
+   113→  const sym = symbols[v.currency] ?? "";
+   114→  const num = new Intl.NumberFormat("en-US", {
+   115→    minimumFractionDigits: v.amount % 1 === 0 ? 0 : 2,
+   116→    maximumFractionDigits: 2,
+   117→  }).format(v.amount);
+   118→  return `${sym}${num}`;
+   119→}
+   120→
+   121→function stageLabel(s: string): string {
+   122→  return s.charAt(0).toUpperCase() + s.slice(1);
+   123→}
+   124→
+   125→// ─────────────────────────────────────────────────────────────────────────────
+   126→// Activity builders per module — each pulls real ids from the mock data so
+   127→// the timeline stays consistent with what the user sees in each module.
+   128→// ─────────────────────────────────────────────────────────────────────────────
+   129→
+   130→import { mockLeads } from "./leads";
+   131→import { mockQuotes } from "./quotes";
+   132→import { mockDocuments } from "./documents";
+   133→import { mockAutomations } from "./automations";
+   134→import { mockInvoices, mockPayments } from "./invoices";
+   135→import { mockIntegrations } from "./integrations";
+   136→
+   137→function actorForOwnerId(ownerId: string): ActivityActor {
+   138→  if (ownerId === "usr_owner") return ACTOR_OWNER;
+   139→  if (ownerId === "usr_rep1") return ACTOR_REP1;
+   140→  if (ownerId === "usr_rep2") return ACTOR_REP2;
+   141→  return ACTOR_SYSTEM;
+   142→}
+   143→
+   144→function buildLeadEvents(): ActivityEvent[] {
+   145→  const out: ActivityEvent[] = [];
+   146→  for (const l of mockLeads) {
+   147→    // created — uses the lead's real createdAt.
+   148→    out.push({
+   149→      id: `act_lead_created_${l.id}`,
+   150→      ts: l.createdAt,
+   151→      module: "leados",
+   152→      type: "lead.created",
+   153→      titleKey: "activity.event.lead.created",
+   154→      titleParams: { name: l.name },
+   155→      actor: actorForOwnerId(l.ownerId),
+   156→      severity: "info",
+   157→      entityId: l.id,
+   158→      entityLabel: l.name,
+   159→      deepLink: { moduleId: "leados", context: l.id },
+   160→    });
+   161→
+   162→    // stage changed — fired on the lead's lastActivityAt.
+   163→    if (l.stage !== "new") {
+   164→      out.push({
+   165→        id: `act_lead_stage_${l.id}`,
+   166→        ts: l.lastActivityAt,
+   167→        module: "leados",
+   168→        type: "lead.stage_changed",
+   169→        titleKey: "activity.event.lead.stage_changed",
+   170→        titleParams: { name: l.name, stage: stageLabel(l.stage) },
+   171→        actor: actorForOwnerId(l.ownerId),
+   172→        severity: l.stage === "won" ? "success" : l.stage === "lost" ? "warning" : "info",
+   173→        entityId: l.id,
+   174→        entityLabel: `${l.name} · ${stageLabel(l.stage)}`,
+   175→        deepLink: { moduleId: "leados", context: l.id },
+   176→      });
+   177→    }
+   178→
+   179→    // sla breach
+   180→    if (l.slaBreached) {
+   181→      out.push({
+   182→        id: `act_lead_sla_${l.id}`,
+   183→        ts: l.slaDueAt ?? l.lastActivityAt,
+   184→        module: "leados",
+   185→        type: "lead.sla_breach",
+   186→        titleKey: "activity.event.lead.sla_breach",
+   187→        titleParams: { name: l.name },
+   188→        actor: ACTOR_SYSTEM,
+   189→        severity: "critical",
+   190→        entityId: l.id,
+   191→        entityLabel: l.name,
+   192→        deepLink: { moduleId: "leados", context: l.id },
+   193→      });
+   194→    }
+   195→  }
+   196→  return out;
+   197→}
+   198→
+   199→function buildQuoteEvents(): ActivityEvent[] {
+   200→  const out: ActivityEvent[] = [];
+   201→  for (const q of mockQuotes) {
+   202→    const total = money({ amount: q.total, currency: q.currency });
+   203→    // The "sent/accepted/expiring" event ts is the quote's real createdAt
+   204→    // (sent) or a synthetic recent ts (accepted — no separate field on the
+   205→    // mock quote).
+   206→    if (q.status === "sent") {
+   207→      // expiring soon? if validUntil is within 3 days from now, flag it.
+   208→      const validMs = new Date(q.validUntil).getTime();
+   209→      const daysToExpiry = (validMs - NOW) / MS_DAY;
+   210→      if (daysToExpiry >= 0 && daysToExpiry <= 3) {
+   211→        out.push({
+   212→          id: `act_quote_expiring_${q.id}`,
+   213→          ts: iso(hoursAgoMs(2)),
+   214→          module: "quoteflow",
+   215→          type: "quote.expiring",
+   216→          titleKey: "activity.event.quote.expiring",
+   217→          titleParams: { number: q.number, total },
+   218→          actor: ACTOR_REP1,
+   219→          severity: "warning",
+   220→          entityId: q.id,
+   221→          entityLabel: q.number,
+   222→          deepLink: { moduleId: "quoteflow", context: q.id },
+   223→        });
+   224→      }
+   225→      out.push({
+   226→        id: `act_quote_sent_${q.id}`,
+   227→        ts: q.createdAt,
+   228→        module: "quoteflow",
+   229→        type: "quote.sent",
+   230→        titleKey: "activity.event.quote.sent",
+   231→        titleParams: { number: q.number, total },
+   232→        actor: ACTOR_REP1,
+   233→        severity: "info",
+   234→        entityId: q.id,
+   235→        entityLabel: q.number,
+   236→        deepLink: { moduleId: "quoteflow", context: q.id },
+   237→      });
+   238→    } else if (q.status === "accepted") {
+   239→      // The accepted event ts is taken to be ~1d after the quote was created
+   240→      // (synthetic — the mock data only stores `createdAt`).
+   241→      const acceptedTs = new Date(
+   242→        new Date(q.createdAt).getTime() + MS_DAY,
+   243→      ).toISOString();
+   244→      out.push({
+   245→        id: `act_quote_accepted_${q.id}`,
+   246→        ts: acceptedTs,
+   247→        module: "quoteflow",
+   248→        type: "quote.accepted",
+   249→        titleKey: "activity.event.quote.accepted",
+   250→        titleParams: { number: q.number, total },
+   251→        actor: ACTOR_OWNER,
+   252→        severity: "success",
+   253→        entityId: q.id,
+   254→        entityLabel: q.number,
+   255→        deepLink: { moduleId: "quoteflow", context: q.id },
+   256→      });
+   257→    }
+   258→    // draft / rejected / expired — skip; they don't surface as timeline events
+   259→    // (or surface as different types in downstream tasks).
+   260→  }
+   261→  return out;
+   262→}
+   263→
+   264→function buildDocumentEvents(): ActivityEvent[] {
+   265→  const out: ActivityEvent[] = [];
+   266→  for (const d of mockDocuments) {
+   267→    out.push({
+   268→      id: `act_doc_uploaded_${d.id}`,
+   269→      ts: d.createdAt,
+   270→      module: "docsmart",
+   271→      type: "doc.uploaded",
+   272→      titleKey: "activity.event.doc.uploaded",
+   273→      titleParams: { filename: d.filename },
+   274→      actor: actorForOwnerId(d.uploadedById),
+   275→      severity: "info",
+   276→      entityId: d.id,
+   277→      entityLabel: d.filename,
+   278→      deepLink: { moduleId: "docsmart", context: d.id },
+   279→    });
+   280→    if (d.status === "approved") {
+   281→      // Approved ~1h after upload (synthetic offset).
+   282→      const approvedTs = new Date(
+   283→        new Date(d.createdAt).getTime() + MS_HOUR,
+   284→      ).toISOString();
+   285→      out.push({
+   286→        id: `act_doc_approved_${d.id}`,
+   287→        ts: approvedTs,
+   288→        module: "docsmart",
+   289→        type: "doc.approved",
+   290→        titleKey: "activity.event.doc.approved",
+   291→        titleParams: { filename: d.filename },
+   292→        actor: ACTOR_OWNER,
+   293→        severity: "success",
+   294→        entityId: d.id,
+   295→        entityLabel: d.filename,
+   296→        deepLink: { moduleId: "docsmart", context: d.id },
+   297→      });
+   298→    } else if (d.status === "rejected") {
+   299→      // Failed ~30min after upload (synthetic offset).
+   300→      const failedTs = new Date(
+   301→        new Date(d.createdAt).getTime() + 30 * MS_MIN,
+   302→      ).toISOString();
+   303→      out.push({
+   304→        id: `act_doc_failed_${d.id}`,
+   305→        ts: failedTs,
+   306→        module: "docsmart",
+   307→        type: "doc.failed",
+   308→        titleKey: "activity.event.doc.failed",
+   309→        titleParams: { filename: d.filename },
+   310→        actor: ACTOR_SYSTEM,
+   311→        severity: "warning",
+   312→        entityId: d.id,
+   313→        entityLabel: d.filename,
+   314→        deepLink: { moduleId: "docsmart", context: d.id },
+   315→      });
+   316→    }
+   317→  }
+   318→  return out;
+   319→}
+   320→
+   321→function buildAutomationEvents(): ActivityEvent[] {
+   322→  const out: ActivityEvent[] = [];
+   323→  for (const a of mockAutomations) {
+   324→    // Skip automations that have never run (drafts with 0 executions) — they
+   325→    // don't surface as activity yet.
+   326→    if (a.runs.total === 0) continue;
+   327→    // The most recent run (or created-at as fallback).
+   328→    const lastRunTs = a.runs.lastRunAt ?? a.createdAt;
+   329→    // Each automation emits a single run event — failed runs surface as
+   330→    // critical, succeeded runs as success.
+   331→    const hasFailures = a.runs.failed > 0;
+   332→    out.push({
+   333→      id: `act_auto_run_${a.id}`,
+   334→      ts: lastRunTs,
+   335→      module: "autopilot",
+   336→      type: hasFailures ? "automation.failed" : "automation.succeeded",
+   337→      titleKey: hasFailures
+   338→        ? "activity.event.automation.failed"
+   339→        : "activity.event.automation.succeeded",
+   340→      titleParams: { name: a.name },
+   341→      actor: ACTOR_SYSTEM,
+   342→      severity: hasFailures ? "critical" : "success",
+   343→      entityId: a.id,
+   344→      entityLabel: a.name,
+   345→      deepLink: { moduleId: "autopilot", context: a.id },
+   346→    });
+   347→  }
+   348→  return out;
+   349→}
+   350→
+   351→function buildInvoiceEvents(): ActivityEvent[] {
+   352→  const out: ActivityEvent[] = [];
+   353→  for (const inv of mockInvoices) {
+   354→    const total = money({ amount: inv.amount, currency: inv.currency });
+   355→    out.push({
+   356→      id: `act_invoice_issued_${inv.id}`,
+   357→      ts: inv.createdAt,
+   358→      module: "erphub",
+   359→      type: "invoice.issued",
+   360→      titleKey: "activity.event.invoice.issued",
+   361→      titleParams: { number: inv.number, total },
+   362→      actor: ACTOR_OWNER,
+   363→      severity: "info",
+   364→      entityId: inv.id,
+   365→      entityLabel: inv.number,
+   366→      deepLink: { moduleId: "erphub", context: inv.id },
+   367→    });
+   368→    if (inv.status === "paid") {
+   369→      // The paid event ts comes from the matching payment if available,
+   370→      // otherwise we use the dueAt.
+   371→      const matchingPayment = mockPayments.find((p) => p.invoiceId === inv.id);
+   372→      const paidTs = matchingPayment
+   373→        ? matchingPayment.paidAt
+   374→        : inv.dueAt ?? inv.createdAt;
+   375→      out.push({
+   376→        id: `act_invoice_paid_${inv.id}`,
+   377→        ts: paidTs,
+   378→        module: "erphub",
+   379→        type: "invoice.paid",
+   380→        titleKey: "activity.event.invoice.paid",
+   381→        titleParams: { number: inv.number, total },
+   382→        actor: ACTOR_SYSTEM,
+   383→        severity: "success",
+   384→        entityId: inv.id,
+   385→        entityLabel: inv.number,
+   386→        deepLink: { moduleId: "erphub", context: inv.id },
+   387→      });
+   388→    } else if (inv.status === "overdue") {
+   389→      out.push({
+   390→        id: `act_invoice_overdue_${inv.id}`,
+   391→        ts: inv.dueAt ?? inv.createdAt,
+   392→        module: "erphub",
+   393→        type: "invoice.overdue",
+   394→        titleKey: "activity.event.invoice.overdue",
+   395→        titleParams: { number: inv.number, total },
+   396→        actor: ACTOR_SYSTEM,
+   397→        severity: "critical",
+   398→        entityId: inv.id,
+   399→        entityLabel: inv.number,
+   400→        deepLink: { moduleId: "erphub", context: inv.id },
+   401→      });
+   402→    }
+   403→  }
+   404→  return out;
+   405→}
+   406→
+   407→function buildPaymentEvents(): ActivityEvent[] {
+   408→  const out: ActivityEvent[] = [];
+   409→  for (const p of mockPayments) {
+   410→    const amount = money({ amount: p.amount, currency: p.currency });
+   411→    out.push({
+   412→      id: `act_payment_${p.id}`,
+   413→      ts: p.paidAt,
+   414→      module: "erphub",
+   415→      type: "payment.received",
+   416→      titleKey: "activity.event.payment.received",
+   417→      titleParams: { amount },
+   418→      actor: ACTOR_SYSTEM,
+   419→      severity: "success",
+   420→      entityId: p.id,
+   421→      entityLabel: `${p.method.toUpperCase()} · ${amount}`,
+   422→      deepLink: { moduleId: "erphub", context: p.invoiceId },
+   423→    });
+   424→  }
+   425→  return out;
+   426→}
+   427→
+   428→function buildIntegrationEvents(): ActivityEvent[] {
+   429→  const out: ActivityEvent[] = [];
+   430→  for (const ig of mockIntegrations) {
+   431→    out.push({
+   432→      id: `act_integration_connected_${ig.id}`,
+   433→      ts: ig.createdAt,
+   434→      module: "connect",
+   435→      type: "integration.connected",
+   436→      titleKey: "activity.event.integration.connected",
+   437→      titleParams: { provider: ig.provider },
+   438→      actor: ACTOR_OWNER,
+   439→      severity: ig.status === "connected" ? "success" : "info",
+   440→      entityId: ig.id,
+   441→      entityLabel: ig.provider,
+   442→      deepLink: { moduleId: "connect", context: ig.id },
+   443→    });
+   444→    if (ig.status === "reauth_required") {
+   445→      out.push({
+   446→        id: `act_integration_reauth_${ig.id}`,
+   447→        ts: ig.lastSyncAt ?? ig.createdAt,
+   448→        module: "connect",
+   449→        type: "integration.reauth",
+   450→        titleKey: "activity.event.integration.reauth",
+   451→        titleParams: { provider: ig.provider },
+   452→        actor: ACTOR_SYSTEM,
+   453→        severity: "warning",
+   454→        entityId: ig.id,
+   455→        entityLabel: ig.provider,
+   456→        deepLink: { moduleId: "connect", context: ig.id },
+   457→      });
+   458→    } else if (ig.status === "error" || ig.status === "disconnected") {
+   459→      out.push({
+   460→        id: `act_integration_failed_${ig.id}`,
+   461→        ts: ig.lastSyncAt ?? ig.createdAt,
+   462→        module: "connect",
+   463→        type: "integration.failed",
+   464→        titleKey: "activity.event.integration.failed",
+   465→        titleParams: { provider: ig.provider },
+   466→        actor: ACTOR_SYSTEM,
+   467→        severity: "critical",
+   468→        entityId: ig.id,
+   469→        entityLabel: ig.provider,
+   470→        deepLink: { moduleId: "connect", context: ig.id },
+   471→      });
+   472→    }
+   473→  }
+   474→  return out;
+   475→}
+   476→
+   477→function buildAuditEvents(): ActivityEvent[] {
+   478→  // Two audit-run events anchored to recent timestamps. The Business Audit
+   479→  // module's mock questionnaire stays untouched — these events are purely for
+   480→  // the timeline surface.
+   481→  return [
+   482→    {
+   483→      id: "act_audit_completed_1",
+   484→      ts: iso(daysAgoMs(2)),
+   485→      module: "audit",
+   486→      type: "audit.completed",
+   487→      titleKey: "activity.event.audit.completed",
+   488→      titleParams: { score: "B+" },
+   489→      actor: ACTOR_OWNER,
+   490→      severity: "success",
+   491→      entityId: "audit_run_1",
+   492→      entityLabel: "Readiness audit · B+",
+   493→      deepLink: { moduleId: "audit" },
+   494→    },
+   495→    {
+   496→      id: "act_audit_completed_2",
+   497→      ts: iso(daysAgoMs(5)),
+   498→      module: "audit",
+   499→      type: "audit.completed",
+   500→      titleKey: "activity.event.audit.completed",
+   501→      titleParams: { score: "A" },
+   502→      actor: ACTOR_OWNER,
+   503→      severity: "success",
+   504→      entityId: "audit_run_2",
+   505→      entityLabel: "Readiness audit · A",
+   506→      deepLink: { moduleId: "audit" },
+   507→    },
+   508→  ];
+   509→}
+   510→
+   511→function buildTaskEvents(): ActivityEvent[] {
+   512→  // Synthetic overdue-task events. These aren't tied to a Tasks module yet
+   513→  // (Tasks ship in a later milestone), so we use the "control" module as the
+   514→  // drilldown target — Control surfaces operational KPIs that include SLA /
+   515→  // overdue counts.
+   516→  return [
+   517→    {
+   518→      id: "act_task_overdue_1",
+   519→      ts: iso(hoursAgoMs(3)),
+   520→      module: "control",
+   521→      type: "task.overdue",
+   522→      titleKey: "activity.event.task.overdue",
+   523→      titleParams: { name: "Send Q3 onboarding pack" },
+   524→      actor: ACTOR_SYSTEM,
+   525→      severity: "warning",
+   526→      entityId: "task_overdue_1",
+   527→      entityLabel: "Send Q3 onboarding pack",
+   528→      deepLink: { moduleId: "control" },
+   529→    },
+   530→    {
+   531→      id: "act_task_overdue_2",
+   532→      ts: iso(hoursAgoMs(28)),
+   533→      module: "control",
+   534→      type: "task.overdue",
+   535→      titleKey: "activity.event.task.overdue",
+   536→      titleParams: { name: "Reconcile Stripe payouts" },
+   537→      actor: ACTOR_SYSTEM,
+   538→      severity: "critical",
+   539→      entityId: "task_overdue_2",
+   540→      entityLabel: "Reconcile Stripe payouts",
+   541→      deepLink: { moduleId: "control" },
+   542→    },
+   543→  ];
+   544→}
+   545→
+   546→function buildOwnerAiEvents(): ActivityEvent[] {
+   547→  // Owner AI proposals — synthetic, anchored to recent timestamps. These
+   548→  // surface on the timeline as info events so the user sees when their AI
+   549→  // co-founder has surfaced a recommendation.
+   550→  return [
+   551→    {
+   552→      id: "act_ai_proposed_1",
+   553→      ts: iso(minsAgoMs(45)),
+   554→      module: "ownerAi",
+   555→      type: "ai.proposed",
+   556→      titleKey: "activity.event.ai.proposed",
+   557→      titleParams: { action: "follow up ld_005 (SLA breached)" },
+   558→      actor: ACTOR_OWNER,
+   559→      severity: "info",
+   560→      entityId: "ownerai_prop_1",
+   561→      entityLabel: "Owner AI · follow-up proposal",
+   562→      deepLink: { moduleId: "ownerAi" },
+   563→    },
+   564→    {
+   565→      id: "act_ai_proposed_2",
+   566→      ts: iso(hoursAgoMs(5)),
+   567→      module: "ownerAi",
+   568→      type: "ai.proposed",
+   569→      titleKey: "activity.event.ai.proposed",
+   570→      titleParams: { action: "discount on Q-2026-0142" },
+   571→      actor: ACTOR_OWNER,
+   572→      severity: "info",
+   573→      entityId: "ownerai_prop_2",
+   574→      entityLabel: "Owner AI · discount proposal",
+   575→      deepLink: { moduleId: "ownerAi" },
+   576→    },
+   577→    {
+   578→      id: "act_ai_proposed_3",
+   579→      ts: iso(daysAgoMs(1)),
+   580→      module: "ownerAi",
+   581→      type: "ai.proposed",
+   582→      titleKey: "activity.event.ai.proposed",
+   583→      titleParams: { action: "renewal reminder to cu_001" },
+   584→      actor: ACTOR_OWNER,
+   585→      severity: "info",
+   586→      entityId: "ownerai_prop_3",
+   587→      entityLabel: "Owner AI · renewal reminder",
+   588→      deepLink: { moduleId: "ownerAi" },
+   589→    },
+   590→  ];
+   591→}
+   592→
+   593→// ─────────────────────────────────────────────────────────────────────────────
+   594→// Aggregate — produce the full feed, then expose a filter function.
+   595→// ─────────────────────────────────────────────────────────────────────────────
+   596→
+   597→function buildAllEvents(): ActivityEvent[] {
+   598→  return [
+   599→    ...buildLeadEvents(),
+   600→    ...buildQuoteEvents(),
+   601→    ...buildDocumentEvents(),
+   602→    ...buildAutomationEvents(),
+   603→    ...buildInvoiceEvents(),
+   604→    ...buildPaymentEvents(),
+   605→    ...buildIntegrationEvents(),
+   606→    ...buildAuditEvents(),
+   607→    ...buildTaskEvents(),
+   608→    ...buildOwnerAiEvents(),
+   609→  ];
+   610→}
+   611→
+   612→// Module-level cached feed — recomputed on first call only. Mock data is
+   613→// stable across the session.
+   614→let _cached: ActivityEvent[] | null = null;
+   615→
+   616→/** Get the full activity feed, sorted most-recent-first. */
+   617→export function getActivityFeed(): ActivityEvent[] {
+   618→  if (_cached) return _cached;
+   619→  const all = buildAllEvents();
+   620→  all.sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0));
+   621→  _cached = all;
+   622→  return all;
+   623→}
+   624→
+   625→// ─────────────────────────────────────────────────────────────────────────────
+   626→// Filter API
+   627→// ─────────────────────────────────────────────────────────────────────────────
+   628→
+   629→export interface ActivityFilter {
+   630→  /** Module id ("leados", "quoteflow", …) — undefined means "all modules". */
+   631→  module?: string;
+   632→  /** Severity filter — undefined means "all severities". */
+   633→  severity?: ActivitySeverity;
+   634→  /** Time window in days — default 7. */
+   635→  days?: number;
+   636→  /** Free-text search across title params, actor name, entity label. */
+   637→  query?: string;
+   638→}
+   639→
+   640→/** Match a single event against the filter, applied to the *English* label
+   641→ *  text. The timeline UI re-resolves the titleKey against the live locale so
+   642→ *  the actual rendered text is localized; the search matches on the stable
+   643→ *  English fallback fields so results are deterministic across locales. */
+   644→function matchesFilter(ev: ActivityEvent, filter: ActivityFilter): boolean {
+   645→  if (filter.module && ev.module !== filter.module) return false;
+   646→  if (filter.severity && ev.severity !== filter.severity) return false;
+   647→  const days = filter.days ?? WINDOW_DAYS;
+   648→  const cutoff = NOW - days * MS_DAY;
+   649→  const tsMs = new Date(ev.ts).getTime();
+   650→  if (tsMs < cutoff) return false;
+   651→  const q = filter.query?.trim().toLowerCase();
+   652→  if (q) {
+   653→    const hay = [
+   654→      ev.entityLabel,
+   655→      ev.actor.name,
+   656→      ev.module,
+   657→      ev.type,
+   658→      ev.entityId,
+   659→    ]
+   660→      .join(" ")
+   661→      .toLowerCase();
+   662→    if (!hay.includes(q)) return false;
+   663→  }
+   664→  return true;
+   665→}
+   666→
+   667→/** Build (filter) the activity feed. Always returns a fresh array (sorted
+   668→ *  most-recent-first) — safe to memoize on the caller side keyed by the
+   669→ *  filter object's stable fields. */
+   670→export function buildActivityFeed(filter: ActivityFilter = {}): ActivityEvent[] {
+   671→  const all = getActivityFeed();
+   672→  return all.filter((ev) => matchesFilter(ev, filter));
+   673→}
+   674→
+   675→// ─────────────────────────────────────────────────────────────────────────────
+   676→// Stats — counts by module, severity, and day, plus today/critical/modulesTouched
+   677→// totals. Used by the sheet's compact stats strip above the timeline.
+   678→// ─────────────────────────────────────────────────────────────────────────────
+   679→
+   680→export interface ActivityStats {
+   681→  total: number;
+   682→  critical: number;
+   683→  today: number;
+   684→  modulesTouched: number;
+   685→  byModule: Record<string, number>;
+   686→  bySeverity: Record<ActivitySeverity, number>;
+   687→  /** Per-day counts keyed by YYYY-MM-DD (local). Index 0 is today. */
+   688→  byDay: { date: string; count: number }[];
+   689→}
+   690→
+   691→/** Compute stats from the full feed (filtered to the 7-day window). */
+   692→export function getActivityStats(): ActivityStats {
+   693→  const all = getActivityFeed();
+   694→  const cutoff = NOW - WINDOW_MS;
+   695→  const inWindow = all.filter((ev) => {
+   696→    const t = new Date(ev.ts).getTime();
+   697→    return !isNaN(t) && t >= cutoff;
+   698→  });
+   699→
+   700→  const byModule: Record<string, number> = {};
+   701→  const bySeverity: Record<ActivitySeverity, number> = {
+   702→    info: 0,
+   703→    success: 0,
+   704→    warning: 0,
+   705→    critical: 0,
+   706→  };
+   707→  const dayCounts = new Map<string, number>();
+   708→
+   709→  // Today & yesterday key helpers (local-time).
+   710→  const todayDate = new Date();
+   711→  const todayKey = todayDate.toDateString();
+   712→
+   713→  let today = 0;
+   714→  let critical = 0;
+   715→
+   716→  for (const ev of inWindow) {
+   717→    byModule[ev.module] = (byModule[ev.module] ?? 0) + 1;
+   718→    bySeverity[ev.severity] += 1;
+   719→    if (ev.severity === "critical") critical += 1;
+   720→    const d = new Date(ev.ts);
+   721→    if (!isNaN(d.getTime())) {
+   722→      const key = d.toDateString();
+   723→      if (key === todayKey) today += 1;
+   724→      dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
+   725→    }
+   726→  }
+   727→
+   728→  // Build per-day series (oldest → newest) for a 7-day sparkline.
+   729→  const byDay: { date: string; count: number }[] = [];
+   730→  for (let i = WINDOW_DAYS - 1; i >= 0; i--) {
+   731→    const d = new Date(NOW - i * MS_DAY);
+   732→    byDay.push({ date: d.toDateString(), count: dayCounts.get(d.toDateString()) ?? 0 });
+   733→  }
+   734→
+   735→  return {
+   736→    total: inWindow.length,
+   737→    critical,
+   738→    today,
+   739→    modulesTouched: Object.keys(byModule).length,
+   740→    byModule,
+   741→    bySeverity,
+   742→    byDay,
+   743→  };
+   744→}
+   745→
+   746→// ─────────────────────────────────────────────────────────────────────────────
+   747→// Day grouping helpers — used by the sheet UI.
+   748→// ─────────────────────────────────────────────────────────────────────────────
+   749→
+   750→export interface ActivityDayGroup {
+   751→  /** toDateString() of the day. */
+   752→  key: string;
+   753→  /** Pre-localized display label ("Today" | "Yesterday" | null for raw date format). */
+   754→  labelKey: "activity.day.today" | "activity.day.yesterday" | null;
+   755→  events: ActivityEvent[];
+   756→}
+   757→
+   758→/** Group events into day buckets (most recent first), preserving per-event
+   759→ *  ordering inside each bucket. */
+   760→export function groupByDay(events: ActivityEvent[]): ActivityDayGroup[] {
+   761→  const buckets = new Map<string, ActivityEvent[]>();
+   762→  const today = new Date();
+   763→  const todayKey = today.toDateString();
+   764→  const yesterdayKey = new Date(today.getTime() - MS_DAY).toDateString();
+   765→  for (const ev of events) {
+   766→    const d = new Date(ev.ts);
+   767→    const key = d.toDateString();
+   768→    const arr = buckets.get(key) ?? [];
+   769→    arr.push(ev);
+   770→    buckets.set(key, arr);
+   771→  }
+   772→  // Preserve the order events were given to us (already sorted desc) when
+   773→  // building the bucket list, since Map preserves insertion order.
+   774→  const out: ActivityDayGroup[] = [];
+   775→  for (const [key, evs] of buckets) {
+   776→    let labelKey: ActivityDayGroup["labelKey"] = null;
+   777→    if (key === todayKey) labelKey = "activity.day.today";
+   778→    else if (key === yesterdayKey) labelKey = "activity.day.yesterday";
+   779→    out.push({ key, labelKey, events: evs });
+   780→  }
+   781→  return out;
+   782→}
+   783→
+   784→// ─────────────────────────────────────────────────────────────────────────────
+   785→// CSV export — produces a simple CSV string from the (filtered) events.
+   786→// ─────────────────────────────────────────────────────────────────────────────
+   787→
+   788→function csvEscape(value: string): string {
+   789→  if (value.includes(",") || value.includes("\"") || value.includes("\n")) {
+   790→    return `"${value.replace(/"/g, '""')}"`;
+   791→  }
+   792→  return value;
+   793→}
+   794→
+   795→/** Export the given events as a CSV string. */
+   796→export function exportActivityCsv(events: ActivityEvent[]): string {
+   797→  const header = ["id", "timestamp", "module", "type", "severity", "actor", "entityId", "entityLabel", "titleKey"];
+   798→  const rows = events.map((ev) =>
+   799→    [
+   800→      ev.id,
+   801→      ev.ts,
+   802→      ev.module,
+   803→      ev.type,
+   804→      ev.severity,
+   805→      ev.actor.name,
+   806→      ev.entityId,
+   807→      ev.entityLabel,
+   808→      ev.titleKey,
+   809→    ]
+   810→      .map(csvEscape)
+   811→      .join(","),
+   812→  );
+   813→  return [header.join(","), ...rows].join("\n");
+   814→}
+   815→

@@ -1,0 +1,1464 @@
+     1→/**
+     2→ * Control — typed analytics/application services.
+     3→ *
+     4→ * Each `get<Domain>Summary(window)` function aggregates from foundation mock
+     5→ * data (`@/lib/mock`) and the Control data layer (`./data`) and returns a
+     6→ * typed object. No raw cross-module joins leak through — these are projected
+     7→ * application-layer shapes consumed by the React views.
+     8→ *
+     9→ * All aggregations are deterministic. The time window filters records by their
+    10→ * intrinsic timestamp (createdAt / paidAt / etc.) for "new X" metrics, and
+    11→ * computes prior-period deltas for trend KPIs. Snapshot metrics (open
+    12→ * pipeline, active leads, integration health) reflect current state.
+    13→ */
+    14→
+    15→import {
+    16→  mockLeads,
+    17→  mockQuotes,
+    18→  mockDocuments,
+    19→  mockAutomations,
+    20→  mockInvoices,
+    21→  mockPayments,
+    22→  mockIntegrations,
+    23→  mockCustomers,
+    24→  mockProducts,
+    25→} from "@/lib/mock";
+    26→import { formatCurrency, formatCompact } from "@/lib/utils";
+    27→import type {
+    28→  TimeWindow,
+    29→  WindowRange,
+    30→  ExecutiveSnapshot,
+    31→  SalesSummary,
+    32→  QuoteSummary,
+    33→  DocumentSummary,
+    34→  AutomationSummary,
+    35→  FinanceSummary,
+    36→  IntegrationHealthSummary,
+    37→  SlaOperationsSummary,
+    38→  KpiCardData,
+    39→  KpiTone,
+    40→  ModuleHealthEntry,
+    41→  ModuleHealth,
+    42→  AttentionItem,
+    43→  AiInsight,
+    44→} from "./types";
+    45→import { buildAttentionFeed, buildAiInsights, OWNER_NAMES, ownerName, WORKER_SNAPSHOT } from "./data";
+    46→
+    47→// ─────────────────────────────────────────────────────────────────────────────
+    48→// Window helpers
+    49→// ─────────────────────────────────────────────────────────────────────────────
+    50→
+    51→const MS_PER_DAY = 86_400_000;
+    52→const MS_PER_HOUR = 3_600_000;
+    53→
+    54→export function resolveWindow(w: TimeWindow, customDays = 14): WindowRange {
+    55→  const endMs = Date.now();
+    56→  let days: number;
+    57→  switch (w) {
+    58→    case "today":
+    59→      days = 1;
+    60→      break;
+    61→    case "7d":
+    62→      days = 7;
+    63→      break;
+    64→    case "30d":
+    65→      days = 30;
+    66→      break;
+    67→    case "quarter":
+    68→      days = 90;
+    69→      break;
+    70→    case "custom":
+    71→      days = customDays;
+    72→      break;
+    73→  }
+    74→  // For "today" we use a 24h window; for others, day-aligned.
+    75→  const startMs = w === "today" ? endMs - MS_PER_HOUR * 24 : endMs - days * MS_PER_DAY;
+    76→  const priorStartMs = startMs - (endMs - startMs);
+    77→  const labelKey =
+    78→    w === "today" ? "control.window.today" :
+    79→    w === "7d" ? "control.window.7d" :
+    80→    w === "30d" ? "control.window.30d" :
+    81→    w === "quarter" ? "control.window.quarter" :
+    82→    "control.window.custom";
+    83→  return { startMs, endMs, days, priorStartMs, labelKey };
+    84→}
+    85→
+    86→/** True if `iso` falls inside [startMs, endMs). */
+    87→function inWindow(iso: string | null | undefined, range: WindowRange): boolean {
+    88→  if (!iso) return false;
+    89→  const t = new Date(iso).getTime();
+    90→  return t >= range.startMs && t < range.endMs;
+    91→}
+    92→
+    93→/** True if `iso` falls inside the prior period [priorStartMs, startMs). */
+    94→function inPriorWindow(iso: string | null | undefined, range: WindowRange): boolean {
+    95→  if (!iso) return false;
+    96→  const t = new Date(iso).getTime();
+    97→  return t >= range.priorStartMs && t < range.startMs;
+    98→}
+    99→
+   100→/** 7 evenly-spaced buckets across the window. Returns ISO bucket labels + start ms. */
+   101→function bucketize(range: WindowRange): { label: string; startMs: number; endMs: number }[] {
+   102→  const n = 7;
+   103→  const span = range.endMs - range.startMs;
+   104→  const step = span / n;
+   105→  const buckets: { label: string; startMs: number; endMs: number }[] = [];
+   106→  for (let i = 0; i < n; i++) {
+   107→    const startMs = range.startMs + i * step;
+   108→    const endMs = startMs + step;
+   109→    const d = new Date(startMs);
+   110→    const label = range.days <= 2
+   111→      ? `${d.getHours().toString().padStart(2, "0")}:00`
+   112→      : `${d.getMonth() + 1}/${d.getDate()}`;
+   113→    buckets.push({ label, startMs, endMs });
+   114→  }
+   115→  return buckets;
+   116→}
+   117→
+   118→/** Deterministic pseudo-history anchored on a real current value. */
+   119→function anchoredSparkline(current: number, variance = 0.08): number[] {
+   120→  const n = 7;
+   121→  // Stable seed from the integer part of current.
+   122→  let seed = Math.max(1, Math.floor(Math.abs(current)) + 7);
+   123→  const rnd = () => {
+   124→    seed = (seed * 9301 + 49297) % 233280;
+   125→    return seed / 233280;
+   126→  };
+   127→  const out: number[] = [];
+   128→  for (let i = 0; i < n; i++) {
+   129→    // Slight upward drift toward current.
+   130→    const drift = (i / (n - 1)) * 0.4 + 0.6;
+   131→    const noise = 1 - variance + rnd() * variance * 2;
+   132→    out.push(Math.max(0, current * drift * noise));
+   133→  }
+   134→  out[out.length - 1] = current;
+   135→  return out;
+   136→}
+   137→
+   138→/** Count-based sparkline — counts records whose `getDate` falls in each bucket. */
+   139→function countSparkline<T>(records: T[], getDate: (r: T) => string | null | undefined, range: WindowRange): number[] {
+   140→  const buckets = bucketize(range);
+   141→  return buckets.map((b) => records.filter((r) => {
+   142→    const t = new Date(getDate(r) ?? "").getTime();
+   143→    return t >= b.startMs && t < b.endMs;
+   144→  }).length);
+   145→}
+   146→
+   147→/** Delta % between current + prior counts. */
+   148→function deltaPct(current: number, prior: number): number {
+   149→  if (prior === 0) return current > 0 ? 100 : 0;
+   150→  return ((current - prior) / prior) * 100;
+   151→}
+   152→
+   153→// ─────────────────────────────────────────────────────────────────────────────
+   154→// Module labels (single source of truth for KPI source subtitles)
+   155→// ─────────────────────────────────────────────────────────────────────────────
+   156→
+   157→export const MODULE_LABELS: Record<string, string> = {
+   158→  leados: "LeadOS",
+   159→  quoteflow: "QuoteFlow",
+   160→  docsmart: "DocSmart",
+   161→  autopilot: "Autopilot",
+   162→  erphub: "ERP Hub",
+   163→  connect: "Connect",
+   164→  ownerAi: "Owner AI",
+   165→};
+   166→
+   167→// ─────────────────────────────────────────────────────────────────────────────
+   168→// Executive snapshot
+   169→// ─────────────────────────────────────────────────────────────────────────────
+   170→
+   171→export function getExecutiveSnapshot(window: TimeWindow): ExecutiveSnapshot {
+   172→  const range = resolveWindow(window);
+   173→  const kpis = buildExecutiveKpis(range);
+   174→  const attentionTop = buildAttentionFeed().slice(0, 5);
+   175→  const moduleHealth = buildModuleHealth();
+   176→  const ecosystem = buildEcosystem(moduleHealth);
+   177→  return { window: range, kpis, attentionTop, moduleHealth, ecosystem };
+   178→}
+   179→
+   180→function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
+   181→  const kpis: KpiCardData[] = [];
+   182→
+   183→  // 1. Revenue (paid invoices in window)
+   184→  const paidInWindow = mockInvoices.filter((i) => i.status === "paid" && inWindow(i.createdAt, range));
+   185→  const paidPrior = mockInvoices.filter((i) => i.status === "paid" && inPriorWindow(i.createdAt, range));
+   186→  const revenue = paidInWindow.reduce((s, i) => s + i.amount, 0);
+   187→  const revenuePrior = paidPrior.reduce((s, i) => s + i.amount, 0);
+   188→  kpis.push({
+   189→    id: "kpi-revenue",
+   190→    labelKey: "control.kpi.revenue",
+   191→    displayValue: formatCompact(revenue),
+   192→    value: revenue,
+   193→    deltaPct: deltaPct(revenue, revenuePrior),
+   194→    tone: "lime",
+   195→    sparkline: countSparkline(mockPayments, (p) => p.paidAt, range).map((_, i) => {
+   196→      // Use payment amounts in bucket
+   197→      const buckets = bucketize(range);
+   198→      const b = buckets[i];
+   199→      return mockPayments.filter((p) => {
+   200→        const t = new Date(p.paidAt).getTime();
+   201→        return t >= b.startMs && t < b.endMs;
+   202→      }).reduce((s, p) => s + p.amount, 0) / 1000;
+   203→    }),
+   204→    moduleId: "erphub",
+   205→    sourceLabel: MODULE_LABELS.erphub,
+   206→    hint: `${paidInWindow.length} paid invoices`,
+   207→    unit: "currency",
+   208→  });
+   209→
+   210→  // 2. Open pipeline value (snapshot — open leads only)
+   211→  const openLeads = mockLeads.filter((l) => l.stage !== "won" && l.stage !== "lost");
+   212→  const pipeline = openLeads.reduce((s, l) => s + l.value, 0);
+   213→  kpis.push({
+   214→    id: "kpi-pipeline",
+   215→    labelKey: "control.kpi.pipeline",
+   216→    displayValue: formatCompact(pipeline),
+   217→    value: pipeline,
+   218→    deltaPct: 8.1, // snapshot — illustrative delta
+   219→    tone: "cyan",
+   220→    sparkline: anchoredSparkline(pipeline / 1000).map((v) => v * 1000),
+   221→    moduleId: "leados",
+   222→    sourceLabel: MODULE_LABELS.leados,
+   223→    hint: `${openLeads.length} open leads`,
+   224→    unit: "currency",
+   225→  });
+   226→
+   227→  // 3. Active leads (snapshot)
+   228→  const activeLeads = openLeads.length;
+   229→  kpis.push({
+   230→    id: "kpi-active-leads",
+   231→    labelKey: "control.kpi.activeLeads",
+   232→    displayValue: String(activeLeads),
+   233→    value: activeLeads,
+   234→    deltaPct: deltaPct(activeLeads, activeLeads - 1),
+   235→    tone: "amber",
+   236→    sparkline: anchoredSparkline(activeLeads),
+   237→    moduleId: "leados",
+   238→    sourceLabel: MODULE_LABELS.leados,
+   239→    hint: "Open pipeline leads",
+   240→  });
+   241→
+   242→  // 4. Won deals (count in window)
+   243→  const wonInWindow = mockLeads.filter((l) => l.stage === "won" && inWindow(l.updatedAt, range));
+   244→  const wonPrior = mockLeads.filter((l) => l.stage === "won" && inPriorWindow(l.updatedAt, range));
+   245→  kpis.push({
+   246→    id: "kpi-won-deals",
+   247→    labelKey: "control.kpi.wonDeals",
+   248→    displayValue: String(wonInWindow.length),
+   249→    value: wonInWindow.length,
+   250→    deltaPct: deltaPct(wonInWindow.length, wonPrior.length),
+   251→    tone: "lime",
+   252→    sparkline: countSparkline(mockLeads.filter((l) => l.stage === "won"), (l) => l.updatedAt, range),
+   253→    moduleId: "leados",
+   254→    sourceLabel: MODULE_LABELS.leados,
+   255→    hint: `Won in last ${range.days}d`,
+   256→  });
+   257→
+   258→  // 5. Quote sent value (sent quotes in window)
+   259→  const sentInWindow = mockQuotes.filter((q) => q.status === "sent" && inWindow(q.createdAt, range));
+   260→  const sentPrior = mockQuotes.filter((q) => q.status === "sent" && inPriorWindow(q.createdAt, range));
+   261→  const sentValue = sentInWindow.reduce((s, q) => s + q.total, 0);
+   262→  const sentPriorValue = sentPrior.reduce((s, q) => s + q.total, 0);
+   263→  kpis.push({
+   264→    id: "kpi-quote-sent-value",
+   265→    labelKey: "control.kpi.quoteSentValue",
+   266→    displayValue: formatCompact(sentValue),
+   267→    value: sentValue,
+   268→    deltaPct: deltaPct(sentValue, sentPriorValue),
+   269→    tone: "cyan",
+   270→    sparkline: countSparkline(mockQuotes.filter((q) => q.status === "sent"), (q) => q.createdAt, range).map((c) => c * 50_000),
+   271→    moduleId: "quoteflow",
+   272→    sourceLabel: MODULE_LABELS.quoteflow,
+   273→    hint: `${sentInWindow.length} sent quotes`,
+   274→    unit: "currency",
+   275→  });
+   276→
+   277→  // 6. Quote acceptance rate (accepted / decided)
+   278→  const accepted = mockQuotes.filter((q) => q.status === "accepted").length;
+   279→  const decided = mockQuotes.filter((q) => q.status === "accepted" || q.status === "rejected" || q.status === "expired").length;
+   280→  const acceptRate = decided > 0 ? (accepted / decided) * 100 : 0;
+   281→  kpis.push({
+   282→    id: "kpi-accept-rate",
+   283→    labelKey: "control.kpi.acceptRate",
+   284→    displayValue: `${acceptRate.toFixed(0)}%`,
+   285→    value: acceptRate,
+   286→    deltaPct: 3.2,
+   287→    tone: "lime",
+   288→    sparkline: anchoredSparkline(acceptRate, 0.04),
+   289→    moduleId: "quoteflow",
+   290→    sourceLabel: MODULE_LABELS.quoteflow,
+   291→    hint: `${accepted}/${decided} decided`,
+   292→    unit: "percent",
+   293→  });
+   294→
+   295→  // 7. Documents awaiting review
+   296→  const docReview = mockDocuments.filter(
+   297→    (d) => d.status === "pending" || d.status === "processing" || d.status === "extracted" || d.status === "classified",
+   298→  );
+   299→  kpis.push({
+   300→    id: "kpi-doc-review",
+   301→    labelKey: "control.kpi.docReview",
+   302→    displayValue: String(docReview.length),
+   303→    value: docReview.length,
+   304→    deltaPct: deltaPct(docReview.length, docReview.length - 1),
+   305→    tone: "amber",
+   306→    sparkline: anchoredSparkline(docReview.length),
+   307→    moduleId: "docsmart",
+   308→    sourceLabel: MODULE_LABELS.docsmart,
+   309→    hint: "Awaiting reviewer sign-off",
+   310→  });
+   311→
+   312→  // 8. Automation failures (sum of failed runs)
+   313→  const autoFailures = mockAutomations.reduce((s, a) => s + a.runs.failed, 0);
+   314→  kpis.push({
+   315→    id: "kpi-auto-failures",
+   316→    labelKey: "control.kpi.autoFailures",
+   317→    displayValue: formatCompact(autoFailures),
+   318→    value: autoFailures,
+   319→    deltaPct: -2.1,
+   320→    tone: "rose",
+   321→    sparkline: anchoredSparkline(autoFailures, 0.06),
+   322→    moduleId: "autopilot",
+   323→    sourceLabel: MODULE_LABELS.autopilot,
+   324→    hint: `${mockAutomations.filter((a) => a.runs.failed > 0).length} automations affected`,
+   325→  });
+   326→
+   327→  // 9. SLA breaches (current count)
+   328→  const slaBreaches = mockLeads.filter((l) => l.slaBreached === true).length;
+   329→  kpis.push({
+   330→    id: "kpi-sla-breaches",
+   331→    labelKey: "control.kpi.slaBreaches",
+   332→    displayValue: String(slaBreaches),
+   333→    value: slaBreaches,
+   334→    deltaPct: slaBreaches > 0 ? 5.4 : 0,
+   335→    tone: "rose",
+   336→    sparkline: anchoredSparkline(slaBreaches, 0.05),
+   337→    moduleId: "leados",
+   338→    sourceLabel: MODULE_LABELS.leados,
+   339→    hint: "Lead response SLA",
+   340→  });
+   341→
+   342→  // 10. Overdue invoices
+   343→  const overdueInv = mockInvoices.filter((i) => i.status === "overdue");
+   344→  const overdueTotal = overdueInv.reduce((s, i) => s + i.amount, 0);
+   345→  kpis.push({
+   346→    id: "kpi-overdue-inv",
+   347→    labelKey: "control.kpi.overdueInvoices",
+   348→    displayValue: formatCompact(overdueTotal),
+   349→    value: overdueTotal,
+   350→    deltaPct: overdueInv.length > 0 ? 4.2 : 0,
+   351→    tone: "rose",
+   352→    sparkline: anchoredSparkline(overdueTotal / 1000).map((v) => v * 1000),
+   353→    moduleId: "erphub",
+   354→    sourceLabel: MODULE_LABELS.erphub,
+   355→    hint: `${overdueInv.length} invoices overdue`,
+   356→    unit: "currency",
+   357→  });
+   358→
+   359→  // 11. Integration health (connected / total)
+   360→  const total = mockIntegrations.length;
+   361→  const connected = mockIntegrations.filter((i) => i.status === "connected").length;
+   362→  const healthPct = total > 0 ? (connected / total) * 100 : 0;
+   363→  kpis.push({
+   364→    id: "kpi-int-health",
+   365→    labelKey: "control.kpi.integrationHealth",
+   366→    displayValue: `${healthPct.toFixed(0)}%`,
+   367→    value: healthPct,
+   368→    deltaPct: 0,
+   369→    tone: healthPct >= 75 ? "lime" : healthPct >= 50 ? "amber" : "rose",
+   370→    sparkline: anchoredSparkline(healthPct, 0.03),
+   371→    moduleId: "connect",
+   372→    sourceLabel: MODULE_LABELS.connect,
+   373→    hint: `${connected}/${total} connected`,
+   374→    unit: "percent",
+   375→  });
+   376→
+   377→  return kpis;
+   378→}
+   379→
+   380→// ─────────────────────────────────────────────────────────────────────────────
+   381→// Module health grid
+   382→// ─────────────────────────────────────────────────────────────────────────────
+   383→
+   384→function buildModuleHealth(): ModuleHealthEntry[] {
+   385→  const out: ModuleHealthEntry[] = [];
+   386→
+   387→  // LeadOS
+   388→  const leadsTotal = mockLeads.length;
+   389→  const slaBreaches = mockLeads.filter((l) => l.slaBreached === true).length;
+   390→  const leadsWarn = mockLeads.filter((l) => l.stage === "new" && !l.firstResponseAt).length;
+   391→  out.push({
+   392→    moduleId: "leados",
+   393→    nameKey: "module.leados",
+   394→    health: slaBreaches > 0 ? "critical" : leadsWarn > 0 ? "warning" : "healthy",
+   395→    score: 1 - (slaBreaches + leadsWarn * 0.5) / Math.max(1, leadsTotal),
+   396→    summary: slaBreaches > 0 ? `${slaBreaches} SLA breach${slaBreaches === 1 ? "" : "es"}` : leadsWarn > 0 ? `${leadsWarn} new leads awaiting response` : "Pipeline healthy",
+   397→    counts: { ok: leadsTotal - slaBreaches - leadsWarn, warn: leadsWarn, crit: slaBreaches },
+   398→  });
+   399→
+   400→  // QuoteFlow
+   401→  const qTotal = mockQuotes.length;
+   402→  const qExpired = mockQuotes.filter((q) => q.status === "expired").length;
+   403→  const qExpiring = mockQuotes.filter((q) => {
+   404→    if (q.status !== "sent") return false;
+   405→    const days = (new Date(q.validUntil).getTime() - Date.now()) / MS_PER_DAY;
+   406→    return days <= 7;
+   407→  }).length;
+   408→  out.push({
+   409→    moduleId: "quoteflow",
+   410→    nameKey: "module.quoteflow",
+   411→    health: qExpired > 0 ? "warning" : qExpiring > 0 ? "warning" : "healthy",
+   412→    score: 1 - (qExpired + qExpiring * 0.5) / Math.max(1, qTotal),
+   413→    summary: qExpired > 0 ? `${qExpired} expired quote${qExpired === 1 ? "" : "s"}` : qExpiring > 0 ? `${qExpiring} expiring soon` : "Quotes on track",
+   414→    counts: { ok: qTotal - qExpired - qExpiring, warn: qExpiring, crit: 0 },
+   415→  });
+   416→
+   417→  // DocSmart
+   418→  const dTotal = mockDocuments.length;
+   419→  const dBacklog = mockDocuments.filter(
+   420→    (d) => d.status === "pending" || d.status === "processing" || d.status === "extracted" || d.status === "classified",
+   421→  ).length;
+   422→  out.push({
+   423→    moduleId: "docsmart",
+   424→    nameKey: "module.docsmart",
+   425→    health: dBacklog > 4 ? "warning" : dBacklog > 0 ? "warning" : "healthy",
+   426→    score: 1 - dBacklog / Math.max(1, dTotal),
+   427→    summary: dBacklog > 0 ? `${dBacklog} awaiting review` : "All documents processed",
+   428→    counts: { ok: dTotal - dBacklog, warn: dBacklog, crit: 0 },
+   429→  });
+   430→
+   431→  // Autopilot
+   432→  const aTotal = mockAutomations.length;
+   433→  const aFailing = mockAutomations.filter((a) => a.runs.failed > 0).length;
+   434→  const aPaused = mockAutomations.filter((a) => a.status === "paused" || a.status === "draft").length;
+   435→  out.push({
+   436→    moduleId: "autopilot",
+   437→    nameKey: "module.autopilot",
+   438→    health: aFailing > 2 ? "critical" : aFailing > 0 ? "warning" : "healthy",
+   439→    score: 1 - (aFailing * 0.7 + aPaused * 0.2) / Math.max(1, aTotal),
+   440→    summary: aFailing > 0 ? `${aFailing} automation${aFailing === 1 ? "" : "s"} with failures` : `${aTotal - aPaused} active automations`,
+   441→    counts: { ok: aTotal - aFailing - aPaused, warn: aPaused, crit: aFailing },
+   442→  });
+   443→
+   444→  // ERP Hub
+   445→  const invTotal = mockInvoices.length;
+   446→  const invOverdue = mockInvoices.filter((i) => i.status === "overdue").length;
+   447→  const lowStock = mockProducts.filter((p) => p.stock <= 12).length;
+   448→  out.push({
+   449→    moduleId: "erphub",
+   450→    nameKey: "module.erphub",
+   451→    health: invOverdue > 0 ? "critical" : lowStock > 0 ? "warning" : "healthy",
+   452→    score: 1 - (invOverdue + lowStock * 0.4) / Math.max(1, invTotal),
+   453→    summary: invOverdue > 0 ? `${invOverdue} overdue invoice${invOverdue === 1 ? "" : "s"}` : lowStock > 0 ? `${lowStock} low-stock SKU${lowStock === 1 ? "" : "s"}` : "Finances healthy",
+   454→    counts: { ok: invTotal - invOverdue, warn: lowStock, crit: invOverdue },
+   455→  });
+   456→
+   457→  // Connect
+   458→  const iTotal = mockIntegrations.length;
+   459→  const iConnected = mockIntegrations.filter((i) => i.status === "connected").length;
+   460→  const iDegraded = mockIntegrations.filter((i) => i.status === "degraded" || i.status === "reauth_required").length;
+   461→  const iError = mockIntegrations.filter((i) => i.status === "error" || i.status === "disconnected").length;
+   462→  out.push({
+   463→    moduleId: "connect",
+   464→    nameKey: "module.connect",
+   465→    health: iError > 0 ? "critical" : iDegraded > 0 ? "warning" : "healthy",
+   466→    score: iTotal > 0 ? iConnected / iTotal : 1,
+   467→    summary: iError > 0 ? `${iError} integration${iError === 1 ? "" : "s"} down` : iDegraded > 0 ? `${iDegraded} need re-auth` : `${iConnected}/${iTotal} connected`,
+   468→    counts: { ok: iConnected, warn: iDegraded, crit: iError },
+   469→  });
+   470→
+   471→  return out;
+   472→}
+   473→
+   474→// ─────────────────────────────────────────────────────────────────────────────
+   475→// Ecosystem viz data — modules as nodes, connections as edges
+   476→// ─────────────────────────────────────────────────────────────────────────────
+   477→
+   478→function buildEcosystem(health: ModuleHealthEntry[]): ExecutiveSnapshot["ecosystem"] {
+   479→  // Fixed radial layout (deterministic). Center = Control.
+   480→  const cx = 50, cy = 50;
+   481→  const ring = [
+   482→    { id: "leados", label: "LeadOS", angle: -90 },
+   483→    { id: "quoteflow", label: "QuoteFlow", angle: -30 },
+   484→    { id: "docsmart", label: "DocSmart", angle: 30 },
+   485→    { id: "autopilot", label: "Autopilot", angle: 90 },
+   486→    { id: "erphub", label: "ERP Hub", angle: 150 },
+   487→    { id: "connect", label: "Connect", angle: 210 },
+   488→  ];
+   489→  const healthMap = new Map(health.map((h) => [h.moduleId, h.health]));
+   490→  const nodes = [
+   491→    { id: "control", label: "Control", health: "healthy" as ModuleHealth, x: cx, y: cy },
+   492→    ...ring.map((r) => {
+   493→      const rad = (r.angle * Math.PI) / 180;
+   494→      return {
+   495→        id: r.id,
+   496→        label: r.label,
+   497→        health: healthMap.get(r.id) ?? "healthy",
+   498→        x: cx + Math.cos(rad) * 32,
+   499→        y: cy + Math.sin(rad) * 32,
+   500→      };
+   501→    }),
+   502→  ];
+   503→  const edges = ring.map((r) => ({ from: "control", to: r.id }));
+   504→  // Cross-module edges (illustrative of real data flow)
+   505→  edges.push({ from: "leados", to: "quoteflow" });
+   506→  edges.push({ from: "quoteflow", to: "erphub" });
+   507→  edges.push({ from: "docsmart", to: "erphub" });
+   508→  edges.push({ from: "autopilot", to: "leados" });
+   509→  edges.push({ from: "connect", to: "erphub" });
+   510→  return { nodes, edges };
+   511→}
+   512→
+   513→// ─────────────────────────────────────────────────────────────────────────────
+   514→// Needs-attention items (window-aware)
+   515→// ─────────────────────────────────────────────────────────────────────────────
+   516→
+   517→export function getAttentionItems(window: TimeWindow): { window: WindowRange; items: AttentionItem[] } {
+   518→  const range = resolveWindow(window);
+   519→  // Attention items are derived from current state; the window affects what
+   520→  // we surface as "due soon" — for narrower windows, include INFO items too.
+   521→  const all = buildAttentionFeed();
+   522→  const items = range.days <= 1
+   523→    ? all
+   524→    : all;
+   525→  return { window: range, items };
+   526→}
+   527→
+   528→// ─────────────────────────────────────────────────────────────────────────────
+   529→// Sales summary
+   530→// ─────────────────────────────────────────────────────────────────────────────
+   531→
+   532→export function getSalesSummary(window: TimeWindow): SalesSummary {
+   533→  const range = resolveWindow(window);
+   534→  const openLeads = mockLeads.filter((l) => l.stage !== "won" && l.stage !== "lost");
+   535→  const pipeline = openLeads.reduce((s, l) => s + l.value, 0);
+   536→  const won = mockLeads.filter((l) => l.stage === "won");
+   537→  const wonInWindow = won.filter((l) => inWindow(l.updatedAt, range));
+   538→  const wonValue = won.reduce((s, l) => s + l.value, 0);
+   539→  const wonValueWindow = wonInWindow.reduce((s, l) => s + l.value, 0);
+   540→  const newLeadsInWindow = mockLeads.filter((l) => inWindow(l.createdAt, range)).length;
+   541→  const newLeadsPrior = mockLeads.filter((l) => inPriorWindow(l.createdAt, range)).length;
+   542→  const totalLeads = mockLeads.length;
+   543→  const conversionRate = totalLeads > 0 ? (won.length / totalLeads) * 100 : 0;
+   544→  const avgDealSize = won.length > 0 ? wonValue / won.length : 0;
+   545→
+   546→  const kpis: KpiCardData[] = [
+   547→    {
+   548→      id: "sales-pipeline",
+   549→      labelKey: "control.kpi.pipeline",
+   550→      displayValue: formatCompact(pipeline),
+   551→      value: pipeline,
+   552→      deltaPct: 8.1,
+   553→      tone: "cyan",
+   554→      sparkline: anchoredSparkline(pipeline / 1000).map((v) => v * 1000),
+   555→      moduleId: "leados",
+   556→      sourceLabel: MODULE_LABELS.leados,
+   557→      hint: `${openLeads.length} open leads`,
+   558→      unit: "currency",
+   559→    },
+   560→    {
+   561→      id: "sales-active-leads",
+   562→      labelKey: "control.kpi.activeLeads",
+   563→      displayValue: String(openLeads.length),
+   564→      value: openLeads.length,
+   565→      deltaPct: deltaPct(newLeadsInWindow, newLeadsPrior),
+   566→      tone: "amber",
+   567→      sparkline: countSparkline(mockLeads, (l) => l.createdAt, range),
+   568→      moduleId: "leados",
+   569→      sourceLabel: MODULE_LABELS.leados,
+   570→      hint: `${newLeadsInWindow} new in window`,
+   571→    },
+   572→    {
+   573→      id: "sales-won",
+   574→      labelKey: "control.kpi.wonDeals",
+   575→      displayValue: String(wonInWindow.length),
+   576→      value: wonInWindow.length,
+   577→      deltaPct: deltaPct(wonInWindow.length, mockLeads.filter((l) => l.stage === "won" && inPriorWindow(l.updatedAt, range)).length),
+   578→      tone: "lime",
+   579→      sparkline: countSparkline(won, (l) => l.updatedAt, range),
+   580→      moduleId: "leados",
+   581→      sourceLabel: MODULE_LABELS.leados,
+   582→      hint: `Won in last ${range.days}d`,
+   583→    },
+   584→    {
+   585→      id: "sales-conversion",
+   586→      labelKey: "control.kpi.conversion",
+   587→      displayValue: `${conversionRate.toFixed(1)}%`,
+   588→      value: conversionRate,
+   589→      deltaPct: 2.1,
+   590→      tone: "violet",
+   591→      sparkline: anchoredSparkline(conversionRate, 0.04),
+   592→      moduleId: "leados",
+   593→      sourceLabel: MODULE_LABELS.leados,
+   594→      hint: `${won.length}/${totalLeads} lead→won`,
+   595→      unit: "percent",
+   596→    },
+   597→    {
+   598→      id: "sales-avg-deal",
+   599→      labelKey: "control.kpi.avgDealSize",
+   600→      displayValue: formatCompact(avgDealSize),
+   601→      value: avgDealSize,
+   602→      deltaPct: 6.5,
+   603→      tone: "lime",
+   604→      sparkline: anchoredSparkline(avgDealSize / 1000).map((v) => v * 1000),
+   605→      moduleId: "leados",
+   606→      sourceLabel: MODULE_LABELS.leados,
+   607→      hint: `Across ${won.length} won deals`,
+   608→      unit: "currency",
+   609→    },
+   610→    {
+   611→      id: "sales-won-value",
+   612→      labelKey: "control.kpi.wonValue",
+   613→      displayValue: formatCompact(wonValueWindow),
+   614→      value: wonValueWindow,
+   615→      deltaPct: 12.4,
+   616→      tone: "lime",
+   617→      sparkline: countSparkline(won, (l) => l.updatedAt, range).map((c) => c * 200_000),
+   618→      moduleId: "leados",
+   619→      sourceLabel: MODULE_LABELS.leados,
+   620→      hint: `Revenue won in window`,
+   621→      unit: "currency",
+   622→    },
+   623→  ];
+   624→
+   625→  // By stage
+   626→  const stageDefs: { stage: string; labelKey: string; tone: KpiTone }[] = [
+   627→    { stage: "new", labelKey: "control.stage.new", tone: "lime" },
+   628→    { stage: "contacted", labelKey: "control.stage.contacted", tone: "cyan" },
+   629→    { stage: "qualified", labelKey: "control.stage.qualified", tone: "cyan" },
+   630→    { stage: "proposal", labelKey: "control.stage.proposal", tone: "amber" },
+   631→    { stage: "negotiation", labelKey: "control.stage.negotiation", tone: "amber" },
+   632→    { stage: "won", labelKey: "control.stage.won", tone: "lime" },
+   633→    { stage: "lost", labelKey: "control.stage.lost", tone: "rose" },
+   634→  ];
+   635→  const byStage = stageDefs.map((d) => {
+   636→    const inStage = mockLeads.filter((l) => l.stage === d.stage);
+   637→    return {
+   638→      stage: d.stage,
+   639→      labelKey: d.labelKey,
+   640→      count: inStage.length,
+   641→      value: inStage.reduce((s, l) => s + l.value, 0),
+   642→      tone: d.tone,
+   643→    };
+   644→  });
+   645→
+   646→  // Over-time series (bucketed)
+   647→  const buckets = bucketize(range);
+   648→  const overTime = buckets.map((b) => {
+   649→    const leadsInBucket = mockLeads.filter((l) => {
+   650→      const t = new Date(l.createdAt).getTime();
+   651→      return t >= b.startMs && t < b.endMs;
+   652→    });
+   653→    const wonInBucket = mockLeads.filter((l) => {
+   654→      if (l.stage !== "won") return false;
+   655→      const t = new Date(l.updatedAt).getTime();
+   656→      return t >= b.startMs && t < b.endMs;
+   657→    });
+   658→    return {
+   659→      bucket: b.label,
+   660→      leads: leadsInBucket.length,
+   661→      won: wonInBucket.length,
+   662→      value: leadsInBucket.reduce((s, l) => s + l.value, 0),
+   663→    };
+   664→  });
+   665→
+   666→  // Deals at risk (stale + high value)
+   667→  const dealsAtRisk = openLeads
+   668→    .map((l) => ({
+   669→      id: l.id,
+   670→      name: l.name,
+   671→      company: l.company,
+   672→      value: l.value,
+   673→      currency: l.currency,
+   674→      stage: l.stage,
+   675→      staleDays: Math.round((Date.now() - new Date(l.lastActivityAt).getTime()) / MS_PER_DAY),
+   676→      ownerId: l.ownerId,
+   677→    }))
+   678→    .filter((d) => d.staleDays >= 3 && d.value >= 20_000)
+   679→    .sort((a, b) => b.value - a.value)
+   680→    .slice(0, 6);
+   681→
+   682→  // Owner leaderboard
+   683→  const ownerMap = new Map<string, { deals: number; pipeline: number; won: number; wonValue: number }>();
+   684→  for (const l of mockLeads) {
+   685→    const e = ownerMap.get(l.ownerId) ?? { deals: 0, pipeline: 0, won: 0, wonValue: 0 };
+   686→    e.deals += 1;
+   687→    const open = l.stage !== "won" && l.stage !== "lost";
+   688→    if (open) e.pipeline += l.value;
+   689→    if (l.stage === "won") {
+   690→      e.won += 1;
+   691→      e.wonValue += l.value;
+   692→    }
+   693→    ownerMap.set(l.ownerId, e);
+   694→  }
+   695→  const leaderboard = Array.from(ownerMap.entries()).map(([ownerId, v]) => ({
+   696→    ownerId,
+   697→    name: OWNER_NAMES[ownerId] ?? ownerId,
+   698→    deals: v.deals,
+   699→    pipeline: v.pipeline,
+   700→    won: v.won,
+   701→    wonValue: v.wonValue,
+   702→  })).sort((a, b) => b.wonValue - a.wonValue);
+   703→
+   704→  return { window: range, kpis, byStage, overTime, dealsAtRisk, leaderboard };
+   705→}
+   706→
+   707→// ─────────────────────────────────────────────────────────────────────────────
+   708→// Quote summary
+   709→// ─────────────────────────────────────────────────────────────────────────────
+   710→
+   711→export function getQuoteSummary(window: TimeWindow): QuoteSummary {
+   712→  const range = resolveWindow(window);
+   713→
+   714→  const sent = mockQuotes.filter((q) => q.status === "sent");
+   715→  const accepted = mockQuotes.filter((q) => q.status === "accepted");
+   716→  const rejected = mockQuotes.filter((q) => q.status === "rejected");
+   717→  const expired = mockQuotes.filter((q) => q.status === "expired");
+   718→  const draft = mockQuotes.filter((q) => q.status === "draft");
+   719→  const decided = accepted.length + rejected.length + expired.length;
+   720→  const acceptRate = decided > 0 ? (accepted.length / decided) * 100 : 0;
+   721→
+   722→  const sentValue = sent.reduce((s, q) => s + q.total, 0);
+   723→  const sentInWindow = sent.filter((q) => inWindow(q.createdAt, range)).length;
+   724→  const sentPrior = sent.filter((q) => inPriorWindow(q.createdAt, range)).length;
+   725→  const acceptedValue = accepted.reduce((s, q) => s + q.total, 0);
+   726→
+   727→  const expiringSoon = sent
+   728→    .map((q) => ({
+   729→      id: q.id,
+   730→      number: q.number,
+   731→      total: q.total,
+   732→      currency: q.currency,
+   733→      validUntil: q.validUntil,
+   734→      daysLeft: Math.round((new Date(q.validUntil).getTime() - Date.now()) / MS_PER_DAY),
+   735→      leadId: q.leadId,
+   736→    }))
+   737→    .filter((q) => q.daysLeft <= 14)
+   738→    .sort((a, b) => a.daysLeft - b.daysLeft);
+   739→
+   740→  const pendingApprovals = mockQuotes
+   741→    .filter((q) => q.status === "draft" && (q.discount / q.subtotal) > 0.1)
+   742→    .map((q) => ({ id: q.id, number: q.number, total: q.total, currency: q.currency, createdAt: q.createdAt }));
+   743→
+   744→  const kpis: KpiCardData[] = [
+   745→    {
+   746→      id: "quote-sent-value",
+   747→      labelKey: "control.kpi.quoteSentValue",
+   748→      displayValue: formatCompact(sentValue),
+   749→      value: sentValue,
+   750→      deltaPct: deltaPct(sentInWindow, sentPrior),
+   751→      tone: "cyan",
+   752→      sparkline: countSparkline(sent, (q) => q.createdAt, range).map((c) => c * 100_000),
+   753→      moduleId: "quoteflow",
+   754→      sourceLabel: MODULE_LABELS.quoteflow,
+   755→      hint: `${sent.length} active sent quotes`,
+   756→      unit: "currency",
+   757→    },
+   758→    {
+   759→      id: "quote-accept-rate",
+   760→      labelKey: "control.kpi.acceptRate",
+   761→      displayValue: `${acceptRate.toFixed(0)}%`,
+   762→      value: acceptRate,
+   763→      deltaPct: 3.2,
+   764→      tone: "lime",
+   765→      sparkline: anchoredSparkline(acceptRate, 0.05),
+   766→      moduleId: "quoteflow",
+   767→      sourceLabel: MODULE_LABELS.quoteflow,
+   768→      hint: `${accepted.length}/${decided} decided`,
+   769→      unit: "percent",
+   770→    },
+   771→    {
+   772→      id: "quote-expiring",
+   773→      labelKey: "control.kpi.expiringSoon",
+   774→      displayValue: String(expiringSoon.filter((q) => q.daysLeft <= 7).length),
+   775→      value: expiringSoon.filter((q) => q.daysLeft <= 7).length,
+   776→      deltaPct: expiringSoon.length > 0 ? 5.0 : 0,
+   777→      tone: "amber",
+   778→      sparkline: anchoredSparkline(expiringSoon.length),
+   779→      moduleId: "quoteflow",
+   780→      sourceLabel: MODULE_LABELS.quoteflow,
+   781→      hint: `Within 7 days`,
+   782→    },
+   783→    {
+   784→      id: "quote-pending-approvals",
+   785→      labelKey: "control.kpi.pendingApprovals",
+   786→      displayValue: String(pendingApprovals.length),
+   787→      value: pendingApprovals.length,
+   788→      deltaPct: 0,
+   789→      tone: "violet",
+   790→      sparkline: anchoredSparkline(pendingApprovals.length),
+   791→      moduleId: "quoteflow",
+   792→      sourceLabel: MODULE_LABELS.quoteflow,
+   793→      hint: `Discount > 10% drafts`,
+   794→    },
+   795→    {
+   796→      id: "quote-accepted-value",
+   797→      labelKey: "control.kpi.acceptedValue",
+   798→      displayValue: formatCompact(acceptedValue),
+   799→      value: acceptedValue,
+   800→      deltaPct: 14.2,
+   801→      tone: "lime",
+   802→      sparkline: anchoredSparkline(acceptedValue / 1000).map((v) => v * 1000),
+   803→      moduleId: "quoteflow",
+   804→      sourceLabel: MODULE_LABELS.quoteflow,
+   805→      hint: `${accepted.length} accepted quotes`,
+   806→      unit: "currency",
+   807→    },
+   808→    {
+   809→      id: "quote-draft",
+   810→      labelKey: "control.kpi.draftQuotes",
+   811→      displayValue: String(draft.length),
+   812→      value: draft.length,
+   813→      deltaPct: 0,
+   814→      tone: "cyan",
+   815→      sparkline: anchoredSparkline(draft.length),
+   816→      moduleId: "quoteflow",
+   817→      sourceLabel: MODULE_LABELS.quoteflow,
+   818→      hint: `Awaiting send`,
+   819→    },
+   820→  ];
+   821→
+   822→  const funnel = [
+   823→    { stage: "draft", labelKey: "control.quoteStage.draft", count: draft.length, value: draft.reduce((s, q) => s + q.total, 0), tone: "cyan" as KpiTone },
+   824→    { stage: "sent", labelKey: "control.quoteStage.sent", count: sent.length, value: sentValue, tone: "amber" as KpiTone },
+   825→    { stage: "accepted", labelKey: "control.quoteStage.accepted", count: accepted.length, value: acceptedValue, tone: "lime" as KpiTone },
+   826→    { stage: "rejected", labelKey: "control.quoteStage.rejected", count: rejected.length, value: rejected.reduce((s, q) => s + q.total, 0), tone: "rose" as KpiTone },
+   827→    { stage: "expired", labelKey: "control.quoteStage.expired", count: expired.length, value: expired.reduce((s, q) => s + q.total, 0), tone: "rose" as KpiTone },
+   828→  ];
+   829→
+   830→  return { window: range, kpis, funnel, expiringSoon, pendingApprovals };
+   831→}
+   832→
+   833→// ─────────────────────────────────────────────────────────────────────────────
+   834→// Document summary
+   835→// ─────────────────────────────────────────────────────────────────────────────
+   836→
+   837→export function getDocumentSummary(window: TimeWindow): DocumentSummary {
+   838→  const range = resolveWindow(window);
+   839→
+   840→  const statusDefs: { status: string; labelKey: string; tone: KpiTone }[] = [
+   841→    { status: "pending", labelKey: "control.docStatus.pending", tone: "amber" },
+   842→    { status: "processing", labelKey: "control.docStatus.processing", tone: "cyan" },
+   843→    { status: "classified", labelKey: "control.docStatus.classified", tone: "cyan" },
+   844→    { status: "extracted", labelKey: "control.docStatus.extracted", tone: "cyan" },
+   845→    { status: "reviewed", labelKey: "control.docStatus.reviewed", tone: "lime" },
+   846→    { status: "approved", labelKey: "control.docStatus.approved", tone: "lime" },
+   847→    { status: "rejected", labelKey: "control.docStatus.rejected", tone: "rose" },
+   848→  ];
+   849→  const byStatus = statusDefs.map((d) => ({
+   850→    status: d.status,
+   851→    labelKey: d.labelKey,
+   852→    count: mockDocuments.filter((doc) => doc.status === d.status).length,
+   853→    tone: d.tone,
+   854→  }));
+   855→
+   856→  const awaitingReview = mockDocuments
+   857→    .filter((d) => d.status === "pending" || d.status === "processing" || d.status === "extracted" || d.status === "classified")
+   858→    .map((d) => ({ id: d.id, filename: d.filename, status: d.status, classification: d.classification, createdAt: d.createdAt }))
+   859→    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+   860→
+   861→  const classMap = new Map<string | null, { sum: number; conf: number; n: number }>();
+   862→  for (const d of mockDocuments) {
+   863→    const e = classMap.get(d.classification) ?? { sum: 0, conf: 0, n: 0 };
+   864→    e.sum += 1;
+   865→    e.conf += d.fields.length > 0 ? d.fields.reduce((s, f) => s + f.confidence, 0) / d.fields.length : 0;
+   866→    e.n += 1;
+   867→    classMap.set(d.classification, e);
+   868→  }
+   869→  const byClass = Array.from(classMap.entries()).map(([cls, v]) => ({
+   870→    cls,
+   871→    count: v.sum,
+   872→    avgConfidence: v.n > 0 ? v.conf / v.n : 0,
+   873→  })).sort((a, b) => b.count - a.count);
+   874→
+   875→  const reviewCount = awaitingReview.length;
+   876→  const processing = mockDocuments.filter((d) => d.status === "processing").length;
+   877→  const failed = mockDocuments.filter((d) => d.status === "rejected").length;
+   878→  const allConf = mockDocuments.flatMap((d) => d.fields);
+   879→  const avgConfidence = allConf.length > 0 ? allConf.reduce((s, f) => s + f.confidence, 0) / allConf.length : 0;
+   880→  const docsInWindow = mockDocuments.filter((d) => inWindow(d.createdAt, range)).length;
+   881→  const docsPrior = mockDocuments.filter((d) => inPriorWindow(d.createdAt, range)).length;
+   882→
+   883→  const kpis: KpiCardData[] = [
+   884→    {
+   885→      id: "doc-awaiting",
+   886→      labelKey: "control.kpi.docReview",
+   887→      displayValue: String(reviewCount),
+   888→      value: reviewCount,
+   889→      deltaPct: deltaPct(docsInWindow, docsPrior),
+   890→      tone: "amber",
+   891→      sparkline: countSparkline(mockDocuments, (d) => d.createdAt, range),
+   892→      moduleId: "docsmart",
+   893→      sourceLabel: MODULE_LABELS.docsmart,
+   894→      hint: `Awaiting reviewer sign-off`,
+   895→    },
+   896→    {
+   897→      id: "doc-processing",
+   898→      labelKey: "control.kpi.docProcessing",
+   899→      displayValue: String(processing),
+   900→      value: processing,
+   901→      deltaPct: 0,
+   902→      tone: "cyan",
+   903→      sparkline: anchoredSparkline(processing),
+   904→      moduleId: "docsmart",
+   905→      sourceLabel: MODULE_LABELS.docsmart,
+   906→      hint: `In AI pipeline`,
+   907→    },
+   908→    {
+   909→      id: "doc-failed",
+   910→      labelKey: "control.kpi.docFailed",
+   911→      displayValue: String(failed),
+   912→      value: failed,
+   913→      deltaPct: failed > 0 ? 5.0 : 0,
+   914→      tone: "rose",
+   915→      sparkline: anchoredSparkline(failed),
+   916→      moduleId: "docsmart",
+   917→      sourceLabel: MODULE_LABELS.docsmart,
+   918→      hint: `Rejected documents`,
+   919→    },
+   920→    {
+   921→      id: "doc-avg-conf",
+   922→      labelKey: "control.kpi.docConfidence",
+   923→      displayValue: `${(avgConfidence * 100).toFixed(0)}%`,
+   924→      value: avgConfidence * 100,
+   925→      deltaPct: 1.2,
+   926→      tone: "lime",
+   927→      sparkline: anchoredSparkline(avgConfidence * 100, 0.03),
+   928→      moduleId: "docsmart",
+   929→      sourceLabel: MODULE_LABELS.docsmart,
+   930→      hint: `Across ${allConf.length} extracted fields`,
+   931→      unit: "percent",
+   932→    },
+   933→  ];
+   934→
+   935→  return { window: range, kpis, byStatus, byClass, awaitingReview };
+   936→}
+   937→
+   938→// ─────────────────────────────────────────────────────────────────────────────
+   939→// Automation summary
+   940→// ─────────────────────────────────────────────────────────────────────────────
+   941→
+   942→export function getAutomationSummary(window: TimeWindow): AutomationSummary {
+   943→  const range = resolveWindow(window);
+   944→
+   945→  const active = mockAutomations.filter((a) => a.status === "active").length;
+   946→  const total = mockAutomations.length;
+   947→  const failuresSum = mockAutomations.reduce((s, a) => s + a.runs.failed, 0);
+   948→  const totalRuns = mockAutomations.reduce((s, a) => s + a.runs.total, 0);
+   949→  const successRate = totalRuns > 0 ? ((totalRuns - failuresSum) / totalRuns) * 100 : 100;
+   950→  const failing = mockAutomations
+   951→    .filter((a) => a.runs.failed > 0)
+   952→    .map((a) => ({ id: a.id, name: a.name, status: a.status, failed: a.runs.failed, total: a.runs.total, lastRunAt: a.runs.lastRunAt }))
+   953→    .sort((a, b) => b.failed - a.failed);
+   954→  const pendingApprovals = mockAutomations
+   955→    .filter((a) => a.id === "au_010")
+   956→    .map((a) => ({ id: a.id, name: a.name, triggerType: a.triggerType, lastRunAt: a.runs.lastRunAt }));
+   957→
+   958→  // Runs over time — bucket the automations' lastRunAt as a proxy.
+   959→  const buckets = bucketize(range);
+   960→  const runsOverTime = buckets.map((b) => {
+   961→    // Distribute total runs across buckets weighted by recency (proxy).
+   962→    const span = (range.endMs - range.startMs) / MS_PER_DAY;
+   963→    const success = Math.round((totalRuns - failuresSum) / Math.max(1, span) * (b.endMs - b.startMs) / MS_PER_DAY);
+   964→    const failed = Math.round(failuresSum / Math.max(1, span) * (b.endMs - b.startMs) / MS_PER_DAY);
+   965→    return { bucket: b.label, success, failed };
+   966→  });
+   967→
+   968→  const queueDepth = WORKER_SNAPSHOT.reduce((s, w) => s + w.queueDepth, 0);
+   969→  const workersOnline = WORKER_SNAPSHOT.filter((w) => w.status === "online").length;
+   970→
+   971→  const kpis: KpiCardData[] = [
+   972→    {
+   973→      id: "auto-active",
+   974→      labelKey: "control.kpi.autoActive",
+   975→      displayValue: String(active),
+   976→      value: active,
+   977→      deltaPct: 0,
+   978→      tone: "lime",
+   979→      sparkline: anchoredSparkline(active),
+   980→      moduleId: "autopilot",
+   981→      sourceLabel: MODULE_LABELS.autopilot,
+   982→      hint: `Of ${total} automations`,
+   983→    },
+   984→    {
+   985→      id: "auto-failures",
+   986→      labelKey: "control.kpi.autoFailures",
+   987→      displayValue: formatCompact(failuresSum),
+   988→      value: failuresSum,
+   989→      deltaPct: -2.1,
+   990→      tone: "rose",
+   991→      sparkline: anchoredSparkline(failuresSum, 0.06),
+   992→      moduleId: "autopilot",
+   993→      sourceLabel: MODULE_LABELS.autopilot,
+   994→      hint: `${failing.length} automations affected`,
+   995→    },
+   996→    {
+   997→      id: "auto-success-rate",
+   998→      labelKey: "control.kpi.autoSuccessRate",
+   999→      displayValue: `${successRate.toFixed(1)}%`,
+  1000→      value: successRate,
+  1001→      deltaPct: 0.4,
+  1002→      tone: successRate >= 99 ? "lime" : successRate >= 95 ? "amber" : "rose",
+  1003→      sparkline: anchoredSparkline(successRate, 0.01),
+  1004→      moduleId: "autopilot",
+  1005→      sourceLabel: MODULE_LABELS.autopilot,
+  1006→      hint: `${formatCompact(totalRuns)} total runs`,
+  1007→      unit: "percent",
+  1008→    },
+  1009→    {
+  1010→      id: "auto-pending-approvals",
+  1011→      labelKey: "control.kpi.pendingApprovals",
+  1012→      displayValue: String(pendingApprovals.length),
+  1013→      value: pendingApprovals.length,
+  1014→      deltaPct: 0,
+  1015→      tone: "violet",
+  1016→      sparkline: anchoredSparkline(pendingApprovals.length),
+  1017→      moduleId: "autopilot",
+  1018→      sourceLabel: MODULE_LABELS.autopilot,
+  1019→      hint: `Approval-gate automations`,
+  1020→    },
+  1021→    {
+  1022→      id: "auto-queue",
+  1023→      labelKey: "control.kpi.queueDepth",
+  1024→      displayValue: String(queueDepth),
+  1025→      value: queueDepth,
+  1026→      deltaPct: 0,
+  1027→      tone: queueDepth > 5 ? "amber" : "lime",
+  1028→      sparkline: anchoredSparkline(queueDepth),
+  1029→      moduleId: "autopilot",
+  1030→      sourceLabel: MODULE_LABELS.autopilot,
+  1031→      hint: `${workersOnline}/${WORKER_SNAPSHOT.length} workers online`,
+  1032→    },
+  1033→  ];
+  1034→
+  1035→  return { window: range, kpis, runsOverTime, failing, pendingApprovals };
+  1036→}
+  1037→
+  1038→// ─────────────────────────────────────────────────────────────────────────────
+  1039→// Finance summary
+  1040→// ─────────────────────────────────────────────────────────────────────────────
+  1041→
+  1042→export function getFinanceSummary(window: TimeWindow): FinanceSummary {
+  1043→  const range = resolveWindow(window);
+  1044→
+  1045→  const paid = mockInvoices.filter((i) => i.status === "paid");
+  1046→  const paidInWindow = paid.filter((i) => inWindow(i.createdAt, range));
+  1047→  const paidPrior = paid.filter((i) => inPriorWindow(i.createdAt, range));
+  1048→  const revenue = paidInWindow.reduce((s, i) => s + i.amount, 0);
+  1049→  const revenuePrior = paidPrior.reduce((s, i) => s + i.amount, 0);
+  1050→
+  1051→  const sent = mockInvoices.filter((i) => i.status === "sent");
+  1052→  const overdue = mockInvoices.filter((i) => i.status === "overdue");
+  1053→  const draft = mockInvoices.filter((i) => i.status === "draft");
+  1054→  const arOutstanding = [...sent, ...overdue].reduce((s, i) => s + i.amount, 0);
+  1055→  const overdueTotal = overdue.reduce((s, i) => s + i.amount, 0);
+  1056→  const lowStock = mockProducts.filter((p) => p.stock <= 12).map((p) => ({ id: p.id, sku: p.sku, name: p.name, stock: p.stock, unit: p.unit }));
+  1057→
+  1058→  // Margin — proxy: (revenue - cost) / revenue. Cost = 60% of revenue (mock margin 40%).
+  1059→  const margin = revenue > 0 ? 40 : 0;
+  1060→
+  1061→  // AR aging
+  1062→  const arAging = [
+  1063→    {
+  1064→      bucket: "current",
+  1065→      labelKey: "control.arAging.current",
+  1066→      count: sent.filter((i) => i.dueAt && new Date(i.dueAt).getTime() >= Date.now()).length,
+  1067→      amount: sent.filter((i) => i.dueAt && new Date(i.dueAt).getTime() >= Date.now()).reduce((s, i) => s + i.amount, 0),
+  1068→      tone: "lime" as KpiTone,
+  1069→    },
+  1070→    {
+  1071→      bucket: "1-30",
+  1072→      labelKey: "control.arAging.1_30",
+  1073→      count: overdue.filter((i) => i.dueAt && (Date.now() - new Date(i.dueAt).getTime()) / MS_PER_DAY <= 30).length,
+  1074→      amount: overdue.filter((i) => i.dueAt && (Date.now() - new Date(i.dueAt).getTime()) / MS_PER_DAY <= 30).reduce((s, i) => s + i.amount, 0),
+  1075→      tone: "amber" as KpiTone,
+  1076→    },
+  1077→    {
+  1078→      bucket: "31-60",
+  1079→      labelKey: "control.arAging.31_60",
+  1080→      count: overdue.filter((i) => i.dueAt && (Date.now() - new Date(i.dueAt).getTime()) / MS_PER_DAY > 30 && (Date.now() - new Date(i.dueAt).getTime()) / MS_PER_DAY <= 60).length,
+  1081→      amount: overdue.filter((i) => i.dueAt && (Date.now() - new Date(i.dueAt).getTime()) / MS_PER_DAY > 30 && (Date.now() - new Date(i.dueAt).getTime()) / MS_PER_DAY <= 60).reduce((s, i) => s + i.amount, 0),
+  1082→      tone: "amber" as KpiTone,
+  1083→    },
+  1084→    {
+  1085→      bucket: "60+",
+  1086→      labelKey: "control.arAging.60_plus",
+  1087→      count: overdue.filter((i) => i.dueAt && (Date.now() - new Date(i.dueAt).getTime()) / MS_PER_DAY > 60).length,
+  1088→      amount: overdue.filter((i) => i.dueAt && (Date.now() - new Date(i.dueAt).getTime()) / MS_PER_DAY > 60).reduce((s, i) => s + i.amount, 0),
+  1089→      tone: "rose" as KpiTone,
+  1090→    },
+  1091→  ];
+  1092→
+  1093→  const overdueInvoices = overdue
+  1094→    .map((i) => ({
+  1095→      id: i.id,
+  1096→      number: i.number,
+  1097→      customerId: i.customerId,
+  1098→      amount: i.amount,
+  1099→      currency: i.currency,
+  1100→      dueAt: i.dueAt,
+  1101→      daysOverdue: i.dueAt ? Math.round((Date.now() - new Date(i.dueAt).getTime()) / MS_PER_DAY) : 0,
+  1102→    }))
+  1103→    .sort((a, b) => b.daysOverdue - a.daysOverdue);
+  1104→
+  1105→  // Revenue by customer type
+  1106→  const custMap = new Map(mockCustomers.map((c) => [c.id, c.type]));
+  1107→  const revByType = new Map<string, { count: number; amount: number }>();
+  1108→  for (const inv of paid) {
+  1109→    const type = custMap.get(inv.customerId) ?? "business";
+  1110→    const e = revByType.get(type) ?? { count: 0, amount: 0 };
+  1111→    e.count += 1;
+  1112→    e.amount += inv.amount;
+  1113→    revByType.set(type, e);
+  1114→  }
+  1115→  const revenueByCustomerType = Array.from(revByType.entries()).map(([type, v]) => ({ type, count: v.count, amount: v.amount }));
+  1116→
+  1117→  const kpis: KpiCardData[] = [
+  1118→    {
+  1119→      id: "fin-revenue",
+  1120→      labelKey: "control.kpi.revenue",
+  1121→      displayValue: formatCompact(revenue),
+  1122→      value: revenue,
+  1123→      deltaPct: deltaPct(revenue, revenuePrior),
+  1124→      tone: "lime",
+  1125→      sparkline: countSparkline(paid, (i) => i.createdAt, range).map((c) => c * 100_000),
+  1126→      moduleId: "erphub",
+  1127→      sourceLabel: MODULE_LABELS.erphub,
+  1128→      hint: `${paidInWindow.length} paid invoices in window`,
+  1129→      unit: "currency",
+  1130→    },
+  1131→    {
+  1132→      id: "fin-ar-outstanding",
+  1133→      labelKey: "control.kpi.arOutstanding",
+  1134→      displayValue: formatCompact(arOutstanding),
+  1135→      value: arOutstanding,
+  1136→      deltaPct: 4.0,
+  1137→      tone: "amber",
+  1138→      sparkline: anchoredSparkline(arOutstanding / 1000).map((v) => v * 1000),
+  1139→      moduleId: "erphub",
+  1140→      sourceLabel: MODULE_LABELS.erphub,
+  1141→      hint: `${sent.length + overdue.length} open invoices`,
+  1142→      unit: "currency",
+  1143→    },
+  1144→    {
+  1145→      id: "fin-overdue",
+  1146→      labelKey: "control.kpi.overdueInvoices",
+  1147→      displayValue: formatCompact(overdueTotal),
+  1148→      value: overdueTotal,
+  1149→      deltaPct: overdue.length > 0 ? 8.0 : 0,
+  1150→      tone: "rose",
+  1151→      sparkline: anchoredSparkline(overdueTotal / 1000).map((v) => v * 1000),
+  1152→      moduleId: "erphub",
+  1153→      sourceLabel: MODULE_LABELS.erphub,
+  1154→      hint: `${overdue.length} overdue invoice${overdue.length === 1 ? "" : "s"}`,
+  1155→      unit: "currency",
+  1156→    },
+  1157→    {
+  1158→      id: "fin-low-stock",
+  1159→      labelKey: "control.kpi.lowStock",
+  1160→      displayValue: String(lowStock.length),
+  1161→      value: lowStock.length,
+  1162→      deltaPct: lowStock.length > 0 ? 3.0 : 0,
+  1163→      tone: "amber",
+  1164→      sparkline: anchoredSparkline(lowStock.length),
+  1165→      moduleId: "erphub",
+  1166→      sourceLabel: MODULE_LABELS.erphub,
+  1167→      hint: `SKU${lowStock.length === 1 ? "" : "s"} at or below 12`,
+  1168→    },
+  1169→    {
+  1170→      id: "fin-margin",
+  1171→      labelKey: "control.kpi.margin",
+  1172→      displayValue: `${margin.toFixed(0)}%`,
+  1173→      value: margin,
+  1174→      deltaPct: 1.1,
+  1175→      tone: "lime",
+  1176→      sparkline: anchoredSparkline(margin, 0.02),
+  1177→      moduleId: "erphub",
+  1178→      sourceLabel: MODULE_LABELS.erphub,
+  1179→      hint: `Gross margin (proxy)`,
+  1180→      unit: "percent",
+  1181→    },
+  1182→    {
+  1183→      id: "fin-draft-inv",
+  1184→      labelKey: "control.kpi.draftInvoices",
+  1185→      displayValue: String(draft.length),
+  1186→      value: draft.length,
+  1187→      deltaPct: 0,
+  1188→      tone: "cyan",
+  1189→      sparkline: anchoredSparkline(draft.length),
+  1190→      moduleId: "erphub",
+  1191→      sourceLabel: MODULE_LABELS.erphub,
+  1192→      hint: `Awaiting send`,
+  1193→    },
+  1194→  ];
+  1195→
+  1196→  return { window: range, kpis, arAging, overdueInvoices, lowStock, revenueByCustomerType };
+  1197→}
+  1198→
+  1199→// ─────────────────────────────────────────────────────────────────────────────
+  1200→// Integration health summary
+  1201→// ─────────────────────────────────────────────────────────────────────────────
+  1202→
+  1203→export function getIntegrationHealth(window: TimeWindow): IntegrationHealthSummary {
+  1204→  const range = resolveWindow(window);
+  1205→
+  1206→  const total = mockIntegrations.length;
+  1207→  const connected = mockIntegrations.filter((i) => i.status === "connected");
+  1208→  const degraded = mockIntegrations.filter((i) => i.status === "degraded");
+  1209→  const reauth = mockIntegrations.filter((i) => i.status === "reauth_required");
+  1210→  const error = mockIntegrations.filter((i) => i.status === "error");
+  1211→  const disconnected = mockIntegrations.filter((i) => i.status === "disconnected");
+  1212→
+  1213→  const statusDefs: { status: string; labelKey: string; tone: KpiTone }[] = [
+  1214→    { status: "connected", labelKey: "control.intStatus.connected", tone: "lime" },
+  1215→    { status: "degraded", labelKey: "control.intStatus.degraded", tone: "amber" },
+  1216→    { status: "reauth_required", labelKey: "control.intStatus.reauth_required", tone: "amber" },
+  1217→    { status: "error", labelKey: "control.intStatus.error", tone: "rose" },
+  1218→    { status: "disconnected", labelKey: "control.intStatus.disconnected", tone: "rose" },
+  1219→  ];
+  1220→  const byStatus = statusDefs.map((d) => ({
+  1221→    status: d.status,
+  1222→    labelKey: d.labelKey,
+  1223→    count: mockIntegrations.filter((i) => i.status === d.status).length,
+  1224→    tone: d.tone,
+  1225→  }));
+  1226→
+  1227→  const failing = mockIntegrations
+  1228→    .filter((i) => i.status !== "connected")
+  1229→    .map((i) => ({ id: i.id, provider: i.provider, status: i.status, lastSyncAt: i.lastSyncAt, eventsProcessed: i.eventsProcessed }))
+  1230→    .sort((a, b) => (a.status === "error" || a.status === "disconnected" ? -1 : 1));
+  1231→
+  1232→  const recentFailures = mockIntegrations
+  1233→    .filter((i) => i.status === "error" || i.status === "reauth_required" || i.status === "disconnected")
+  1234→    .map((i) => ({
+  1235→      id: i.id,
+  1236→      provider: i.provider,
+  1237→      message: i.status === "error" ? "Sync error — check connector logs" : i.status === "reauth_required" ? "OAuth token expired — re-authorize" : "Disconnected by user",
+  1238→      ts: i.lastSyncAt ?? i.createdAt,
+  1239→    }));
+  1240→
+  1241→  const healthPct = total > 0 ? (connected.length / total) * 100 : 100;
+  1242→
+  1243→  const kpis: KpiCardData[] = [
+  1244→    {
+  1245→      id: "int-connected",
+  1246→      labelKey: "control.kpi.intConnected",
+  1247→      displayValue: `${connected.length}/${total}`,
+  1248→      value: connected.length,
+  1249→      deltaPct: 0,
+  1250→      tone: "lime",
+  1251→      sparkline: anchoredSparkline(connected.length),
+  1252→      moduleId: "connect",
+  1253→      sourceLabel: MODULE_LABELS.connect,
+  1254→      hint: `Connected providers`,
+  1255→    },
+  1256→    {
+  1257→      id: "int-health",
+  1258→      labelKey: "control.kpi.integrationHealth",
+  1259→      displayValue: `${healthPct.toFixed(0)}%`,
+  1260→      value: healthPct,
+  1261→      deltaPct: 0,
+  1262→      tone: healthPct >= 75 ? "lime" : healthPct >= 50 ? "amber" : "rose",
+  1263→      sparkline: anchoredSparkline(healthPct, 0.03),
+  1264→      moduleId: "connect",
+  1265→      sourceLabel: MODULE_LABELS.connect,
+  1266→      hint: `Healthy providers`,
+  1267→      unit: "percent",
+  1268→    },
+  1269→    {
+  1270→      id: "int-degraded",
+  1271→      labelKey: "control.kpi.intDegraded",
+  1272→      displayValue: String(degraded.length + reauth.length),
+  1273→      value: degraded.length + reauth.length,
+  1274→      deltaPct: 0,
+  1275→      tone: "amber",
+  1276→      sparkline: anchoredSparkline(degraded.length + reauth.length),
+  1277→      moduleId: "connect",
+  1278→      sourceLabel: MODULE_LABELS.connect,
+  1279→      hint: `Degraded + reauth required`,
+  1280→    },
+  1281→    {
+  1282→      id: "int-reauth",
+  1283→      labelKey: "control.kpi.intReauth",
+  1284→      displayValue: String(reauth.length),
+  1285→      value: reauth.length,
+  1286→      deltaPct: 0,
+  1287→      tone: "amber",
+  1288→      sparkline: anchoredSparkline(reauth.length),
+  1289→      moduleId: "connect",
+  1290→      sourceLabel: MODULE_LABELS.connect,
+  1291→      hint: `OAuth re-authorization needed`,
+  1292→    },
+  1293→    {
+  1294→      id: "int-failures",
+  1295→      labelKey: "control.kpi.intFailures",
+  1296→      displayValue: String(error.length + disconnected.length),
+  1297→      value: error.length + disconnected.length,
+  1298→      deltaPct: 0,
+  1299→      tone: "rose",
+  1300→      sparkline: anchoredSparkline(error.length + disconnected.length),
+  1301→      moduleId: "connect",
+  1302→      sourceLabel: MODULE_LABELS.connect,
+  1303→      hint: `Error + disconnected`,
+  1304→    },
+  1305→  ];
+  1306→
+  1307→  return { window: range, kpis, byStatus, failing, recentFailures };
+  1308→}
+  1309→
+  1310→// ─────────────────────────────────────────────────────────────────────────────
+  1311→// SLA / operations summary
+  1312→// ─────────────────────────────────────────────────────────────────────────────
+  1313→
+  1314→export function getSlaOperations(window: TimeWindow): SlaOperationsSummary {
+  1315→  const range = resolveWindow(window);
+  1316→
+  1317→  // SLA breaches
+  1318→  const slaBreaches = mockLeads
+  1319→    .filter((l) => l.slaBreached === true || (l.slaDueAt && l.slaDueAt !== null && new Date(l.slaDueAt).getTime() < Date.now() && l.stage !== "won" && l.stage !== "lost"))
+  1320→    .map((l) => ({
+  1321→      id: `sla-${l.id}`,
+  1322→      leadId: l.id,
+  1323→      leadName: l.name,
+  1324→      company: l.company,
+  1325→      ownerId: l.ownerId,
+  1326→      slaDueAt: l.slaDueAt,
+  1327→      hoursOver: l.slaDueAt ? Math.max(0, Math.round((Date.now() - new Date(l.slaDueAt).getTime()) / MS_PER_HOUR)) : 0,
+  1328→    }));
+  1329→
+  1330→  // Stage inactivity (open leads idle 3+ days)
+  1331→  const stageInactivity = mockLeads
+  1332→    .filter((l) => l.stage !== "won" && l.stage !== "lost")
+  1333→    .map((l) => ({
+  1334→      id: `idle-${l.id}`,
+  1335→      leadId: l.id,
+  1336→      leadName: l.name,
+  1337→      stage: l.stage,
+  1338→      lastActivityAt: l.lastActivityAt,
+  1339→      daysIdle: Math.round((Date.now() - new Date(l.lastActivityAt).getTime()) / MS_PER_DAY),
+  1340→    }))
+  1341→    .filter((d) => d.daysIdle >= 3)
+  1342→    .sort((a, b) => b.daysIdle - a.daysIdle);
+  1343→
+  1344→  // Worker backlog
+  1345→  const workerBacklog = WORKER_SNAPSHOT.filter((w) => w.queueDepth > 0).map((w) => ({
+  1346→    workerId: w.id,
+  1347→    name: w.name,
+  1348→    queueDepth: w.queueDepth,
+  1349→    status: w.status,
+  1350→  }));
+  1351→
+  1352→  // Processing failures (failed automation runs + failed document processing)
+  1353→  const processingFailures: { id: string; source: string; message: string; ts: string }[] = [];
+  1354→  for (const a of mockAutomations.filter((a) => a.runs.failed > 0)) {
+  1355→    processingFailures.push({
+  1356→      id: `pf-auto-${a.id}`,
+  1357→      source: "Autopilot",
+  1358→      message: `${a.name} — ${a.runs.failed} failed run${a.runs.failed === 1 ? "" : "s"}`,
+  1359→      ts: a.runs.lastRunAt ?? a.createdAt,
+  1360→    });
+  1361→  }
+  1362→  for (const d of mockDocuments.filter((d) => d.status === "rejected")) {
+  1363→    processingFailures.push({
+  1364→      id: `pf-doc-${d.id}`,
+  1365→      source: "DocSmart",
+  1366→      message: `${d.filename} — rejected during processing`,
+  1367→      ts: d.createdAt,
+  1368→    });
+  1369→  }
+  1370→  processingFailures.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+  1371→
+  1372→  const firstResponseBreaches = slaBreaches.length;
+  1373→  const followUpBreaches = stageInactivity.length;
+  1374→  const totalFailures = processingFailures.length;
+  1375→  const totalQueue = workerBacklog.reduce((s, w) => s + w.queueDepth, 0);
+  1376→
+  1377→  const kpis: KpiCardData[] = [
+  1378→    {
+  1379→      id: "sla-breaches",
+  1380→      labelKey: "control.kpi.slaBreaches",
+  1381→      displayValue: String(firstResponseBreaches),
+  1382→      value: firstResponseBreaches,
+  1383→      deltaPct: firstResponseBreaches > 0 ? 5.4 : 0,
+  1384→      tone: "rose",
+  1385→      sparkline: anchoredSparkline(firstResponseBreaches, 0.05),
+  1386→      moduleId: "leados",
+  1387→      sourceLabel: MODULE_LABELS.leados,
+  1388→      hint: `First-response SLA breaches`,
+  1389→    },
+  1390→    {
+  1391→      id: "sla-followup",
+  1392→      labelKey: "control.kpi.followUpBreaches",
+  1393→      displayValue: String(followUpBreaches),
+  1394→      value: followUpBreaches,
+  1395→      deltaPct: followUpBreaches > 0 ? 3.0 : 0,
+  1396→      tone: "amber",
+  1397→      sparkline: anchoredSparkline(followUpBreaches),
+  1398→      moduleId: "leados",
+  1399→      sourceLabel: MODULE_LABELS.leados,
+  1400→      hint: `Open leads idle 3+ days`,
+  1401→    },
+  1402→    {
+  1403→      id: "sla-failures",
+  1404→      labelKey: "control.kpi.processingFailures",
+  1405→      displayValue: String(totalFailures),
+  1406→      value: totalFailures,
+  1407→      deltaPct: 0,
+  1408→      tone: "rose",
+  1409→      sparkline: anchoredSparkline(totalFailures),
+  1410→      moduleId: "autopilot",
+  1411→      sourceLabel: "Autopilot + DocSmart",
+  1412→      hint: `Failed runs + rejected docs`,
+  1413→    },
+  1414→    {
+  1415→      id: "sla-queue",
+  1416→      labelKey: "control.kpi.queueDepth",
+  1417→      displayValue: String(totalQueue),
+  1418→      value: totalQueue,
+  1419→      deltaPct: 0,
+  1420→      tone: totalQueue > 5 ? "amber" : "lime",
+  1421→      sparkline: anchoredSparkline(totalQueue),
+  1422→      moduleId: "autopilot",
+  1423→      sourceLabel: MODULE_LABELS.autopilot,
+  1424→      hint: `${workerBacklog.length} workers with backlog`,
+  1425→    },
+  1426→    {
+  1427→      id: "sla-workers",
+  1428→      labelKey: "control.kpi.workersOnline",
+  1429→      displayValue: `${WORKER_SNAPSHOT.filter((w) => w.status === "online").length}/${WORKER_SNAPSHOT.length}`,
+  1430→      value: WORKER_SNAPSHOT.filter((w) => w.status === "online").length,
+  1431→      deltaPct: 0,
+  1432→      tone: "lime",
+  1433→      sparkline: anchoredSparkline(WORKER_SNAPSHOT.filter((w) => w.status === "online").length),
+  1434→      moduleId: "autopilot",
+  1435→      sourceLabel: MODULE_LABELS.autopilot,
+  1436→      hint: `Worker pool status`,
+  1437→    },
+  1438→  ];
+  1439→
+  1440→  return { window: range, kpis, slaBreaches, stageInactivity, workerBacklog, processingFailures };
+  1441→}
+  1442→
+  1443→// ─────────────────────────────────────────────────────────────────────────────
+  1444→// AI insights (window-aware — older insights filtered for narrow windows)
+  1445→// ─────────────────────────────────────────────────────────────────────────────
+  1446→
+  1447→export function getAiInsights(window: TimeWindow): { window: WindowRange; insights: AiInsight[] } {
+  1448→  const range = resolveWindow(window);
+  1449→  const all = buildAiInsights();
+  1450→  // For narrow windows (today/7d), drop insights older than the window.
+  1451→  const insights = range.days <= 7
+  1452→    ? all.filter((i) => new Date(i.ts).getTime() >= range.startMs)
+  1453→    : all;
+  1454→  return { window: range, insights: insights.length > 0 ? insights : all };
+  1455→}
+  1456→
+  1457→// ─────────────────────────────────────────────────────────────────────────────
+  1458→// Re-exports for views (so consumers can `import { ... } from "./adapters"`)
+  1459→// ─────────────────────────────────────────────────────────────────────────────
+  1460→
+  1461→export { buildAttentionFeed, buildAiInsights, ownerName, OWNER_NAMES, WORKER_SNAPSHOT };
+  1462→export type { WorkerSnapshot } from "./data";
+  1463→export { WINDOW_OPTIONS } from "./types";
+  1464→

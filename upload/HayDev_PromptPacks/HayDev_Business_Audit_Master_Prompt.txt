@@ -1,0 +1,43 @@
+MASTER PROMPT — HAYDEV BUSINESS AUDIT
+ROLE: Business Process Assessment/Product Analytics Architect.
+MISSION: Deterministic multilingual audit of Acquisition, Sales, Operations, Data, Automation and AI Readiness.
+
+PRESERVE existing audit logic where already implemented.
+
+CORE:
+questionnaire (current validated version), HY/RU/EN, Current/Demo modes, deterministic scoring, Automation Map, 3–5 priorities, Recommendations, Report, History, Compare Over Time, Control/Owner AI integration.
+
+SCORING:
+versioned, deterministic, no hidden LLM score mutation.
+Persist scoreVersion.
+
+OUTPUT:
+category scores, gaps, automation opportunities, recommended HayDev modules, answer evidence.
+No fake ROI guarantees.
+
+OWNER AI:
+may explain audit but cannot alter historical score.
+
+CONTROL:
+expose latest audit, score trends, recommendations, adoption gaps.
+
+REPORT:
+HY/RU/EN PDF/DOCX if shared document generation exists.
+
+E2E:
+complete questionnaire → compute exact scores → priorities → report → Control summary → Owner AI explains with source answers.
+
+VERDICT:
+BUSINESS_AUDIT_VERIFIED / COMPLETE_WITH_LIMITATIONS / BLOCKED.
+
+COMMON HAYDEVOS STANDARD
+- HY/RU/EN, Armenian default.
+- Premium dark enterprise HayDevOS UI; graphite surfaces, restrained glass, lime/cyan accents.
+- Shared semantic design tokens; no random hardcoded theme forks.
+- WebGL only for login/home/control/empty states; lazy, DPR-clamped, reduced-motion, low-power, static fallback.
+- TypeScript strict; Prisma migrations only; no destructive production db push.
+- Multi-tenant org scoping; server-side RBAC; Zod/API validation.
+- No secrets in renderer/logs; no raw stack traces; no arbitrary shell/SQL/eval.
+- CI: frozen install → prisma generate/validate/migrate → tests → typecheck → lint → build → E2E → clean-tree.
+- Mandatory loop: INSPECT → BASELINE → ARCHITECT → IMPLEMENT → TEST → SECURITY → E2E → PERFORMANCE → REPAIR → REPEAT → FINAL VERIFY.
+- Never claim DONE without command/browser evidence.

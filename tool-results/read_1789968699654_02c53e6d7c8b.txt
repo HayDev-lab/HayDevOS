@@ -1,0 +1,1083 @@
+     1→/**
+     2→ * HayDevOS Integration Hub — in-memory data layer.
+     3→ *
+     4→ * Re-exports the foundation `mockIntegrations` (8 records) for back-compat,
+     5→ * and adds the canonical Integration Hub datasets: a 13-provider catalog,
+     6→ * typed connected integrations, webhook endpoints + events, sync runs,
+     7→ * credential vault metadata, an integration audit log, global settings,
+     8→ * and analytics rollups.
+     9→ *
+    10→ * All credential values are MASKED — no plaintext is ever stored here.
+    11→ * The "decryption" concept is server-only (see IntegrationDetail reveal).
+    12→ */
+    13→
+    14→import {
+    15→  Facebook,
+    16→  MessageCircle,
+    17→  Hash,
+    18→  Mail,
+    19→  Webhook,
+    20→  Boxes,
+    21→  Target,
+    22→  FileText,
+    23→  ScanLine,
+    24→  Workflow,
+    25→  Slack,
+    26→  Contact,
+    27→  CreditCard,
+    28→} from "lucide-react";
+    29→
+    30→import { mockIntegrations } from "@/lib/mock/integrations";
+    31→import type {
+    32→  Provider,
+    33→  Integration,
+    34→  WebhookEndpoint,
+    35→  WebhookEvent,
+    36→  SyncRun,
+    37→  Credential,
+    38→  IntegrationAuditEntry,
+    39→  IntegrationSettings,
+    40→} from "./types";
+    41→
+    42→// ─────────────────────────────────────────────────────────────────────────────
+    43→// Helpers
+    44→// ─────────────────────────────────────────────────────────────────────────────
+    45→
+    46→const ORG = "org_haydev";
+    47→const now = Date.now();
+    48→const daysAgo = (d: number) => new Date(now - d * 86400000).toISOString();
+    49→const hoursAgo = (h: number) => new Date(now - h * 3600000).toISOString();
+    50→const minsAgo = (m: number) => new Date(now - m * 60000).toISOString();
+    51→const daysAhead = (d: number) => new Date(now + d * 86400000).toISOString();
+    52→
+    53→// ─────────────────────────────────────────────────────────────────────────────
+    54→// Provider catalog — 13 providers covering external + HayDevOS internals
+    55→// ─────────────────────────────────────────────────────────────────────────────
+    56→
+    57→export const providers: Provider[] = [
+    58→  {
+    59→    id: "meta",
+    60→    name: "Meta",
+    61→    category: "social",
+    62→    description:
+    63→      "Facebook & Instagram Lead Ads, Messenger, marketing audiences. OAuth 2.0 with PKCE.",
+    64→    icon: Facebook,
+    65→    capabilities: ["Lead capture", "Messenger inbox", "Audience sync", "Conversions API"],
+    66→    authType: "oauth",
+    67→    requiredScopes: [
+    68→      "pages_show_list",
+    69→      "pages_messaging",
+    70→      "leads_retrieval",
+    71→      "ads_management",
+    72→      "business_management",
+    73→    ],
+    74→    docsUrl: "https://developers.facebook.com/docs/marketing-api",
+    75→    accent: "cyan",
+    76→  },
+    77→  {
+    78→    id: "telegram",
+    79→    name: "Telegram",
+    80→    category: "messaging",
+    81→    description:
+    82→      "Bot API for inbound lead intake, notifications, and 2-way conversations. Bot token auth.",
+    83→    icon: MessageCircle,
+    84→    capabilities: ["Bot inbox", "Push notifications", "Channel broadcast", "Inline keyboards"],
+    85→    authType: "api_key",
+    86→    requiredScopes: [],
+    87→    docsUrl: "https://core.telegram.org/bots/api",
+    88→    accent: "cyan",
+    89→  },
+    90→  {
+    91→    id: "whatsapp",
+    92→    name: "WhatsApp Business",
+    93→    category: "messaging",
+    94→    description:
+    95→      "Cloud API for templates, session messages, and customer support flows. OAuth + phone number ID.",
+    96→    icon: Hash,
+    97→    capabilities: ["Template messages", "Session messages", "Media exchange", "Webhook receipts"],
+    98→    authType: "oauth",
+    99→    requiredScopes: [
+   100→      "whatsapp_business_messaging",
+   101→      "whatsapp_business_management",
+   102→    ],
+   103→    docsUrl: "https://developers.facebook.com/docs/whatsapp",
+   104→    accent: "lime",
+   105→  },
+   106→  {
+   107→    id: "email",
+   108→    name: "Email (SMTP/IMAP)",
+   109→    category: "email",
+   110→    description:
+   111→      "Universal email integration for outbound sequences and inbound parsing. App password / OAuth.",
+   112→    icon: Mail,
+   113→    capabilities: ["Outbound SMTP", "Inbound IMAP", "Template rendering", "Bounce handling"],
+   114→    authType: "api_key",
+   115→    requiredScopes: [],
+   116→    docsUrl: "https://datatracker.ietf.org/doc/html/rfc3501",
+   117→    accent: "amber",
+   118→  },
+   119→  {
+   120→    id: "signed_webhook",
+   121→    name: "Signed Webhook",
+   122→    category: "webhook",
+   123→    description:
+   124→      "Generic HMAC-SHA256 signed webhook ingress. Bring your own provider — we verify the signature.",
+   125→    icon: Webhook,
+   126→    capabilities: ["HMAC verification", "Idempotent ingress", "Event replay", "Custom event types"],
+   127→    authType: "webhook",
+   128→    requiredScopes: [],
+   129→    docsUrl: "https://docs.haydev.os/webhooks",
+   130→    accent: "violet",
+   131→  },
+   132→  {
+   133→    id: "erp",
+   134→    name: "ERP Hub",
+   135→    category: "internal",
+   136→    description:
+   137→      "HayDevOS ERP — customers, orders, invoices, payments. No external auth (org-scoped service token).",
+   138→    icon: Boxes,
+   139→    capabilities: ["Customer sync", "Order webhooks", "Invoice webhooks", "Payment hooks"],
+   140→    authType: "none",
+   141→    requiredScopes: [],
+   142→    docsUrl: "https://docs.haydev.os/erp",
+   143→    accent: "lime",
+   144→  },
+   145→  {
+   146→    id: "leados",
+   147→    name: "LeadOS",
+   148→    category: "internal",
+   149→    description:
+   150→      "HayDevOS lead-to-cash pipeline. Emits lead stage transitions + SLA breach events.",
+   151→    icon: Target,
+   152→    capabilities: ["Lead events", "Stage transitions", "SLA breach signals", "Owner routing"],
+   153→    authType: "none",
+   154→    requiredScopes: [],
+   155→    docsUrl: "https://docs.haydev.os/leados",
+   156→    accent: "lime",
+   157→  },
+   158→  {
+   159→    id: "quoteflow",
+   160→    name: "QuoteFlow",
+   161→    category: "internal",
+   162→    description:
+   163→      "HayDevOS quoting engine. Emits quote sent/accepted/rejected events for downstream billing.",
+   164→    icon: FileText,
+   165→    capabilities: ["Quote events", "Approval hooks", "E-sign callbacks", "Version pinning"],
+   166→    authType: "none",
+   167→    requiredScopes: [],
+   168→    docsUrl: "https://docs.haydev.os/quoteflow",
+   169→    accent: "cyan",
+   170→  },
+   171→  {
+   172→    id: "documentflow",
+   173→    name: "DocumentFlow",
+   174→    category: "internal",
+   175→    description:
+   176→      "HayDevOS document AI. Emits classified/extracted/approved events with confidence scores.",
+   177→    icon: ScanLine,
+   178→    capabilities: ["Document events", "Extraction results", "Review queue hooks", "Batch signals"],
+   179→    authType: "none",
+   180→    requiredScopes: [],
+   181→    docsUrl: "https://docs.haydev.os/documentflow",
+   182→    accent: "amber",
+   183→  },
+   184→  {
+   185→    id: "automation",
+   186→    name: "Automation Builder",
+   187→    category: "internal",
+   188→    description:
+   189→      "HayDevOS Autopilot — emits automation started/succeeded/failed + approval-decision events.",
+   190→    icon: Workflow,
+   191→    capabilities: ["Run events", "Approval hooks", "Failure alerts", "Schedule ticks"],
+   192→    authType: "none",
+   193→    requiredScopes: [],
+   194→    docsUrl: "https://docs.haydev.os/autopilot",
+   195→    accent: "violet",
+   196→  },
+   197→  {
+   198→    id: "slack",
+   199→    name: "Slack",
+   200→    category: "messaging",
+   201→    description:
+   202→      "Slack workspace integration for notifications, slash commands, and approval DMs. OAuth 2.0.",
+   203→    icon: Slack,
+   204→    capabilities: ["Channel notifications", "Slash commands", "DM approvals", "Thread replies"],
+   205→    authType: "oauth",
+   206→    requiredScopes: [
+   207→      "channels:read",
+   208→      "chat:write",
+   209→      "commands",
+   210→      "users:read",
+   211→      "users.profile:read",
+   212→    ],
+   213→    docsUrl: "https://api.slack.com/docs",
+   214→    accent: "violet",
+   215→  },
+   216→  {
+   217→    id: "hubspot",
+   218→    name: "HubSpot",
+   219→    category: "internal",
+   220→    description:
+   221→      "HubSpot CRM sync — contacts, deals, companies. Bi-directional sync with conflict resolution.",
+   222→    icon: Contact,
+   223→    capabilities: ["Contact sync", "Deal sync", "Company sync", "Timeline events"],
+   224→    authType: "oauth",
+   225→    requiredScopes: [
+   226→      "crm.objects.contacts.read",
+   227→      "crm.objects.contacts.write",
+   228→      "crm.objects.deals.read",
+   229→      "crm.objects.deals.write",
+   230→    ],
+   231→    docsUrl: "https://developers.hubspot.com/docs",
+   232→    accent: "amber",
+   233→  },
+   234→  {
+   235→    id: "stripe",
+   236→    name: "Stripe",
+   237→    category: "internal",
+   238→    description:
+   239→      "Stripe billing & payments — subscription webhooks, payment intents, customer portal. OAuth.",
+   240→    icon: CreditCard,
+   241→    capabilities: ["Payment webhooks", "Subscription sync", "Customer sync", "Invoice events"],
+   242→    authType: "oauth",
+   243→    requiredScopes: [
+   244→      "read_only",
+   245→      "payments",
+   246→      "subscriptions",
+   247→      "invoices",
+   248→    ],
+   249→    docsUrl: "https://stripe.com/docs/api",
+   250→    accent: "violet",
+   251→  },
+   252→];
+   253→
+   254→export function providerById(id: string): Provider | undefined {
+   255→  return providers.find((p) => p.id === id);
+   256→}
+   257→
+   258→// ─────────────────────────────────────────────────────────────────────────────
+   259→// Connected integrations (10 — covers every status)
+   260→// ─────────────────────────────────────────────────────────────────────────────
+   261→
+   262→export const integrations: Integration[] = [
+   263→  {
+   264→    id: "int_001",
+   265→    orgId: ORG,
+   266→    providerId: "meta",
+   267→    label: "Meta — HayDev HQ",
+   268→    status: "error",
+   269→    healthScore: 22,
+   270→    authType: "oauth",
+   271→    scopesGranted: ["pages_show_list", "leads_retrieval", "ads_management"],
+   272→    capabilitiesInUse: ["Lead capture", "Conversions API"],
+   273→    credentialRefMasked: "EAAG••••••••4f1a",
+   274→    credentialId: "cr_001",
+   275→    lastSyncAt: daysAgo(1),
+   276→    eventsProcessed: 921,
+   277→    config: {
+   278→      pageId: "10294••••21",
+   279→      pixelId: "88472••••93",
+   280→      businessId: "biz_••••••6c4",
+   281→    },
+   282→    createdAt: daysAgo(20),
+   283→    updatedAt: daysAgo(1),
+   284→  },
+   285→  {
+   286→    id: "int_002",
+   287→    orgId: ORG,
+   288→    providerId: "telegram",
+   289→    label: "Telegram — Sales Bot",
+   290→    status: "connected",
+   291→    healthScore: 98,
+   292→    authType: "api_key",
+   293→    scopesGranted: [],
+   294→    capabilitiesInUse: ["Bot inbox", "Push notifications"],
+   295→    credentialRefMasked: "8421••••••••AAHb",
+   296→    credentialId: "cr_002",
+   297→    lastSyncAt: minsAgo(3),
+   298→    eventsProcessed: 18429,
+   299→    config: {
+   300→      botHandle: "@haydev_sales_bot",
+   301→      chatId: "-1001••••4421",
+   302→    },
+   303→    createdAt: daysAgo(90),
+   304→    updatedAt: hoursAgo(2),
+   305→  },
+   306→  {
+   307→    id: "int_003",
+   308→    orgId: ORG,
+   309→    providerId: "whatsapp",
+   310→    label: "WhatsApp — Support Line",
+   311→    status: "connected",
+   312→    healthScore: 94,
+   313→    authType: "oauth",
+   314→    scopesGranted: ["whatsapp_business_messaging", "whatsapp_business_management"],
+   315→    capabilitiesInUse: ["Template messages", "Session messages", "Webhook receipts"],
+   316→    credentialRefMasked: "EAAJ••••••••902c",
+   317→    credentialId: "cr_003",
+   318→    lastSyncAt: minsAgo(8),
+   319→    eventsProcessed: 7341,
+   320→    config: {
+   321→      phoneNumberId: "1098••••44",
+   322→      wabaId: "2094••••11",
+   323→      businessName: "HayDev HQ",
+   324→    },
+   325→    createdAt: daysAgo(45),
+   326→    updatedAt: hoursAgo(1),
+   327→  },
+   328→  {
+   329→    id: "int_004",
+   330→    orgId: ORG,
+   331→    providerId: "email",
+   332→    label: "Email — outbound@haydev.os",
+   333→    status: "degraded",
+   334→    healthScore: 64,
+   335→    authType: "api_key",
+   336→    scopesGranted: [],
+   337→    capabilitiesInUse: ["Outbound SMTP", "Inbound IMAP", "Bounce handling"],
+   338→    credentialRefMasked: "ap_••••••••f2c8",
+   339→    credentialId: "cr_004",
+   340→    lastSyncAt: hoursAgo(6),
+   341→    eventsProcessed: 5210,
+   342→    config: {
+   343→      smtpHost: "smtp.••••.com",
+   344→      imapHost: "imap.••••.com",
+   345→      mailbox: "outbound@••••.os",
+   346→    },
+   347→    createdAt: daysAgo(45),
+   348→    updatedAt: hoursAgo(6),
+   349→  },
+   350→  {
+   351→    id: "int_005",
+   352→    orgId: ORG,
+   353→    providerId: "signed_webhook",
+   354→    label: "Signed Webhook — Ingress",
+   355→    status: "connected",
+   356→    healthScore: 99,
+   357→    authType: "webhook",
+   358→    scopesGranted: [],
+   359→    capabilitiesInUse: ["HMAC verification", "Idempotent ingress", "Event replay"],
+   360→    credentialRefMasked: "whsec_••••••••9a42",
+   361→    credentialId: "cr_005",
+   362→    lastSyncAt: minsAgo(1),
+   363→    eventsProcessed: 22018,
+   364→    config: {
+   365→      endpoint: "/hooks/ingress",
+   366→      algorithm: "HMAC-SHA256",
+   367→    },
+   368→    createdAt: daysAgo(120),
+   369→    updatedAt: minsAgo(1),
+   370→  },
+   371→  {
+   372→    id: "int_006",
+   373→    orgId: ORG,
+   374→    providerId: "stripe",
+   375→    label: "Stripe — Live Production",
+   376→    status: "reauth_required",
+   377→    healthScore: 38,
+   378→    authType: "oauth",
+   379→    scopesGranted: ["read_only", "payments", "invoices"],
+   380→    capabilitiesInUse: ["Payment webhooks", "Subscription sync", "Invoice events"],
+   381→    credentialRefMasked: "sk_live_••••••••42f1",
+   382→    credentialId: "cr_006",
+   383→    lastSyncAt: daysAgo(3),
+   384→    eventsProcessed: 1842,
+   385→    config: {
+   386→      accountId: "acct_1••••4f2",
+   387→      mode: "live",
+   388→      webhookId: "we_1••••4f2",
+   389→    },
+   390→    createdAt: daysAgo(30),
+   391→    updatedAt: daysAgo(3),
+   392→  },
+   393→  {
+   394→    id: "int_007",
+   395→    orgId: ORG,
+   396→    providerId: "slack",
+   397→    label: "Slack — HayDev Workspace",
+   398→    status: "connected",
+   399→    healthScore: 96,
+   400→    authType: "oauth",
+   401→    scopesGranted: ["channels:read", "chat:write", "commands", "users:read"],
+   402→    capabilitiesInUse: ["Channel notifications", "DM approvals", "Thread replies"],
+   403→    credentialRefMasked: "xoxb-••••••••fa2",
+   404→    credentialId: "cr_007",
+   405→    lastSyncAt: minsAgo(11),
+   406→    eventsProcessed: 14021,
+   407→    config: {
+   408→      teamId: "T1••••2A",
+   409→      defaultChannel: "C0••••4F",
+   410→      appName: "HayDevOS",
+   411→    },
+   412→    createdAt: daysAgo(75),
+   413→    updatedAt: hoursAgo(2),
+   414→  },
+   415→  {
+   416→    id: "int_008",
+   417→    orgId: ORG,
+   418→    providerId: "hubspot",
+   419→    label: "HubSpot — CRM Sync",
+   420→    status: "connected",
+   421→    healthScore: 91,
+   422→    authType: "oauth",
+   423→    scopesGranted: [
+   424→      "crm.objects.contacts.read",
+   425→      "crm.objects.contacts.write",
+   426→      "crm.objects.deals.read",
+   427→    ],
+   428→    capabilitiesInUse: ["Contact sync", "Deal sync", "Timeline events"],
+   429→    credentialRefMasked: "pat-••••••••8c4",
+   430→    credentialId: "cr_008",
+   431→    lastSyncAt: hoursAgo(1),
+   432→    eventsProcessed: 9412,
+   433→    config: {
+   434→      portalId: "2018••••4",
+   435→      syncDirection: "bi-directional",
+   436→      conflictPolicy: "last-write-wins",
+   437→    },
+   438→    createdAt: daysAgo(60),
+   439→    updatedAt: hoursAgo(1),
+   440→  },
+   441→  {
+   442→    id: "int_009",
+   443→    orgId: ORG,
+   444→    providerId: "leados",
+   445→    label: "LeadOS — Internal",
+   446→    status: "connected",
+   447→    healthScore: 100,
+   448→    authType: "none",
+   449→    scopesGranted: [],
+   450→    capabilitiesInUse: ["Lead events", "Stage transitions", "SLA breach signals"],
+   451→    credentialRefMasked: "svc_••••••••1a2b",
+   452→    credentialId: "cr_009",
+   453→    lastSyncAt: minsAgo(1),
+   454→    eventsProcessed: 31204,
+   455→    config: {
+   456→      serviceToken: "svc_••••••••1a2b",
+   457→      emitLeadEvents: "true",
+   458→    },
+   459→    createdAt: daysAgo(180),
+   460→    updatedAt: minsAgo(1),
+   461→  },
+   462→  {
+   463→    id: "int_010",
+   464→    orgId: ORG,
+   465→    providerId: "erp",
+   466→    label: "ERP Hub — Internal",
+   467→    status: "connected",
+   468→    healthScore: 100,
+   469→    authType: "none",
+   470→    scopesGranted: [],
+   471→    capabilitiesInUse: ["Customer sync", "Order webhooks", "Invoice webhooks"],
+   472→    credentialRefMasked: "svc_••••••••3c4d",
+   473→    credentialId: "cr_010",
+   474→    lastSyncAt: minsAgo(1),
+   475→    eventsProcessed: 28102,
+   476→    config: {
+   477→      serviceToken: "svc_••••••••3c4d",
+   478→      emitPaymentHooks: "true",
+   479→    },
+   480→    createdAt: daysAgo(180),
+   481→    updatedAt: minsAgo(1),
+   482→  },
+   483→];
+   484→
+   485→export function integrationById(id: string): Integration | undefined {
+   486→  return integrations.find((i) => i.id === id);
+   487→}
+   488→
+   489→// ─────────────────────────────────────────────────────────────────────────────
+   490→// Webhook endpoints (6)
+   491→// ─────────────────────────────────────────────────────────────────────────────
+   492→
+   493→export const webhookEndpoints: WebhookEndpoint[] = [
+   494→  {
+   495→    id: "wh_001",
+   496→    orgId: ORG,
+   497→    name: "Generic Signed Ingress",
+   498→    url: "https://api.haydev.os/hooks/ingress/wh_001",
+   499→    signingSecretMasked: "whsec_••••••••9a42",
+   500→    eventTypes: ["lead.created", "quote.accepted", "invoice.paid", "doc.approved"],
+   501→    providerId: "signed_webhook",
+   502→    lastStatus: "delivered",
+   503→    lastDeliveryAt: minsAgo(2),
+   504→    deliveries24h: 4218,
+   505→    successRate: 99.6,
+   506→    hmacVerified: true,
+   507→  },
+   508→  {
+   509→    id: "wh_002",
+   510→    orgId: ORG,
+   511→    name: "Stripe → HayDevOS",
+   512→    url: "https://api.haydev.os/hooks/stripe/wh_002",
+   513→    signingSecretMasked: "whsec_••••••••5e1",
+   514→    eventTypes: ["payment_intent.succeeded", "invoice.paid", "customer.updated"],
+   515→    providerId: "stripe",
+   516→    lastStatus: "delivered",
+   517→    lastDeliveryAt: minsAgo(8),
+   518→    deliveries24h: 1421,
+   519→    successRate: 99.2,
+   520→    hmacVerified: true,
+   521→  },
+   522→  {
+   523→    id: "wh_003",
+   524→    orgId: ORG,
+   525→    name: "Meta Lead Ads",
+   526→    url: "https://api.haydev.os/hooks/meta/wh_003",
+   527→    signingSecretMasked: "whsec_••••••••7f2",
+   528→    eventTypes: ["leadgen"],
+   529→    providerId: "meta",
+   530→    lastStatus: "failed",
+   531→    lastDeliveryAt: hoursAgo(3),
+   532→    deliveries24h: 42,
+   533→    successRate: 76.4,
+   534→    hmacVerified: true,
+   535→  },
+   536→  {
+   537→    id: "wh_004",
+   538→    orgId: ORG,
+   539→    name: "WhatsApp Inbound",
+   540→    url: "https://api.haydev.os/hooks/whatsapp/wh_004",
+   541→    signingSecretMasked: "whsec_••••••••3a8",
+   542→    eventTypes: ["messages", "message_status", "template_status"],
+   543→    providerId: "whatsapp",
+   544→    lastStatus: "delivered",
+   545→    lastDeliveryAt: minsAgo(4),
+   546→    deliveries24h: 821,
+   547→    successRate: 98.9,
+   548→    hmacVerified: true,
+   549→  },
+   550→  {
+   551→    id: "wh_005",
+   552→    orgId: ORG,
+   553→    name: "Slack Slash + Interactivity",
+   554→    url: "https://api.haydev.os/hooks/slack/wh_005",
+   555→    signingSecretMasked: "whsec_••••••••6b9",
+   556→    eventTypes: ["slash_command", "interactive", "event_callback"],
+   557→    providerId: "slack",
+   558→    lastStatus: "delivered",
+   559→    lastDeliveryAt: minsAgo(15),
+   560→    deliveries24h: 312,
+   561→    successRate: 99.8,
+   562→    hmacVerified: true,
+   563→  },
+   564→  {
+   565→    id: "wh_006",
+   566→    orgId: ORG,
+   567→    name: "HubSpot CRM Events",
+   568→    url: "https://api.haydev.os/hooks/hubspot/wh_006",
+   569→    signingSecretMasked: "whsec_••••••••2d4",
+   570→    eventTypes: ["contact.creation", "deal.propertyChange", "ticket.creation"],
+   571→    providerId: "hubspot",
+   572→    lastStatus: "pending",
+   573→    lastDeliveryAt: hoursAgo(2),
+   574→    deliveries24h: 198,
+   575→    successRate: 97.4,
+   576→    hmacVerified: true,
+   577→  },
+   578→];
+   579→
+   580→export function endpointById(id: string): WebhookEndpoint | undefined {
+   581→  return webhookEndpoints.find((w) => w.id === id);
+   582→}
+   583→
+   584→// ─────────────────────────────────────────────────────────────────────────────
+   585→// Webhook events (recent 18)
+   586→// ─────────────────────────────────────────────────────────────────────────────
+   587→
+   588→export const webhookEvents: WebhookEvent[] = [
+   589→  {
+   590→    id: "ev_001", orgId: ORG, endpointId: "wh_001", providerId: "signed_webhook",
+   591→    eventId: "evt_9f2a4c1", eventType: "lead.created",
+   592→    receivedAt: minsAgo(2), processedAt: minsAgo(2), status: "delivered",
+   593→    responseCode: 200, hmacValid: true, bodyBytes: 1842,
+   594→    idempotencyKey: "idem_8f4a2c1", errorMessage: null,
+   595→  },
+   596→  {
+   597→    id: "ev_002", orgId: ORG, endpointId: "wh_002", providerId: "stripe",
+   598→    eventId: "evt_1Na2bc3", eventType: "payment_intent.succeeded",
+   599→    receivedAt: minsAgo(8), processedAt: minsAgo(8), status: "delivered",
+   600→    responseCode: 200, hmacValid: true, bodyBytes: 2941,
+   601→    idempotencyKey: "idem_2Na2bc3", errorMessage: null,
+   602→  },
+   603→  {
+   604→    id: "ev_003", orgId: ORG, endpointId: "wh_003", providerId: "meta",
+   605→    eventId: "evt_meta_441", eventType: "leadgen",
+   606→    receivedAt: hoursAgo(3), processedAt: null, status: "failed",
+   607→    responseCode: 503, hmacValid: true, bodyBytes: 1024,
+   608→    idempotencyKey: "idem_meta441", errorMessage: "Downstream timeout after 5000ms",
+   609→  },
+   610→  {
+   611→    id: "ev_004", orgId: ORG, endpointId: "wh_004", providerId: "whatsapp",
+   612→    eventId: "evt_wa_821", eventType: "messages",
+   613→    receivedAt: minsAgo(4), processedAt: minsAgo(4), status: "delivered",
+   614→    responseCode: 200, hmacValid: true, bodyBytes: 921,
+   615→    idempotencyKey: "idem_wa821", errorMessage: null,
+   616→  },
+   617→  {
+   618→    id: "ev_005", orgId: ORG, endpointId: "wh_001", providerId: "signed_webhook",
+   619→    eventId: "evt_9f2a4c2", eventType: "quote.accepted",
+   620→    receivedAt: minsAgo(12), processedAt: minsAgo(12), status: "delivered",
+   621→    responseCode: 200, hmacValid: true, bodyBytes: 1412,
+   622→    idempotencyKey: "idem_8f4a2c2", errorMessage: null,
+   623→  },
+   624→  {
+   625→    id: "ev_006", orgId: ORG, endpointId: "wh_005", providerId: "slack",
+   626→    eventId: "evt_slack_91", eventType: "slash_command",
+   627→    receivedAt: minsAgo(15), processedAt: minsAgo(15), status: "delivered",
+   628→    responseCode: 200, hmacValid: true, bodyBytes: 612,
+   629→    idempotencyKey: "idem_slack91", errorMessage: null,
+   630→  },
+   631→  {
+   632→    id: "ev_007", orgId: ORG, endpointId: "wh_006", providerId: "hubspot",
+   633→    eventId: "evt_hs_22", eventType: "contact.creation",
+   634→    receivedAt: hoursAgo(2), processedAt: null, status: "pending",
+   635→    responseCode: 202, hmacValid: true, bodyBytes: 1521,
+   636→    idempotencyKey: "idem_hs22", errorMessage: null,
+   637→  },
+   638→  {
+   639→    id: "ev_008", orgId: ORG, endpointId: "wh_002", providerId: "stripe",
+   640→    eventId: "evt_1Na2bc4", eventType: "invoice.paid",
+   641→    receivedAt: minsAgo(22), processedAt: minsAgo(22), status: "delivered",
+   642→    responseCode: 200, hmacValid: true, bodyBytes: 1812,
+   643→    idempotencyKey: "idem_2Na2bc4", errorMessage: null,
+   644→  },
+   645→  {
+   646→    id: "ev_009", orgId: ORG, endpointId: "wh_001", providerId: "signed_webhook",
+   647→    eventId: "evt_9f2a4c3", eventType: "invoice.paid",
+   648→    receivedAt: minsAgo(31), processedAt: minsAgo(31), status: "replayed",
+   649→    responseCode: 200, hmacValid: true, bodyBytes: 1102,
+   650→    idempotencyKey: "idem_8f4a2c3", errorMessage: null,
+   651→  },
+   652→  {
+   653→    id: "ev_010", orgId: ORG, endpointId: "wh_004", providerId: "whatsapp",
+   654→    eventId: "evt_wa_822", eventType: "message_status",
+   655→    receivedAt: minsAgo(45), processedAt: minsAgo(45), status: "delivered",
+   656→    responseCode: 200, hmacValid: true, bodyBytes: 412,
+   657→    idempotencyKey: "idem_wa822", errorMessage: null,
+   658→  },
+   659→  {
+   660→    id: "ev_011", orgId: ORG, endpointId: "wh_005", providerId: "slack",
+   661→    eventId: "evt_slack_92", eventType: "interactive",
+   662→    receivedAt: minsAgo(58), processedAt: minsAgo(58), status: "delivered",
+   663→    responseCode: 200, hmacValid: true, bodyBytes: 821,
+   664→    idempotencyKey: "idem_slack92", errorMessage: null,
+   665→  },
+   666→  {
+   667→    id: "ev_012", orgId: ORG, endpointId: "wh_003", providerId: "meta",
+   668→    eventId: "evt_meta_442", eventType: "leadgen",
+   669→    receivedAt: hoursAgo(5), processedAt: hoursAgo(5), status: "delivered",
+   670→    responseCode: 200, hmacValid: true, bodyBytes: 992,
+   671→    idempotencyKey: "idem_meta442", errorMessage: null,
+   672→  },
+   673→  {
+   674→    id: "ev_013", orgId: ORG, endpointId: "wh_001", providerId: "signed_webhook",
+   675→    eventId: "evt_9f2a4c4", eventType: "doc.approved",
+   676→    receivedAt: hoursAgo(1), processedAt: hoursAgo(1), status: "delivered",
+   677→    responseCode: 200, hmacValid: true, bodyBytes: 712,
+   678→    idempotencyKey: "idem_8f4a2c4", errorMessage: null,
+   679→  },
+   680→  {
+   681→    id: "ev_014", orgId: ORG, endpointId: "wh_002", providerId: "stripe",
+   682→    eventId: "evt_1Na2bc5", eventType: "customer.updated",
+   683→    receivedAt: hoursAgo(2), processedAt: hoursAgo(2), status: "delivered",
+   684→    responseCode: 200, hmacValid: true, bodyBytes: 1241,
+   685→    idempotencyKey: "idem_2Na2bc5", errorMessage: null,
+   686→  },
+   687→  {
+   688→    id: "ev_015", orgId: ORG, endpointId: "wh_004", providerId: "whatsapp",
+   689→    eventId: "evt_wa_823", eventType: "template_status",
+   690→    receivedAt: hoursAgo(3), processedAt: null, status: "failed",
+   691→    responseCode: 422, hmacValid: true, bodyBytes: 612,
+   692→    idempotencyKey: "idem_wa823", errorMessage: "Template rejected by WhatsApp review",
+   693→  },
+   694→  {
+   695→    id: "ev_016", orgId: ORG, endpointId: "wh_006", providerId: "hubspot",
+   696→    eventId: "evt_hs_23", eventType: "deal.propertyChange",
+   697→    receivedAt: hoursAgo(4), processedAt: hoursAgo(4), status: "delivered",
+   698→    responseCode: 200, hmacValid: true, bodyBytes: 1321,
+   699→    idempotencyKey: "idem_hs23", errorMessage: null,
+   700→  },
+   701→  {
+   702→    id: "ev_017", orgId: ORG, endpointId: "wh_005", providerId: "slack",
+   703→    eventId: "evt_slack_93", eventType: "event_callback",
+   704→    receivedAt: hoursAgo(6), processedAt: hoursAgo(6), status: "delivered",
+   705→    responseCode: 200, hmacValid: true, bodyBytes: 521,
+   706→    idempotencyKey: "idem_slack93", errorMessage: null,
+   707→  },
+   708→  {
+   709→    id: "ev_018", orgId: ORG, endpointId: "wh_001", providerId: "signed_webhook",
+   710→    eventId: "evt_9f2a4c5", eventType: "lead.created",
+   711→    receivedAt: hoursAgo(7), processedAt: hoursAgo(7), status: "delivered",
+   712→    responseCode: 200, hmacValid: true, bodyBytes: 1732,
+   713→    idempotencyKey: "idem_8f4a2c5", errorMessage: null,
+   714→  },
+   715→];
+   716→
+   717→// ─────────────────────────────────────────────────────────────────────────────
+   718→// Sync runs (14)
+   719→// ─────────────────────────────────────────────────────────────────────────────
+   720→
+   721→export const syncRuns: SyncRun[] = [
+   722→  {
+   723→    id: "sr_001", orgId: ORG, integrationId: "int_002", providerId: "telegram",
+   724→    startedAt: minsAgo(3), finishedAt: minsAgo(3), durationMs: 412,
+   725→    recordsIn: 21, recordsOut: 21, status: "success",
+   726→    error: null, triggeredBy: "schedule",
+   727→  },
+   728→  {
+   729→    id: "sr_002", orgId: ORG, integrationId: "int_003", providerId: "whatsapp",
+   730→    startedAt: minsAgo(8), finishedAt: minsAgo(8), durationMs: 1821,
+   731→    recordsIn: 184, recordsOut: 184, status: "success",
+   732→    error: null, triggeredBy: "webhook",
+   733→  },
+   734→  {
+   735→    id: "sr_003", orgId: ORG, integrationId: "int_005", providerId: "signed_webhook",
+   736→    startedAt: minsAgo(2), finishedAt: minsAgo(2), durationMs: 142,
+   737→    recordsIn: 4, recordsOut: 4, status: "success",
+   738→    error: null, triggeredBy: "webhook",
+   739→  },
+   740→  {
+   741→    id: "sr_004", orgId: ORG, integrationId: "int_007", providerId: "slack",
+   742→    startedAt: minsAgo(11), finishedAt: minsAgo(11), durationMs: 612,
+   743→    recordsIn: 41, recordsOut: 41, status: "success",
+   744→    error: null, triggeredBy: "schedule",
+   745→  },
+   746→  {
+   747→    id: "sr_005", orgId: ORG, integrationId: "int_008", providerId: "hubspot",
+   748→    startedAt: hoursAgo(1), finishedAt: hoursAgo(1), durationMs: 4821,
+   749→    recordsIn: 412, recordsOut: 408, status: "partial",
+   750→    error: "4 records skipped due to conflict; see conflict log",
+   751→    triggeredBy: "schedule",
+   752→  },
+   753→  {
+   754→    id: "sr_006", orgId: ORG, integrationId: "int_004", providerId: "email",
+   755→    startedAt: hoursAgo(6), finishedAt: hoursAgo(6), durationMs: 12041,
+   756→    recordsIn: 312, recordsOut: 0, status: "failed",
+   757→    error: "IMAP auth rejected: invalid app password",
+   758→    triggeredBy: "schedule",
+   759→  },
+   760→  {
+   761→    id: "sr_007", orgId: ORG, integrationId: "int_001", providerId: "meta",
+   762→    startedAt: daysAgo(1), finishedAt: daysAgo(1), durationMs: 9412,
+   763→    recordsIn: 21, recordsOut: 0, status: "failed",
+   764→    error: "OAuth token expired; refresh failed (reauth required)",
+   765→    triggeredBy: "schedule",
+   766→  },
+   767→  {
+   768→    id: "sr_008", orgId: ORG, integrationId: "int_006", providerId: "stripe",
+   769→    startedAt: daysAgo(3), finishedAt: daysAgo(3), durationMs: 2241,
+   770→    recordsIn: 88, recordsOut: 0, status: "failed",
+   771→    error: "Stripe API key revoked",
+   772→    triggeredBy: "schedule",
+   773→  },
+   774→  {
+   775→    id: "sr_009", orgId: ORG, integrationId: "int_009", providerId: "leados",
+   776→    startedAt: minsAgo(1), finishedAt: minsAgo(1), durationMs: 92,
+   777→    recordsIn: 8, recordsOut: 8, status: "success",
+   778→    error: null, triggeredBy: "webhook",
+   779→  },
+   780→  {
+   781→    id: "sr_010", orgId: ORG, integrationId: "int_010", providerId: "erp",
+   782→    startedAt: minsAgo(1), finishedAt: minsAgo(1), durationMs: 142,
+   783→    recordsIn: 12, recordsOut: 12, status: "success",
+   784→    error: null, triggeredBy: "webhook",
+   785→  },
+   786→  {
+   787→    id: "sr_011", orgId: ORG, integrationId: "int_002", providerId: "telegram",
+   788→    startedAt: hoursAgo(2), finishedAt: hoursAgo(2), durationMs: 382,
+   789→    recordsIn: 18, recordsOut: 18, status: "success",
+   790→    error: null, triggeredBy: "schedule",
+   791→  },
+   792→  {
+   793→    id: "sr_012", orgId: ORG, integrationId: "int_007", providerId: "slack",
+   794→    startedAt: hoursAgo(3), finishedAt: hoursAgo(3), durationMs: 521,
+   795→    recordsIn: 32, recordsOut: 32, status: "success",
+   796→    error: null, triggeredBy: "manual",
+   797→  },
+   798→  {
+   799→    id: "sr_013", orgId: ORG, integrationId: "int_008", providerId: "hubspot",
+   800→    startedAt: hoursAgo(5), finishedAt: hoursAgo(5), durationMs: 3921,
+   801→    recordsIn: 381, recordsOut: 381, status: "success",
+   802→    error: null, triggeredBy: "schedule",
+   803→  },
+   804→  {
+   805→    id: "sr_014", orgId: ORG, integrationId: "int_003", providerId: "whatsapp",
+   806→    startedAt: hoursAgo(7), finishedAt: hoursAgo(7), durationMs: 1821,
+   807→    recordsIn: 142, recordsOut: 142, status: "success",
+   808→    error: null, triggeredBy: "backfill",
+   809→  },
+   810→];
+   811→
+   812→// ─────────────────────────────────────────────────────────────────────────────
+   813→// Credentials vault (10 — masked)
+   814→// ─────────────────────────────────────────────────────────────────────────────
+   815→
+   816→export const credentials: Credential[] = [
+   817→  {
+   818→    id: "cr_001", orgId: ORG, providerId: "meta", label: "Meta — Page Access Token",
+   819→    type: "oauth_token", maskedValue: "EAAG••••••••4f1a",
+   820→    createdAt: daysAgo(20), lastRotatedAt: daysAgo(20), expiresAt: daysAhead(8),
+   821→    integrationId: "int_001", encrypted: true, active: true,
+   822→  },
+   823→  {
+   824→    id: "cr_002", orgId: ORG, providerId: "telegram", label: "Telegram — Bot Token",
+   825→    type: "api_key", maskedValue: "8421••••••••AAHb",
+   826→    createdAt: daysAgo(90), lastRotatedAt: daysAgo(30), expiresAt: null,
+   827→    integrationId: "int_002", encrypted: true, active: true,
+   828→  },
+   829→  {
+   830→    id: "cr_003", orgId: ORG, providerId: "whatsapp", label: "WhatsApp — System User Token",
+   831→    type: "oauth_token", maskedValue: "EAAJ••••••••902c",
+   832→    createdAt: daysAgo(45), lastRotatedAt: daysAgo(15), expiresAt: daysAhead(45),
+   833→    integrationId: "int_003", encrypted: true, active: true,
+   834→  },
+   835→  {
+   836→    id: "cr_004", orgId: ORG, providerId: "email", label: "Email — SMTP App Password",
+   837→    type: "api_key", maskedValue: "ap_••••••••f2c8",
+   838→    createdAt: daysAgo(45), lastRotatedAt: daysAgo(45), expiresAt: null,
+   839→    integrationId: "int_004", encrypted: true, active: true,
+   840→  },
+   841→  {
+   842→    id: "cr_005", orgId: ORG, providerId: "signed_webhook", label: "Signed Webhook — Secret",
+   843→    type: "signing_secret", maskedValue: "whsec_••••••••9a42",
+   844→    createdAt: daysAgo(120), lastRotatedAt: daysAgo(7), expiresAt: null,
+   845→    integrationId: "int_005", encrypted: true, active: true,
+   846→  },
+   847→  {
+   848→    id: "cr_006", orgId: ORG, providerId: "stripe", label: "Stripe — Restricted Key",
+   849→    type: "oauth_token", maskedValue: "sk_live_••••••••42f1",
+   850→    createdAt: daysAgo(30), lastRotatedAt: daysAgo(3), expiresAt: daysAhead(2),
+   851→    integrationId: "int_006", encrypted: true, active: false,
+   852→  },
+   853→  {
+   854→    id: "cr_007", orgId: ORG, providerId: "slack", label: "Slack — Bot OAuth Token",
+   855→    type: "oauth_token", maskedValue: "xoxb-••••••••fa2",
+   856→    createdAt: daysAgo(75), lastRotatedAt: daysAgo(20), expiresAt: null,
+   857→    integrationId: "int_007", encrypted: true, active: true,
+   858→  },
+   859→  {
+   860→    id: "cr_008", orgId: ORG, providerId: "hubspot", label: "HubSpot — Private App Token",
+   861→    type: "oauth_token", maskedValue: "pat-••••••••8c4",
+   862→    createdAt: daysAgo(60), lastRotatedAt: daysAgo(10), expiresAt: daysAhead(60),
+   863→    integrationId: "int_008", encrypted: true, active: true,
+   864→  },
+   865→  {
+   866→    id: "cr_009", orgId: ORG, providerId: "leados", label: "LeadOS — Service Token",
+   867→    type: "api_key", maskedValue: "svc_••••••••1a2b",
+   868→    createdAt: daysAgo(180), lastRotatedAt: daysAgo(60), expiresAt: null,
+   869→    integrationId: "int_009", encrypted: true, active: true,
+   870→  },
+   871→  {
+   872→    id: "cr_010", orgId: ORG, providerId: "erp", label: "ERP Hub — Service Token",
+   873→    type: "api_key", maskedValue: "svc_••••••••3c4d",
+   874→    createdAt: daysAgo(180), lastRotatedAt: daysAgo(60), expiresAt: null,
+   875→    integrationId: "int_010", encrypted: true, active: true,
+   876→  },
+   877→];
+   878→
+   879→export function credentialById(id: string): Credential | undefined {
+   880→  return credentials.find((c) => c.id === id);
+   881→}
+   882→
+   883→/** Credentials expiring within the next N days. */
+   884→export function credentialsExpiringSoon(days: number = 14): Credential[] {
+   885→  const cutoff = now + days * 86400000;
+   886→  return credentials.filter(
+   887→    (c) => c.expiresAt !== null && new Date(c.expiresAt).getTime() < cutoff && c.active,
+   888→  );
+   889→}
+   890→
+   891→// ─────────────────────────────────────────────────────────────────────────────
+   892→// Audit log (integration-scoped) — 16 entries
+   893→// ─────────────────────────────────────────────────────────────────────────────
+   894→
+   895→export const integrationAudit: IntegrationAuditEntry[] = [
+   896→  {
+   897→    id: "al_001", orgId: ORG, actor: "Aram Hayrapetyan", action: "connect",
+   898→    providerId: "signed_webhook", integrationId: "int_005", ip: "146.70.•••.•••",
+   899→    userAgent: "Mozilla/5.0 (Macintosh) Chrome/127",
+   900→    message: "Connected Signed Webhook (HMAC ingress). Generated endpoint + signing secret.",
+   901→    createdAt: daysAgo(120),
+   902→  },
+   903→  {
+   904→    id: "al_002", orgId: ORG, actor: "Aram Hayrapetyan", action: "connect",
+   905→    providerId: "telegram", integrationId: "int_002", ip: "146.70.•••.•••",
+   906→    userAgent: "Mozilla/5.0 (Macintosh) Chrome/127",
+   907→    message: "Connected Telegram bot. Stored bot token (masked).",
+   908→    createdAt: daysAgo(90),
+   909→  },
+   910→  {
+   911→    id: "al_003", orgId: ORG, actor: "schedule", action: "sync",
+   912→    providerId: "telegram", integrationId: "int_002", ip: "10.0.0.••",
+   913→    userAgent: "haydev-worker/1.0",
+   914→    message: "Scheduled sync completed: 21 records in / 21 out (412ms).",
+   915→    createdAt: minsAgo(3),
+   916→  },
+   917→  {
+   918→    id: "al_004", orgId: ORG, actor: "schedule", action: "sync",
+   919→    providerId: "meta", integrationId: "int_001", ip: "10.0.0.••",
+   920→    userAgent: "haydev-worker/1.0",
+   921→    message: "Scheduled sync FAILED: OAuth token expired; refresh failed.",
+   922→    createdAt: daysAgo(1),
+   923→  },
+   924→  {
+   925→    id: "al_005", orgId: ORG, actor: "Aram Hayrapetyan", action: "rotate_credential",
+   926→    providerId: "signed_webhook", integrationId: "int_005", ip: "146.70.•••.•••",
+   927→    userAgent: "Mozilla/5.0 (Macintosh) Chrome/127",
+   928→    message: "Rotated signing secret. Previous secret revoked after 24h grace period.",
+   929→    createdAt: daysAgo(7),
+   930→  },
+   931→  {
+   932→    id: "al_006", orgId: ORG, actor: "Aram Hayrapetyan", action: "refresh_auth",
+   933→    providerId: "stripe", integrationId: "int_006", ip: "146.70.•••.•••",
+   934→    userAgent: "Mozilla/5.0 (Macintosh) Chrome/127",
+   935→    message: "Refreshed OAuth tokens (Stripe). Status: REAUTH_REQUIRED (refresh failed).",
+   936→    createdAt: daysAgo(3),
+   937→  },
+   938→  {
+   939→    id: "al_007", orgId: ORG, actor: "system", action: "webhook_received",
+   940→    providerId: "stripe", integrationId: null, ip: "3.18.••.•••",
+   941→    userAgent: "Stripe/1.0",
+   942→    message: "Webhook received: invoice.paid (evt_1Na2bc4). HMAC verified.",
+   943→    createdAt: minsAgo(22),
+   944→  },
+   945→  {
+   946→    id: "al_008", orgId: ORG, actor: "system", action: "webhook_received",
+   947→    providerId: "meta", integrationId: null, ip: "31.13.••.•••",
+   948→    userAgent: "facebookplatform/1.0",
+   949→    message: "Webhook received: leadgen (evt_meta_441). HMAC verified.",
+   950→    createdAt: hoursAgo(3),
+   951→  },
+   952→  {
+   953→    id: "al_009", orgId: ORG, actor: "Aram Hayrapetyan", action: "webhook_replayed",
+   954→    providerId: "signed_webhook", integrationId: null, ip: "146.70.•••.•••",
+   955→    userAgent: "Mozilla/5.0 (Macintosh) Chrome/127",
+   956→    message: "Replayed event evt_9f2a4c3 (invoice.paid). Result: delivered (200).",
+   957→    createdAt: minsAgo(31),
+   958→  },
+   959→  {
+   960→    id: "al_010", orgId: ORG, actor: "Aram Hayrapetyan", action: "test",
+   961→    providerId: "whatsapp", integrationId: "int_003", ip: "146.70.•••.•••",
+   962→    userAgent: "Mozilla/5.0 (Macintosh) Chrome/127",
+   963→    message: "Connectivity test: 200 OK (latency 412ms).",
+   964→    createdAt: hoursAgo(1),
+   965→  },
+   966→  {
+   967→    id: "al_011", orgId: ORG, actor: "Aram Hayrapetyan", action: "config_updated",
+   968→    providerId: "hubspot", integrationId: "int_008", ip: "146.70.•••.•••",
+   969→    userAgent: "Mozilla/5.0 (Macintosh) Chrome/127",
+   970→    message: "Updated sync direction: one-way → bi-directional. Conflict policy: last-write-wins.",
+   971→    createdAt: hoursAgo(1),
+   972→  },
+   973→  {
+   974→    id: "al_012", orgId: ORG, actor: "schedule", action: "sync",
+   975→    providerId: "email", integrationId: "int_004", ip: "10.0.0.••",
+   976→    userAgent: "haydev-worker/1.0",
+   977→    message: "Scheduled sync FAILED: IMAP auth rejected (invalid app password).",
+   978→    createdAt: hoursAgo(6),
+   979→  },
+   980→  {
+   981→    id: "al_013", orgId: ORG, actor: "Aram Hayrapetyan", action: "connect",
+   982→    providerId: "slack", integrationId: "int_007", ip: "146.70.•••.•••",
+   983→    userAgent: "Mozilla/5.0 (Macintosh) Chrome/127",
+   984→    message: "Connected Slack workspace. OAuth scopes granted: 4/5.",
+   985→    createdAt: daysAgo(75),
+   986→  },
+   987→  {
+   988→    id: "al_014", orgId: ORG, actor: "Aram Hayrapetyan", action: "rotate_credential",
+   989→    providerId: "stripe", integrationId: "int_006", ip: "146.70.•••.•••",
+   990→    userAgent: "Mozilla/5.0 (Macintosh) Chrome/127",
+   991→    message: "Rotated Stripe restricted key. New key expires in 30 days.",
+   992→    createdAt: daysAgo(3),
+   993→  },
+   994→  {
+   995→    id: "al_015", orgId: ORG, actor: "Aram Hayrapetyan", action: "disconnect",
+   996→    providerId: "meta", integrationId: null, ip: "146.70.•••.•••",
+   997→    userAgent: "Mozilla/5.0 (Macintosh) Chrome/127",
+   998→    message: "Disconnected stale Meta integration (biz_••••••6c4). Tokens revoked.",
+   999→    createdAt: daysAgo(25),
+  1000→  },
+  1001→  {
+  1002→    id: "al_016", orgId: ORG, actor: "Aram Hayrapetyan", action: "revoke_credential",
+  1003→    providerId: "meta", integrationId: "int_001", ip: "146.70.•••.•••",
+  1004→    userAgent: "Mozilla/5.0 (Macintosh) Chrome/127",
+  1005→    message: "Revoked legacy Meta page token (pre-rotation).",
+  1006→    createdAt: daysAgo(1),
+  1007→  },
+  1008→];
+  1009→
+  1010→// ─────────────────────────────────────────────────────────────────────────────
+  1011→// Global settings
+  1012→// ─────────────────────────────────────────────────────────────────────────────
+  1013→
+  1014→export const integrationSettings: IntegrationSettings = {
+  1015→  webhookBaseUrl: "https://api.haydev.os/hooks",
+  1016→  rateLimitPerMin: 600,
+  1017→  maxBodySizeKb: 512,
+  1018→  blockPrivateNetworks: true,
+  1019→  idempotencyWindowSec: 3600,
+  1020→  redirectAllowlist: [
+  1021→    "https://app.haydev.os/oauth/callback",
+  1022→    "https://staging.haydev.os/oauth/callback",
+  1023→  ],
+  1024→  rejectSelfSignedTls: true,
+  1025→  requireHmac: true,
+  1026→  defaultSyncCron: "*/15 * * * *",
+  1027→  autoDisableAfterFailures: 5,
+  1028→};
+  1029→
+  1030→// ─────────────────────────────────────────────────────────────────────────────
+  1031→// Analytics rollups
+  1032→// ─────────────────────────────────────────────────────────────────────────────
+  1033→
+  1034→export const statusBreakdown: { status: string; count: number }[] = [
+  1035→  { status: "connected", count: 7 },
+  1036→  { status: "degraded", count: 1 },
+  1037→  { status: "reauth_required", count: 1 },
+  1038→  { status: "error", count: 1 },
+  1039→  { status: "disconnected", count: 0 },
+  1040→];
+  1041→
+  1042→export const syncSuccessSeries: { day: string; success: number; failed: number; partial: number }[] = [
+  1043→  { day: "Mon", success: 482, failed: 12, partial: 4 },
+  1044→  { day: "Tue", success: 521, failed: 8, partial: 6 },
+  1045→  { day: "Wed", success: 498, failed: 14, partial: 3 },
+  1046→  { day: "Thu", success: 612, failed: 9, partial: 5 },
+  1047→  { day: "Fri", success: 724, failed: 18, partial: 8 },
+  1048→  { day: "Sat", success: 142, failed: 3, partial: 1 },
+  1049→  { day: "Sun", success: 98, failed: 2, partial: 0 },
+  1050→];
+  1051→
+  1052→export const eventsByProvider: { provider: string; events: number }[] = [
+  1053→  { provider: "Signed Webhook", events: 4218 },
+  1054→  { provider: "Stripe", events: 1421 },
+  1055→  { provider: "WhatsApp", events: 821 },
+  1056→  { provider: "Slack", events: 312 },
+  1057→  { provider: "HubSpot", events: 198 },
+  1058→  { provider: "Meta", events: 42 },
+  1059→];
+  1060→
+  1061→export const avgDurationByProvider: { provider: string; ms: number }[] = [
+  1062→  { provider: "HubSpot", ms: 4821 },
+  1063→  { provider: "Stripe", ms: 2241 },
+  1064→  { provider: "WhatsApp", ms: 1821 },
+  1065→  { provider: "Meta", ms: 9412 },
+  1066→  { provider: "Slack", ms: 612 },
+  1067→  { provider: "Telegram", ms: 412 },
+  1068→  { provider: "LeadOS", ms: 92 },
+  1069→];
+  1070→
+  1071→export const credentialHealthBuckets: { bucket: string; count: number }[] = [
+  1072→  { bucket: "Healthy", count: 7 },
+  1073→  { bucket: "Expiring ≤14d", count: 2 },
+  1074→  { bucket: "Expired", count: 1 },
+  1075→  { bucket: "No expiry", count: 4 },
+  1076→];
+  1077→
+  1078→// ─────────────────────────────────────────────────────────────────────────────
+  1079→// Foundation re-export (back-compat)
+  1080→// ─────────────────────────────────────────────────────────────────────────────
+  1081→
+  1082→export { mockIntegrations };
+  1083→

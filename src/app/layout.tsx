@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "HayDevOS" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/branding/haydevos-logo.png",
   },
   openGraph: {
     title: "HayDevOS",

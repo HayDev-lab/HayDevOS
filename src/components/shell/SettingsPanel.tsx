@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TeamManagementPanel } from "./TeamManagementPanel";
 
 interface SettingsPanelProps {
   open: boolean;
@@ -232,6 +233,8 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
                     </tbody>
                   </table>
                 </div>
+
+                <TeamManagementPanel />
               </TabsContent>
 
               {/* MODULES */}

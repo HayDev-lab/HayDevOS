@@ -13,6 +13,7 @@ import type { ClientSession } from "@/lib/auth/types";
 import { useAppStore } from "@/lib/store/app-store";
 import { resetOwnerAiClientState } from "@/modules/ownerai/state";
 import { LoginScreen } from "./LoginScreen";
+import { RegisterScreen } from "./RegisterScreen";
 import { ShellLayout } from "./ShellLayout";
 
 interface HayDevShellProps {
@@ -25,6 +26,7 @@ const getServerMountSnapshot = () => false;
 
 export function HayDevShell({ initialSession }: HayDevShellProps) {
   const [session, setSession] = useState<ClientSession | null>(initialSession);
+  const [authView, setAuthView] = useState<"login" | "register">("login");
   const locale = useAppStore((state) => state.locale);
   const hasMounted = useSyncExternalStore(
     subscribeToClientMount,
@@ -94,7 +96,15 @@ export function HayDevShell({ initialSession }: HayDevShellProps) {
   }
 
   if (!session || !contextValue) {
-    return <LoginScreen onSignIn={handleSignIn} />;
+    if (authView === "register") {
+      return (
+        <RegisterScreen
+          onSignedIn={handleSignIn}
+          onBackToLogin={() => setAuthView("login")}
+        />
+      );
+    }
+    return <LoginScreen onSignIn={handleSignIn} onGoToRegister={() => setAuthView("register")} />;
   }
 
   return (

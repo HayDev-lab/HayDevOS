@@ -41,6 +41,7 @@ import { LoginBackground } from "./LoginBackground";
 
 interface LoginScreenProps {
   onSignIn: (session: ClientSession) => void;
+  onGoToRegister?: () => void;
 }
 
 const TAGLINE_KEYS = [
@@ -49,7 +50,7 @@ const TAGLINE_KEYS = [
   "shell.login.tagline3",
 ] as const;
 
-export function LoginScreen({ onSignIn }: LoginScreenProps) {
+export function LoginScreen({ onSignIn, onGoToRegister }: LoginScreenProps) {
   const { t, locale, setLocale } = useLocale();
 
   const [email, setEmail] = useState("");
@@ -126,13 +127,14 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
           transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
         />
 
-        {/* Brand */}
-        <div className="relative z-20 w-64">
-          <HayDevLogo priority />
-        </div>
+        {/* Top spacer mirroring the right brand height */}
+        <div
+          className="relative z-20 w-44 aspect-[1536/1024] lg:w-64"
+          aria-hidden
+        />
 
         {/* Centerpiece tagline */}
-        <div className="relative z-20 max-w-xl">
+        <div className="relative z-20 my-auto max-w-xl">
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -181,7 +183,7 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
 
       {/* ───────────────── Right login card ───────────────── */}
       <div
-        className="relative flex flex-1 items-center justify-center p-6 sm:p-10"
+        className="relative flex flex-1 flex-col justify-between p-6 sm:p-10 xl:p-14"
       >
         {/* Mobile-only background glow */}
         <div
@@ -193,17 +195,19 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
           aria-hidden
         />
 
+        {/* Brand above the login card */}
+        <div className="relative z-10 flex justify-center">
+          <div className="w-44 lg:w-64">
+            <HayDevLogo priority />
+          </div>
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="relative z-10 w-full max-w-md"
+          className="relative z-10 my-auto w-full max-w-md self-center"
         >
-          {/* Mobile brand */}
-          <div className="mb-8 w-44 lg:hidden">
-            <HayDevLogo priority />
-          </div>
-
           <div className="glass-3d rounded-2xl p-6 shadow-2xl sm:p-8">
             <div className="mb-6 space-y-1">
               <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
@@ -327,12 +331,25 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
               </Button>
 
             </form>
-          </div>
 
-          <p className="mt-6 text-center text-[10px] uppercase tracking-wider text-muted-foreground/50">
-            {t("shell.login.footer", { year })}
-          </p>
+            {onGoToRegister ? (
+              <div className="mt-6 flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                <span>{t("shell.login.noAccount")}</span>
+                <button
+                  type="button"
+                  onClick={onGoToRegister}
+                  className="font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  {t("shell.login.registerLink")}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </motion.div>
+
+        <p className="relative z-10 text-center text-[10px] uppercase tracking-wider text-muted-foreground/50">
+          {t("shell.login.footer", { year })}
+        </p>
       </div>
     </div>
   );

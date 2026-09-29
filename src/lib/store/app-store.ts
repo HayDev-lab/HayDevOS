@@ -2,8 +2,9 @@
 
 /**
  * HayDevOS global app shell state (Zustand).
- * Owns: active org/module, locale, sidebar, command palette, Owner AI panel,
- * global search query, and the mock current user.
+ * Owns UI-only state: active module, locale, sidebar, command palette, Owner
+ * AI panel, and global search query. Identity and tenancy come from the
+ * server-backed AuthContext and are deliberately never persisted here.
  */
 
 import { create } from "zustand";
@@ -16,39 +17,7 @@ import type { Locale } from "@/lib/i18n";
 // in sync with DEFAULT_LOCALE in i18n.ts.
 const APP_DEFAULT_LOCALE: Locale = "hy";
 
-export interface MockUser {
-  id: string;
-  name: string;
-  email: string;
-  role: "OWNER" | "ADMIN" | "MANAGER" | "MEMBER" | "VIEWER";
-  avatarUrl: string;
-}
-
-export interface MockOrg {
-  id: string;
-  name: string;
-  slug: string;
-  plan: string;
-}
-
-export const MOCK_ORGS: MockOrg[] = [
-  { id: "org_haydev", name: "HayDev HQ", slug: "haydev-hq", plan: "enterprise" },
-  { id: "org_demo", name: "Demo Corp", slug: "demo-corp", plan: "growth" },
-];
-
-export const MOCK_USER: MockUser = {
-  id: "usr_owner",
-  name: "Aram Hayrapetyan",
-  email: "owner@haydev.os",
-  role: "OWNER",
-  avatarUrl: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
-};
-
 interface AppState {
-  // org
-  activeOrgId: string;
-  setActiveOrg: (orgId: string) => void;
-
   // module
   activeModule: string;
   setActiveModule: (moduleId: string) => void;
@@ -78,26 +47,15 @@ interface AppState {
   shortcutsOpen: boolean;
   setShortcutsOpen: (open: boolean) => void;
 
-  // theme (Task 13) — bridge-synced to next-themes
-  theme: "dark" | "light";
-  setTheme: (theme: "dark" | "light") => void;
-  toggleTheme: () => void;
-
   // global search
   searchQuery: string;
   setSearchQuery: (q: string) => void;
 
-  // user
-  user: MockUser;
-  setUser: (user: MockUser) => void;
 }
 
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
-      activeOrgId: MOCK_ORGS[0].id,
-      setActiveOrg: (orgId) => set({ activeOrgId: orgId }),
-
       activeModule: "dashboard",
       setActiveModule: (moduleId) => set({ activeModule: moduleId }),
 
@@ -114,33 +72,29 @@ export const useAppStore = create<AppState>()(
       ownerAiOpen: false,
       setOwnerAiOpen: (open) => set({ ownerAiOpen: open }),
 
-      // Task 13 — Activity timeline sheet + Shortcuts help dialog + theme bridge
+      // Task 13 — Activity timeline sheet + Shortcuts help dialog
       activityOpen: false,
       setActivityOpen: (open) => set({ activityOpen: open }),
 
       shortcutsOpen: false,
       setShortcutsOpen: (open) => set({ shortcutsOpen: open }),
 
-      theme: "dark",
-      setTheme: (theme) => set({ theme }),
-      toggleTheme: () =>
-        set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
-
       searchQuery: "",
       setSearchQuery: (q) => set({ searchQuery: q }),
 
-      user: MOCK_USER,
-      setUser: (user) => set({ user }),
     }),
     {
       name: "haydev-os-app",
       storage: createJSONStorage(() => localStorage),
+      // The shell is server-rendered with the Armenian defaults. Hydrating the
+      // persisted browser state during the first client render would make the
+      // initial HTML differ for users who previously selected another locale.
+      // HayDevShell rehydrates after React has attached to the server markup.
+      skipHydration: true,
       partialize: (s) => ({
-        activeOrgId: s.activeOrgId,
         activeModule: s.activeModule,
         locale: s.locale,
         sidebarCollapsed: s.sidebarCollapsed,
-        theme: s.theme,
       }),
     },
   ),

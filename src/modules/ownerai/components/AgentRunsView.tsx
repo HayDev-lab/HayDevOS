@@ -88,7 +88,7 @@ export function AgentRunsView() {
                     </span>
                   </td>
                   <td className="px-3 py-2 text-[11px] text-muted-foreground">
-                    {r.provider === "z-ai-web-dev-sdk" ? "z-ai (LLM)" : "offline-fallback"}
+                    {r.provider === "openai-compatible" ? "online LLM" : "offline-fallback"}
                     {r.model ? <span className="block text-[10px] text-muted-foreground/70">{r.model}</span> : null}
                   </td>
                   <td className="px-3 py-2 text-right font-mono text-[11px] text-foreground/80">{r.toolCallCount}</td>

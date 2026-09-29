@@ -9,8 +9,7 @@
  *  - Scoring version (derived: `Q<qversion>:S<algorithm>`).
  *  - Gap threshold / good / needs-work thresholds (local state; not persisted
  *    in this iteration, but the UI is wired so the operator can preview bands).
- *  - Demo data reset (clears the local in-memory answers in the parent).
- *  - Export config (toast — mock).
+ *  - Exportable scoring configuration.
  */
 
 import { useState } from "react";
@@ -37,10 +36,9 @@ import { ALGORITHM_VERSION, SCORE_VERSION } from "../scoring";
 interface Props {
   settings: AuditSettings;
   onSettingsChange: (s: AuditSettings) => void;
-  onResetDemo: () => void;
 }
 
-export function SettingsView({ settings, onSettingsChange, onResetDemo }: Props) {
+export function SettingsView({ settings, onSettingsChange }: Props) {
   const { t } = useLocale();
 
   const [draft, setDraft] = useState<AuditSettings>(settings);
@@ -257,21 +255,6 @@ export function SettingsView({ settings, onSettingsChange, onResetDemo }: Props)
             >
               <Download className="h-3.5 w-3.5" />
               {t("audit.settings.exportConfig")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                onResetDemo();
-                toast.success(t("audit.settings.demoReset"));
-              }}
-              className={cn(
-                "h-8 gap-1.5 border-rose/30 text-rose hover:bg-rose/10",
-              )}
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              {t("audit.settings.resetDemo")}
             </Button>
           </div>
         </div>

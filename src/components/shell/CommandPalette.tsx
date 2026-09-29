@@ -3,7 +3,7 @@
 /**
  * CommandPalette — global Cmd/Ctrl+K palette.
  *
- * Sections: Navigate (modules), Quick Actions (toasts), Search (filtered mock).
+ * Sections: module navigation, quick navigation, and live-result placeholders.
  * The Dialog open state is driven by `commandOpen` in the app store.
  *
  * The local `query` is reset to "" each time the palette opens via the
@@ -34,8 +34,8 @@ import {
 import { useAppStore } from "@/lib/store/app-store";
 import { useLocale } from "@/lib/i18n";
 import { ModuleRegistry } from "@/lib/modules/registry";
+import { useAuth } from "@/components/auth/AuthContext";
 import { mockLeads, mockQuotes, mockDocuments, mockCustomers } from "@/lib/mock";
-import { toast } from "sonner";
 
 interface SearchResult {
   id: string;
@@ -47,6 +47,7 @@ interface SearchResult {
 
 export function CommandPalette() {
   const { t } = useLocale();
+  const { session } = useAuth();
   const { commandOpen, setCommandOpen, setActiveModule } = useAppStore();
   const [query, setQuery] = useState("");
 
@@ -90,7 +91,7 @@ export function CommandPalette() {
         out.push({
           id: qd.id,
           label: qd.number,
-          hint: `$${qd.total.toLocaleString()} · ${qd.status}`,
+          hint: `$${qd.total.toLocaleString("en-US")} · ${qd.status}`,
           module: "quoteflow",
           kind: "quote",
         });
@@ -128,7 +129,7 @@ export function CommandPalette() {
       icon: Plus,
       label: t("shell.command.createLead"),
       run: () => {
-        toast.success(t("shell.toast.leadCreated"));
+        setActiveModule("leados");
         setCommandOpen(false);
       },
     },
@@ -136,7 +137,7 @@ export function CommandPalette() {
       icon: FileText,
       label: t("shell.command.createQuote"),
       run: () => {
-        toast.success(t("shell.toast.quoteCreated"));
+        setActiveModule("quoteflow");
         setCommandOpen(false);
       },
     },
@@ -144,7 +145,7 @@ export function CommandPalette() {
       icon: Upload,
       label: t("shell.command.uploadDoc"),
       run: () => {
-        toast.success(t("shell.toast.docUploaded"));
+        setActiveModule("docsmart");
         setCommandOpen(false);
       },
     },
@@ -152,7 +153,7 @@ export function CommandPalette() {
       icon: Workflow,
       label: t("shell.command.newAutomation"),
       run: () => {
-        toast.success(t("shell.toast.automationCreated"));
+        setActiveModule("autopilot");
         setCommandOpen(false);
       },
     },
@@ -160,7 +161,7 @@ export function CommandPalette() {
       icon: FileBarChart,
       label: t("shell.command.generateReport"),
       run: () => {
-        toast.success(t("shell.toast.reportQueued"));
+        setActiveModule("audit");
         setCommandOpen(false);
       },
     },
@@ -187,7 +188,9 @@ export function CommandPalette() {
 
           {/* Navigate */}
           <CommandGroup heading={t("shell.command.navigate")}>
-            {ModuleRegistry.map((m) => {
+            {ModuleRegistry.filter(
+              (module) => !(session.user.role === "OWNER" && module.id === "control"),
+            ).map((m) => {
               const Icon = m.icon;
               return (
                 <CommandItem
@@ -269,4 +272,3 @@ export function CommandPalette() {
 }
 
 export default CommandPalette;
-

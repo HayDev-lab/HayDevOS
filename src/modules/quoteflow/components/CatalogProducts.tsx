@@ -244,16 +244,9 @@ function ProductForm({
   onChange: (v: EditingProduct) => void;
 }) {
   const { t } = useLocale();
-  // Touch local state to ensure proper re-render on each input change.
-  const [local, setLocal] = useState<EditingProduct>(value);
-
-  useEffect(() => {
-    setLocal(value);
-  }, [value]);
 
   const update = (patch: Partial<EditingProduct>) => {
-    const next = { ...local, ...patch };
-    setLocal(next);
+    const next = { ...value, ...patch };
     onChange(next);
   };
 
@@ -261,23 +254,23 @@ function ProductForm({
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">{t("quoteflow.catalog.sku")}</Label>
-        <Input value={local.sku} onChange={(e) => update({ sku: e.target.value })} className="h-9 font-mono" />
+        <Input value={value.sku} onChange={(e) => update({ sku: e.target.value })} className="h-9 font-mono" />
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">{t("quoteflow.catalog.name")}</Label>
-        <Input value={local.name} onChange={(e) => update({ name: e.target.value })} className="h-9" />
+        <Input value={value.name} onChange={(e) => update({ name: e.target.value })} className="h-9" />
       </div>
       <div className="space-y-1.5 sm:col-span-2">
         <Label className="text-xs text-muted-foreground">{t("quoteflow.catalog.description")}</Label>
-        <Textarea rows={2} value={local.description} onChange={(e) => update({ description: e.target.value })} />
+        <Textarea rows={2} value={value.description} onChange={(e) => update({ description: e.target.value })} />
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">{t("quoteflow.catalog.price")}</Label>
-        <Input type="number" min={0} step="0.01" value={local.price} onChange={(e) => update({ price: Number(e.target.value) })} className="h-9 font-mono" />
+        <Input type="number" min={0} step="0.01" value={value.price} onChange={(e) => update({ price: Number(e.target.value) })} className="h-9 font-mono" />
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">{t("quoteflow.settings.currency")}</Label>
-        <Select value={local.currency} onValueChange={(v) => update({ currency: v })}>
+        <Select value={value.currency} onValueChange={(v) => update({ currency: v })}>
           <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             {["USD", "EUR", "RUB", "AMD", "GBP"].map((c) => (
@@ -288,11 +281,11 @@ function ProductForm({
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">{t("quoteflow.catalog.unit")}</Label>
-        <Input value={local.unit} onChange={(e) => update({ unit: e.target.value })} className="h-9" />
+        <Input value={value.unit} onChange={(e) => update({ unit: e.target.value })} className="h-9" />
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">{t("quoteflow.catalog.stock")}</Label>
-        <Input type="number" min={0} value={local.stock} onChange={(e) => update({ stock: Number(e.target.value) })} className="h-9 font-mono" />
+        <Input type="number" min={0} value={value.stock} onChange={(e) => update({ stock: Number(e.target.value) })} className="h-9 font-mono" />
       </div>
     </div>
   );

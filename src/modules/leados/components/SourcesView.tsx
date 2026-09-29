@@ -8,7 +8,7 @@
  * toggle), and a sources pie chart.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   ResponsiveContainer,
@@ -32,7 +32,6 @@ import {
   TrendingUp,
   PieChart as PieIcon,
 } from "lucide-react";
-import { toast } from "sonner";
 
 import { useLocale } from "@/lib/i18n";
 import { cn, formatCurrency, formatCompact, toneClasses, type StatusTone } from "@/lib/utils";
@@ -50,11 +49,10 @@ import {
 } from "@/components/ui/table";
 
 import {
-  allLeads,
   LEAD_SOURCES,
   SOURCE_BY_ID,
-  getSourceStats,
 } from "../data";
+import { useLeadOSData } from "../LeadOSData";
 
 const SOURCE_COLORS: string[] = [
   "var(--accent-lime)",
@@ -80,9 +78,9 @@ const CHART_TOOLTIP_STYLE = {
 
 export function SourcesView() {
   const { t } = useLocale();
-  const [metaConnected, setMetaConnected] = useState(true);
-
-  const sourceStats = useMemo(() => getSourceStats(allLeads), []);
+  const { overview } = useLeadOSData();
+  const sourceStats = overview!.sourceStats;
+  const metaConnected = false;
   const pieData = useMemo(
     () =>
       sourceStats.map((s, i) => ({
@@ -104,17 +102,8 @@ export function SourcesView() {
   );
 
   const totalLeads = sourceStats.reduce((s, x) => s + x.count, 0);
-  const totalCost = sourceStats.reduce((s, x) => s + x.count * x.costPerLead, 0);
-  const blendedCpl = totalLeads > 0 ? Math.round(totalCost / totalLeads) : 0;
-
-  function toggleMeta() {
-    setMetaConnected((c) => {
-      const next = !c;
-      if (next) toast.success(t("leados.toast.sourceConnected"));
-      else toast.info(t("leados.sources.disconnected"));
-      return next;
-    });
-  }
+  const totalCost = sourceStats.reduce((s, x) => s + x.count * (x.costPerLead ?? 0), 0);
+  const blendedCpl = totalLeads > 0 && totalCost > 0 ? Math.round(totalCost / totalLeads) : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -165,7 +154,7 @@ export function SourcesView() {
                 <Button
                   variant={metaConnected ? "outline" : "default"}
                   size="sm"
-                  onClick={toggleMeta}
+                  disabled
                 >
                   <Plug className="h-3.5 w-3.5" />
                   {metaConnected ? t("leados.sources.disconnected") : t("leados.sources.connect")}
@@ -175,10 +164,10 @@ export function SourcesView() {
 
             {/* Sub-stats */}
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <SubStat label={t("leados.sources.leadCount")} value={String(metaConnected ? 14 : 0)} tone="lime" />
-              <SubStat label={t("leados.sources.conversionRate")} value={metaConnected ? "21%" : "—"} tone="cyan" />
-              <SubStat label={t("leados.sources.costPerLead")} value={metaConnected ? "$42" : "—"} tone="amber" />
-              <SubStat label="Sync" value={metaConnected ? "Live" : "Off"} tone={metaConnected ? "lime" : "rose"} />
+              <SubStat label={t("leados.sources.leadCount")} value="0" tone="lime" />
+              <SubStat label={t("leados.sources.conversionRate")} value="—" tone="cyan" />
+              <SubStat label={t("leados.sources.costPerLead")} value="—" tone="amber" />
+              <SubStat label="Sync" value="Off" tone="rose" />
             </div>
           </CardContent>
         </Card>
@@ -194,7 +183,7 @@ export function SourcesView() {
             </div>
             <div className="mt-3 space-y-2">
               <SubStat label={t("leados.kpi.totalLeads")} value={String(totalLeads)} tone="lime" />
-              <SubStat label={t("leados.sources.costPerLead")} value={formatCurrency(blendedCpl, "USD")} tone="cyan" />
+              <SubStat label={t("leados.sources.costPerLead")} value={blendedCpl === null ? "—" : formatCurrency(blendedCpl, "USD")} tone="cyan" />
               <SubStat
                 label={t("leados.team.pipelineValue")}
                 value={formatCompact(sourceStats.reduce((s, x) => s + x.totalValue, 0))}
@@ -238,7 +227,7 @@ export function SourcesView() {
             <TableBody>
               {sourceStats.map((s, i) => {
                 const def = SOURCE_BY_ID[s.source];
-                const totalCost = s.count * s.costPerLead;
+                const totalCost = s.count * (s.costPerLead ?? 0);
                 return (
                   <motion.tr
                     key={s.source}
@@ -263,7 +252,7 @@ export function SourcesView() {
                       {Math.round(s.conversionRate * 100)}%
                     </TableCell>
                     <TableCell className="py-2.5 text-sm text-foreground">
-                      {formatCurrency(s.costPerLead, "USD")}
+                      {s.costPerLead === null ? "—" : formatCurrency(s.costPerLead, "USD")}
                     </TableCell>
                     <TableCell className="py-2.5 text-sm font-medium text-foreground">
                       {formatCurrency(s.totalValue, "USD")}

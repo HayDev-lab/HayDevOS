@@ -16,7 +16,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { useAppStore, MOCK_ORGS, MOCK_USER } from "@/lib/store/app-store";
+import { useAuth } from "@/components/auth/AuthContext";
+import { useAppStore } from "@/lib/store/app-store";
 import { useLocale } from "@/lib/i18n";
 import {
   ModuleRegistry,
@@ -47,22 +48,24 @@ interface SidebarProps {
 
 export function Sidebar({ onOpenSettings }: SidebarProps) {
   const { t } = useLocale();
+  const { session } = useAuth();
+  const { user, activeOrganization: activeOrg } = session;
   const {
     activeModule,
     setActiveModule,
     sidebarCollapsed,
     toggleSidebar,
-    activeOrgId,
-    user,
   } = useAppStore();
 
   const collapsed = sidebarCollapsed;
-  const activeOrg = MOCK_ORGS.find((o) => o.id === activeOrgId) ?? MOCK_ORGS[0];
+  const navigationModules = ModuleRegistry.filter(
+    (module) => !(user.role === "OWNER" && module.id === "control"),
+  );
 
   // Group modules (excluding settings — it's pinned at the bottom).
   const grouped = CATEGORY_ORDER.map((cat) => ({
     category: cat,
-    modules: ModuleRegistry.filter((m) => m.category === cat && m.id !== "settings"),
+    modules: navigationModules.filter((m) => m.category === cat && m.id !== "settings"),
   })).filter((g) => g.modules.length > 0);
 
   return (
@@ -225,12 +228,16 @@ function SidebarItem({
 
 export function MobileSidebarContent({ onOpenSettings }: SidebarProps) {
   const { t } = useLocale();
-  const { activeModule, setActiveModule, activeOrgId, user } = useAppStore();
-  const activeOrg = MOCK_ORGS.find((o) => o.id === activeOrgId) ?? MOCK_ORGS[0];
+  const { session } = useAuth();
+  const { user, activeOrganization: activeOrg } = session;
+  const { activeModule, setActiveModule } = useAppStore();
+  const navigationModules = ModuleRegistry.filter(
+    (module) => !(user.role === "OWNER" && module.id === "control"),
+  );
 
   const grouped = CATEGORY_ORDER.map((cat) => ({
     category: cat,
-    modules: ModuleRegistry.filter((m) => m.category === cat && m.id !== "settings"),
+    modules: navigationModules.filter((m) => m.category === cat && m.id !== "settings"),
   })).filter((g) => g.modules.length > 0);
 
   return (
@@ -300,7 +307,7 @@ export function MobileSidebarContent({ onOpenSettings }: SidebarProps) {
       <div className="border-t border-border px-3 py-2">
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7 border border-border">
-            <AvatarImage src={MOCK_USER.avatarUrl} alt={user.name} />
+            <AvatarImage src={user.avatarUrl} alt={user.name} />
             <AvatarFallback className="bg-primary/10 text-[10px] font-bold text-lime">
               {initials(user.name)}
             </AvatarFallback>

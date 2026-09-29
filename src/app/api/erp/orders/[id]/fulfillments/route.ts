@@ -1,0 +1,4 @@
+import { NextResponse, type NextRequest } from "next/server"; import { withTenantApi } from "@/lib/api/handler"; import { parseJson } from "@/lib/api/request";
+import { createFulfillment, erpContext, fulfillmentInputSchema, listFulfillments, routeId } from "@/lib/erp"; export const runtime = "nodejs"; export const dynamic = "force-dynamic"; type Route = { params: Promise<{ id: string }> };
+export async function GET(req: NextRequest, route: Route) { return withTenantApi(req, {}, async (auth) => NextResponse.json({ fulfillments: await listFulfillments(erpContext(auth, req), routeId((await route.params).id)) })); }
+export async function POST(req: NextRequest, route: Route) { return withTenantApi(req, { mutation: true }, async (auth) => NextResponse.json({ fulfillment: await createFulfillment(erpContext(auth, req), routeId((await route.params).id), await parseJson(req, fulfillmentInputSchema)) }, { status: 201 })); }

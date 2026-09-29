@@ -28,38 +28,6 @@ export {
   type QuoteDiscount,
 } from "./pricing";
 
-// Data layer (re-exported for downstream consumers)
-export {
-  mockQuotes,
-  mockProducts,
-  mockLeads,
-  mockCustomers,
-  mockPricingRules,
-  mockRulesById,
-  mockPriceBooks,
-  mockTemplates,
-  mockApprovals,
-  mockGeneratedDocuments,
-  mockShareLinks,
-  mockQuoteActivity,
-  mockQuoteRequests,
-  resolveQuoteParty,
-  resolveQuoteOwner,
-  quoteToLineItems,
-  type PriceBook,
-  type PriceBookRate,
-  type QuoteTemplate,
-  type ApprovalRequest,
-  type ApprovalStatus,
-  type GeneratedDocument,
-  type GeneratedDocumentKind,
-  type ClientShareLink,
-  type QuoteActivity,
-  type QuoteActivityType,
-  type QuoteRequest,
-  type QuoteRequestStatus,
-} from "./data";
-
 // Consolidated view-level types (re-exported from ./types)
 export type {
   QuoteFlowTab,

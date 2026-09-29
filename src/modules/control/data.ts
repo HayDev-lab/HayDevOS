@@ -24,18 +24,19 @@ import {
 import type {
   AttentionItem,
   AiInsight,
+  ControlTranslator,
   Priority,
 } from "./types";
+import { t as translateText } from "@/lib/i18n";
+
+const getTranslator = (translator?: ControlTranslator): ControlTranslator =>
+  translator ?? ((key, params) => translateText(key, "en", params));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Owner / user identity (single source of truth for Control drilldowns)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const OWNER_NAMES: Record<string, string> = {
-  usr_owner: "Aram Hayrapetyan",
-  usr_rep1: "Marat Dallakyan",
-  usr_rep2: "Lusine Barseghyan",
-};
+export const OWNER_NAMES: Record<string, string> = {};
 
 export function ownerName(id: string): string {
   return OWNER_NAMES[id] ?? id;
@@ -55,14 +56,7 @@ export interface WorkerSnapshot {
   region: string;
 }
 
-export const WORKER_SNAPSHOT: WorkerSnapshot[] = [
-  { id: "wkr-eu-1", name: "wkr-eu-1", status: "online", queueDepth: 2, cpuPct: 41, region: "eu-central" },
-  { id: "wkr-eu-2", name: "wkr-eu-2", status: "online", queueDepth: 0, cpuPct: 67, region: "eu-central" },
-  { id: "wkr-eu-3", name: "wkr-eu-3", status: "online", queueDepth: 0, cpuPct: 12, region: "eu-central" },
-  { id: "wkr-us-1", name: "wkr-us-1", status: "online", queueDepth: 1, cpuPct: 22, region: "us-east" },
-  { id: "wkr-us-2", name: "wkr-us-2", status: "draining", queueDepth: 3, cpuPct: 88, region: "us-east" },
-  { id: "wkr-us-3", name: "wkr-us-3", status: "offline", queueDepth: 0, cpuPct: 0, region: "us-east" },
-];
+export const WORKER_SNAPSHOT: WorkerSnapshot[] = [];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Time helpers
@@ -96,7 +90,8 @@ const daysAhead = (d: number) => new Date(now + d * 86_400_000).toISOString();
  * Sorted CRITICAL → HIGH → MEDIUM → INFO, then by timestamp desc within each
  * priority.
  */
-export function buildAttentionFeed(): AttentionItem[] {
+export function buildAttentionFeed(translator?: ControlTranslator): AttentionItem[] {
+  const tr = getTranslator(translator);
   const items: AttentionItem[] = [];
 
   // SLA breaches (mockLeads w/ slaBreached=true OR slaDueAt in past + open stage)
@@ -112,8 +107,13 @@ export function buildAttentionFeed(): AttentionItem[] {
         id: `att-sla-${lead.id}`,
         type: "sla_breach",
         priority: "CRITICAL",
-        title: `${lead.name} — SLA breach`,
-        body: `Lead from ${lead.company ?? "—"} (${lead.source}) breached response SLA${hoursOver > 0 ? ` ${hoursOver}h ago` : ""}. Owner: ${ownerName(lead.ownerId)}.`,
+        title: tr("control.text.attention.slaTitle", { name: lead.name }),
+        body: tr("control.text.attention.slaBody", {
+          company: lead.company ?? "—",
+          source: lead.source,
+          hours: hoursOver,
+          owner: ownerName(lead.ownerId),
+        }),
         source: "leados",
         moduleId: "leados",
         entityRef: lead.id,
@@ -130,8 +130,12 @@ export function buildAttentionFeed(): AttentionItem[] {
         id: `att-auto-${a.id}`,
         type: "automation_failure",
         priority: a.runs.failed >= 50 ? "CRITICAL" : "HIGH",
-        title: `${a.name} — ${a.runs.failed} failed run${a.runs.failed === 1 ? "" : "s"}`,
-        body: `${a.runs.total.toLocaleString()} total runs · ${a.runs.success.toLocaleString()} succeeded. Last run ${a.runs.lastRunAt ? relFmt(a.runs.lastRunAt) : "—"}. Trigger: ${a.triggerType}.`,
+        title: tr("control.text.attention.automationTitle", { name: a.name, count: a.runs.failed }),
+        body: tr("control.text.attention.automationBody", {
+          total: a.runs.total.toLocaleString("en-US"),
+          success: a.runs.success.toLocaleString("en-US"),
+          trigger: a.triggerType,
+        }),
         source: "autopilot",
         moduleId: "autopilot",
         entityRef: a.id,
@@ -149,8 +153,13 @@ export function buildAttentionFeed(): AttentionItem[] {
         id: `att-int-${i.id}`,
         type: "integration_reauth",
         priority: pri,
-        title: `${i.provider} — ${i.status.replace("_", " ")}`,
-        body: `Sync ${i.status === "reauth_required" ? "paused — re-authorization required" : i.status}. ${i.eventsProcessed.toLocaleString()} events processed. Last sync ${i.lastSyncAt ? relFmt(i.lastSyncAt) : "—"}.`,
+        title: tr("control.text.attention.integrationTitle", { provider: i.provider }),
+        body: tr(
+          i.status === "reauth_required"
+            ? "control.text.attention.integrationReauthBody"
+            : "control.text.attention.integrationErrorBody",
+          { count: i.eventsProcessed.toLocaleString("en-US") },
+        ),
         source: "connect",
         moduleId: "connect",
         entityRef: i.id,
@@ -163,8 +172,10 @@ export function buildAttentionFeed(): AttentionItem[] {
         id: `att-int-deg-${i.id}`,
         type: "integration_reauth",
         priority: "MEDIUM",
-        title: `${i.provider} — degraded`,
-        body: `Integration sync degraded. ${i.eventsProcessed.toLocaleString()} events processed. Last sync ${i.lastSyncAt ? relFmt(i.lastSyncAt) : "—"}.`,
+        title: tr("control.text.attention.integrationSlowTitle", { provider: i.provider }),
+        body: tr("control.text.attention.integrationSlowBody", {
+          count: i.eventsProcessed.toLocaleString("en-US"),
+        }),
         source: "connect",
         moduleId: "connect",
         entityRef: i.id,
@@ -181,8 +192,14 @@ export function buildAttentionFeed(): AttentionItem[] {
       id: `att-inv-${inv.id}`,
       type: "invoice_erp_alert",
       priority: daysOver > 5 ? "CRITICAL" : "HIGH",
-      title: `${inv.number} — overdue ${daysOver}d`,
-      body: `Invoice ${inv.number} (${inv.currency} ${inv.amount.toLocaleString()}) is ${daysOver} day${daysOver === 1 ? "" : "s"} overdue. Customer ${inv.customerId}.`,
+      title: tr("control.text.attention.invoiceTitle", { number: inv.number, days: daysOver }),
+      body: tr("control.text.attention.invoiceBody", {
+        number: inv.number,
+        currency: inv.currency,
+        amount: inv.amount.toLocaleString("en-US"),
+        days: daysOver,
+        customer: inv.customerId,
+      }),
       source: "erphub",
       moduleId: "erphub",
       entityRef: inv.id,
@@ -200,8 +217,14 @@ export function buildAttentionFeed(): AttentionItem[] {
         id: `att-stale-${lead.id}`,
         type: "stale_high_value_deal",
         priority: "HIGH",
-        title: `${lead.company ?? lead.name} — stale high-value deal`,
-        body: `${lead.currency} ${lead.value.toLocaleString()} · stage ${lead.stage} · idle ${idleDays}d. Owner: ${ownerName(lead.ownerId)}.`,
+        title: tr("control.text.attention.staleDealTitle", { company: lead.company ?? lead.name }),
+        body: tr("control.text.attention.staleDealBody", {
+          currency: lead.currency,
+          amount: lead.value.toLocaleString("en-US"),
+          stage: lead.stage,
+          days: idleDays,
+          owner: ownerName(lead.ownerId),
+        }),
         source: "leados",
         moduleId: "leados",
         entityRef: lead.id,
@@ -219,8 +242,13 @@ export function buildAttentionFeed(): AttentionItem[] {
         id: `att-qexp-${q.id}`,
         type: "expiring_quote",
         priority: daysLeft <= 2 ? "HIGH" : "MEDIUM",
-        title: `${q.number} — expires in ${daysLeft}d`,
-        body: `Sent quote ${q.number} (${q.currency} ${q.total.toLocaleString()}) expires ${relFmt(q.validUntil)}. Lead ${q.leadId ?? "—"}.`,
+        title: tr("control.text.attention.quoteTitle", { number: q.number, days: daysLeft }),
+        body: tr("control.text.attention.quoteBody", {
+          number: q.number,
+          currency: q.currency,
+          amount: q.total.toLocaleString("en-US"),
+          lead: q.leadId ?? "—",
+        }),
         source: "quoteflow",
         moduleId: "quoteflow",
         entityRef: q.id,
@@ -236,8 +264,12 @@ export function buildAttentionFeed(): AttentionItem[] {
       id: `att-stock-${p.id}`,
       type: "invoice_erp_alert",
       priority: "MEDIUM",
-      title: `${p.sku} — low stock (${p.stock})`,
-      body: `Product "${p.name}" has only ${p.stock} ${p.unit} remaining. Reorder threshold 12.`,
+      title: tr("control.text.attention.stockTitle", { sku: p.sku, stock: p.stock }),
+      body: tr("control.text.attention.stockBody", {
+        name: p.name,
+        stock: p.stock,
+        unit: p.unit,
+      }),
       source: "erphub",
       moduleId: "erphub",
       entityRef: p.id,
@@ -254,8 +286,12 @@ export function buildAttentionFeed(): AttentionItem[] {
       id: `att-doc-${d.id}`,
       type: "document_review",
       priority: d.status === "pending" || d.status === "processing" ? "MEDIUM" : "INFO",
-      title: `${d.filename} — ${d.status}`,
-      body: `Document ${d.filename} (${d.classification ?? "unclassified"}) is in ${d.status} state. Uploaded ${relFmt(d.createdAt)}.`,
+      title: tr("control.text.attention.documentTitle", { filename: d.filename }),
+      body: tr("control.text.attention.documentBody", {
+        filename: d.filename,
+        classification: d.classification ?? tr("control.text.unclassified"),
+        status: d.status,
+      }),
       source: "docsmart",
       moduleId: "docsmart",
       entityRef: d.id,
@@ -270,8 +306,14 @@ export function buildAttentionFeed(): AttentionItem[] {
       id: `att-wkr-${w.id}`,
       type: "worker_backlog",
       priority: w.cpuPct > 80 ? "HIGH" : "MEDIUM",
-      title: `${w.name} — backlog ${w.queueDepth} jobs`,
-      body: `Worker ${w.name} (${w.region}) has ${w.queueDepth} queued jobs · CPU ${w.cpuPct}% · status ${w.status}.`,
+      title: tr("control.text.attention.workerTitle", { name: w.name, count: w.queueDepth }),
+      body: tr("control.text.attention.workerBody", {
+        name: w.name,
+        region: w.region,
+        count: w.queueDepth,
+        cpu: w.cpuPct,
+        status: w.status,
+      }),
       source: "autopilot",
       moduleId: "autopilot",
       entityRef: w.id,
@@ -287,8 +329,11 @@ export function buildAttentionFeed(): AttentionItem[] {
       id: `att-approve-${approvalAutomation.id}`,
       type: "approval_pending",
       priority: "MEDIUM",
-      title: `Approval gate — ${approvalAutomation.runs.failed} pending`,
-      body: `${approvalAutomation.name} has ${approvalAutomation.runs.failed} blocked run${approvalAutomation.runs.failed === 1 ? "" : "s"} awaiting owner approval.`,
+      title: tr("control.text.attention.approvalTitle", { count: approvalAutomation.runs.failed }),
+      body: tr("control.text.attention.approvalBody", {
+        name: approvalAutomation.name,
+        count: approvalAutomation.runs.failed,
+      }),
       source: "autopilot",
       moduleId: "autopilot",
       entityRef: approvalAutomation.id,
@@ -303,8 +348,12 @@ export function buildAttentionFeed(): AttentionItem[] {
       id: `att-new-${lead.id}`,
       type: "overdue_followup",
       priority: "INFO",
-      title: `${lead.name} — new inbound lead`,
-      body: `Lead from ${lead.company ?? lead.source} (${lead.currency} ${lead.value.toLocaleString()}) has no owner response yet. SLA due ${relFmt(lead.slaDueAt ?? lead.createdAt)}.`,
+      title: tr("control.text.attention.newLeadTitle", { name: lead.name }),
+      body: tr("control.text.attention.newLeadBody", {
+        company: lead.company ?? lead.source,
+        currency: lead.currency,
+        amount: lead.value.toLocaleString("en-US"),
+      }),
       source: "leados",
       moduleId: "leados",
       entityRef: lead.id,
@@ -331,7 +380,8 @@ export function buildAttentionFeed(): AttentionItem[] {
  * attention feed uses. Each insight has a tone, a drilldown module, and a
  * suggested action with an "Ask Owner AI" affordance.
  */
-export function buildAiInsights(): AiInsight[] {
+export function buildAiInsights(translator?: ControlTranslator): AiInsight[] {
+  const tr = getTranslator(translator);
   const insights: AiInsight[] = [];
 
   // Stale high-value deals
@@ -343,8 +393,11 @@ export function buildAiInsights(): AiInsight[] {
   if (staleHighValue.length > 0) {
     insights.push({
       id: "ai-stale-deals",
-      title: `${staleHighValue.length} deal${staleHighValue.length === 1 ? "" : "s"} at risk`,
-      body: `High-value open leads have been idle 7+ days: ${staleHighValue.map((l) => l.company ?? l.name).join(", ")}. Re-engagement likely recovers ${staleHighValue.reduce((s, l) => s + l.value, 0).toLocaleString()} in pipeline.`,
+      title: tr("control.text.insight.staleTitle", { count: staleHighValue.length }),
+      body: tr("control.text.insight.staleBody", {
+        companies: staleHighValue.map((lead) => lead.company ?? lead.name).join(", "),
+        amount: staleHighValue.reduce((sum, lead) => sum + lead.value, 0).toLocaleString("en-US"),
+      }),
       tone: "amber",
       moduleId: "leados",
       actionKey: "control.insights.action.reengage",
@@ -360,8 +413,13 @@ export function buildAiInsights(): AiInsight[] {
     const days = Math.max(0, Math.round((new Date(closest.validUntil).getTime() - now) / 86_400_000));
     insights.push({
       id: "ai-quote-expiring",
-      title: `Quote ${closest.number} expires in ${days}d`,
-      body: `${closest.number} (${closest.currency} ${closest.total.toLocaleString()}) is the closest-to-expiry sent quote. Follow up with ${closest.leadId ?? "the prospect"} to maximize acceptance odds.`,
+      title: tr("control.text.insight.quoteTitle", { number: closest.number, days }),
+      body: tr("control.text.insight.quoteBody", {
+        number: closest.number,
+        currency: closest.currency,
+        amount: closest.total.toLocaleString("en-US"),
+        lead: closest.leadId ?? tr("control.text.prospect"),
+      }),
       tone: "amber",
       moduleId: "quoteflow",
       actionKey: "control.insights.action.followup",
@@ -377,8 +435,11 @@ export function buildAiInsights(): AiInsight[] {
   if (docBacklog.length >= 3) {
     insights.push({
       id: "ai-doc-backlog",
-      title: `Document review backlog growing`,
-      body: `${docBacklog.length} document${docBacklog.length === 1 ? "" : "s"} awaiting review. Average confidence ${(docBacklog.reduce((s, d) => s + avgConf(d), 0) / docBacklog.length * 100).toFixed(0)}% — auto-approve fields above 0.95 to halve review time.`,
+      title: tr("control.text.insight.docsTitle"),
+      body: tr("control.text.insight.docsBody", {
+        count: docBacklog.length,
+        confidence: (docBacklog.reduce((sum, document) => sum + avgConf(document), 0) / docBacklog.length * 100).toFixed(0),
+      }),
       tone: "cyan",
       moduleId: "docsmart",
       actionKey: "control.insights.action.autoApprove",
@@ -392,8 +453,13 @@ export function buildAiInsights(): AiInsight[] {
   if (failingAuto) {
     insights.push({
       id: "ai-auto-failure",
-      title: `Automation "${failingAuto.name}" failed ${failingAuto.runs.failed}×`,
-      body: `${failingAuto.name} has ${failingAuto.runs.failed} failed run${failingAuto.runs.failed === 1 ? "" : "s"} of ${failingAuto.runs.total.toLocaleString()}. Most failures cluster around ${failingAuto.triggerType} — check the execution log for the root cause.`,
+      title: tr("control.text.insight.automationTitle", { name: failingAuto.name, count: failingAuto.runs.failed }),
+      body: tr("control.text.insight.automationBody", {
+        name: failingAuto.name,
+        failed: failingAuto.runs.failed,
+        total: failingAuto.runs.total.toLocaleString("en-US"),
+        trigger: failingAuto.triggerType,
+      }),
       tone: "rose",
       moduleId: "autopilot",
       actionKey: "control.insights.action.investigate",
@@ -407,8 +473,11 @@ export function buildAiInsights(): AiInsight[] {
   if (reauth) {
     insights.push({
       id: "ai-int-reauth",
-      title: `${reauth.provider} integration needs attention`,
-      body: `${reauth.provider} is in ${reauth.status.replace("_", " ")} state. ${reauth.eventsProcessed.toLocaleString()} events processed before disconnect. Re-authorize to resume sync.`,
+      title: tr("control.text.insight.integrationTitle", { provider: reauth.provider }),
+      body: tr("control.text.insight.integrationBody", {
+        provider: reauth.provider,
+        count: reauth.eventsProcessed.toLocaleString("en-US"),
+      }),
       tone: "amber",
       moduleId: "connect",
       actionKey: "control.insights.action.reauthorize",
@@ -423,8 +492,15 @@ export function buildAiInsights(): AiInsight[] {
     const total = overdue.reduce((s, i) => s + i.amount, 0);
     insights.push({
       id: "ai-overdue-inv",
-      title: `${overdue.length} overdue invoice${overdue.length === 1 ? "" : "s"} totaling ${overdue[0].currency} ${total.toLocaleString()}`,
-      body: `AR aging: ${overdue.map((i) => i.number).join(", ")}. Send reminders + escalate to finance owner. Estimated days-sales-outstanding impact: +${Math.round(overdue.length * 2.4)}d.`,
+      title: tr("control.text.insight.invoiceTitle", {
+        count: overdue.length,
+        currency: overdue[0].currency,
+        amount: total.toLocaleString("en-US"),
+      }),
+      body: tr("control.text.insight.invoiceBody", {
+        invoices: overdue.map((invoice) => invoice.number).join(", "),
+        days: Math.round(overdue.length * 2.4),
+      }),
       tone: "rose",
       moduleId: "erphub",
       actionKey: "control.insights.action.remind",
@@ -440,8 +516,14 @@ export function buildAiInsights(): AiInsight[] {
     const rate = (accepted / decided) * 100;
     insights.push({
       id: "ai-acceptance",
-      title: `Quote acceptance rate ${rate.toFixed(0)}% — ${rate >= 50 ? "healthy" : "below target"}`,
-      body: `${accepted} accepted of ${decided} decided quotes. ${rate >= 50 ? "Above the 50% benchmark." : "Consider revising pricing or follow-up cadence."} Top accepted product mix suggests bundling DocSmart + Autopilot lifts close rate.`,
+      title: tr(
+        rate >= 50 ? "control.text.insight.acceptanceHealthyTitle" : "control.text.insight.acceptanceLowTitle",
+        { rate: rate.toFixed(0) },
+      ),
+      body: tr(
+        rate >= 50 ? "control.text.insight.acceptanceHealthyBody" : "control.text.insight.acceptanceLowBody",
+        { accepted, decided },
+      ),
       tone: rate >= 50 ? "lime" : "amber",
       moduleId: "quoteflow",
       actionKey: "control.insights.action.optimize",
@@ -460,15 +542,4 @@ export function buildAiInsights(): AiInsight[] {
 function avgConf(d: { fields: { confidence: number }[] }): number {
   if (d.fields.length === 0) return 0;
   return d.fields.reduce((s, f) => s + f.confidence, 0) / d.fields.length;
-}
-
-/** Short relative formatter (no locale dependency — Control is locale-aware at the view layer). */
-function relFmt(iso: string): string {
-  const diff = new Date(iso).getTime() - now;
-  const abs = Math.abs(diff);
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  if (abs < 3_600_000) return rtf.format(Math.round(diff / 60_000), "minute");
-  if (abs < 86_400_000) return rtf.format(Math.round(diff / 3_600_000), "hour");
-  if (abs < 30 * 86_400_000) return rtf.format(Math.round(diff / 86_400_000), "day");
-  return rtf.format(Math.round(diff / (30 * 86_400_000)), "month");
 }

@@ -34,11 +34,28 @@ const LOCALE_MAP: Record<string, string> = {
   en: "en-US",
 };
 
+const ARMENIAN_MONTHS = [
+  "հնվ.", "փետ.", "մրտ.", "ապր.", "մյս.", "հնս.",
+  "հլս.", "օգս.", "սեպ.", "հոկ.", "նոյ.", "դեկ.",
+] as const;
+
+function formatArmenianDate(date: Date, includeTime: boolean): string {
+  const day = date.getDate();
+  const month = ARMENIAN_MONTHS[date.getMonth()];
+  const year = date.getFullYear();
+  if (!includeTime) return `${day} ${month} ${year}`;
+
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return `${day} ${month} ${year}, ${hour}:${minute}`;
+}
+
 /** Format an ISO date string / Date in the given locale. */
 export function formatDate(date: string | Date | null | undefined, locale: string = "en"): string {
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return "—";
+  if (locale === "hy") return formatArmenianDate(d, false);
   return new Intl.DateTimeFormat(LOCALE_MAP[locale] ?? "en-US", {
     year: "numeric",
     month: "short",
@@ -51,6 +68,7 @@ export function formatDateTime(date: string | Date | null | undefined, locale: s
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return "—";
+  if (locale === "hy") return formatArmenianDate(d, true);
   return new Intl.DateTimeFormat(LOCALE_MAP[locale] ?? "en-US", {
     year: "numeric",
     month: "short",
@@ -66,7 +84,6 @@ export function relativeTime(date: string | Date | null | undefined, locale: str
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return "—";
 
-  const rtf = new Intl.RelativeTimeFormat(LOCALE_MAP[locale] ?? "en-US", { numeric: "auto" });
   const diff = d.getTime() - Date.now();
   const absDiff = Math.abs(diff);
 
@@ -82,8 +99,6 @@ export function relativeTime(date: string | Date | null | undefined, locale: str
 
   for (const division of divisions) {
     if (absDiff < division.amount) {
-      const value = Math.round(diff / (division.amount === 60 * 1000 ? 1000 : division.amount / (division.unit === "second" ? 1 : 1)));
-      // Simpler: compute per-unit divisor
       const divisor =
         division.unit === "second" ? 1000 :
         division.unit === "minute" ? 60 * 1000 :
@@ -92,10 +107,46 @@ export function relativeTime(date: string | Date | null | undefined, locale: str
         division.unit === "week" ? 7 * 24 * 60 * 60 * 1000 :
         division.unit === "month" ? 30 * 24 * 60 * 60 * 1000 :
         365 * 24 * 60 * 60 * 1000;
-      return rtf.format(Math.round(diff / divisor), division.unit);
+      const value = Math.round(diff / divisor);
+
+      // Chromium's ICU bundle can fall back to the browser language for
+      // Armenian RelativeTimeFormat. Keep Armenian deterministic so another
+      // selected browser language can never leak into the interface.
+      if (locale === "hy") {
+        if (division.unit === "second" && Math.abs(value) < 10) {
+          return value >= 0 ? "հենց հիմա" : "հենց նոր";
+        }
+
+        const armenianUnit: Record<Intl.RelativeTimeFormatUnit, string> = {
+          second: "վայրկյան",
+          seconds: "վայրկյան",
+          minute: "րոպե",
+          minutes: "րոպե",
+          hour: "ժամ",
+          hours: "ժամ",
+          day: "օր",
+          days: "օր",
+          week: "շաբաթ",
+          weeks: "շաբաթ",
+          month: "ամիս",
+          months: "ամիս",
+          quarter: "եռամսյակ",
+          quarters: "եռամսյակ",
+          year: "տարի",
+          years: "տարի",
+        };
+        const amount = Math.abs(value);
+        return value >= 0
+          ? `${amount} ${armenianUnit[division.unit]}ից`
+          : `${amount} ${armenianUnit[division.unit]} առաջ`;
+      }
+
+      const rtf = new Intl.RelativeTimeFormat(LOCALE_MAP[locale] ?? "en-US", { numeric: "auto" });
+      return rtf.format(value, division.unit);
     }
   }
-  return rtf.format(Math.round(diff / (365 * 24 * 60 * 60 * 1000)), "year");
+  return new Intl.RelativeTimeFormat(LOCALE_MAP[locale] ?? "en-US", { numeric: "auto" })
+    .format(Math.round(diff / (365 * 24 * 60 * 60 * 1000)), "year");
 }
 
 export type StatusTone = "lime" | "cyan" | "amber" | "rose" | "violet" | "muted" | "success" | "warning" | "info" | "destructive";

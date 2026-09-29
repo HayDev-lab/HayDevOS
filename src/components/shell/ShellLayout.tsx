@@ -19,27 +19,21 @@
  *   - ⌘/Ctrl+H → toggle Activity timeline sheet
  *   - ? (Shift+/) → open Shortcuts help dialog
  *   - / → open command palette (same as ⌘K)
- *   - t → toggle theme (store.toggleTheme; bridge effect applies to next-themes)
  *   - g + d/l/q/o/a/e/c/i/b/u/s → jump to the matching module
  *
  * All single-key bindings are suppressed when:
  *   - the user is typing in an input / textarea / select / contenteditable
  *   - a Sheet / Dialog / Command palette is open (Escape handles those)
  *
- * Theme bridge: a useEffect syncs `theme` from the app store to next-themes'
- * `setTheme`. The app store's `theme` is the source of truth; TopBar reads it
- * (via next-themes) and writes to it via store.setTheme. The keyboard `t`
- * binding calls store.toggleTheme, and this effect pushes the new value into
- * next-themes so the .dark / .light class on <html> flips.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity } from "lucide-react";
 import { toast } from "sonner";
 
-import { useAppStore, MOCK_ORGS } from "@/lib/store/app-store";
+import { useAuth } from "@/components/auth/AuthContext";
+import { useAppStore } from "@/lib/store/app-store";
 import { useLocale } from "@/lib/i18n";
 import { getModule } from "@/lib/modules/registry";
 
@@ -90,24 +84,19 @@ function isEditing(target: EventTarget | null): boolean {
 
 export function ShellLayout({ onLogout }: ShellLayoutProps) {
   const { t } = useLocale();
+  const { session } = useAuth();
   const {
     activeModule,
     setCommandOpen,
     commandOpen,
     setOwnerAiOpen,
     ownerAiOpen,
-    activeOrgId,
     setActiveModule,
     activityOpen,
     setActivityOpen,
     shortcutsOpen,
     setShortcutsOpen,
-    theme: storeTheme,
-    toggleTheme,
   } = useAppStore();
-
-  // next-themes' hook — we use it to APPLY the store's theme to <html>.
-  const { setTheme: applyNextTheme } = useTheme();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -118,15 +107,15 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
 
   const mod = getModule(activeModule);
   const ActiveComponent = mod?.component;
-  const activeOrg = MOCK_ORGS.find((o) => o.id === activeOrgId) ?? MOCK_ORGS[0];
+  const activeOrg = session.activeOrganization;
 
-  // ─── Theme bridge: store.theme → next-themes ───────────────────────────
-  // Whenever the store's theme changes, push it into next-themes so the
-  // .dark / .light class flips on <html>. This makes the store the single
-  // source of truth for theme state.
+  // The owner home already contains the complete Control command center.
+  // Redirect old persisted links/hotkeys so OWNER never sees a duplicate view.
   useEffect(() => {
-    applyNextTheme(storeTheme);
-  }, [storeTheme, applyNextTheme]);
+    if (session.user.role === "OWNER" && activeModule === "control") {
+      setActiveModule("dashboard");
+    }
+  }, [activeModule, session.user.role, setActiveModule]);
 
   // ─── Global keyboard shortcuts (Task 13) ───────────────────────────────
   const anyOverlayOpen = commandOpen || ownerAiOpen || activityOpen || shortcutsOpen || settingsOpen || mobileSidebarOpen;
@@ -179,13 +168,6 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
         return;
       }
 
-      // `t` toggles theme.
-      if (k === "t") {
-        e.preventDefault();
-        toggleTheme();
-        return;
-      }
-
       // `g` enters pending-jump state — the next keypress resolves it.
       if (k === "g") {
         e.preventDefault();
@@ -211,7 +193,8 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
           window.clearTimeout(jumpTimeoutRef.current);
           jumpTimeoutRef.current = null;
         }
-        const moduleId = MODULE_HOTKEYS[k];
+        const requestedModuleId = MODULE_HOTKEYS[k];
+        const moduleId = session.user.role === "OWNER" && requestedModuleId === "control" ? "dashboard" : requestedModuleId;
         if (moduleId) {
           e.preventDefault();
           setActiveModule(moduleId);
@@ -240,7 +223,7 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
     setActivityOpen,
     setShortcutsOpen,
     setActiveModule,
-    toggleTheme,
+    session.user.role,
     t,
   ]);
 
@@ -260,51 +243,53 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
   const handleOpenSettings = useCallback(() => setSettingsOpen(true), []);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="app-backdrop flex h-dvh min-h-0 w-full min-w-0 max-w-full flex-col overflow-hidden text-foreground">
       <TopBar
         onOpenSettings={handleOpenSettings}
         onLogout={onLogout}
         onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <Sidebar onOpenSettings={handleOpenSettings} />
 
         {/* Main content area */}
         <main
-          className="relative flex-1 overflow-y-auto"
-          aria-label={mod ? t(mod.nameKey) : "Content"}
+          className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto"
+          aria-label={mod ? t(mod.nameKey) : t("shell.content")}
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeModule}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
-              className="min-h-[calc(100vh-3.5rem-2rem)]"
-            >
-              {ActiveComponent ? <ActiveComponent /> : null}
-            </motion.div>
-          </AnimatePresence>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeModule}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="min-h-0 flex-1"
+              >
+                {ActiveComponent ? <ActiveComponent /> : null}
+              </motion.div>
+            </AnimatePresence>
 
-          {/* Footer (sticky bottom of main) */}
-          <footer className="mt-auto flex h-8 shrink-0 items-center justify-between gap-3 border-t border-border bg-sidebar/60 px-4 text-[10px] uppercase tracking-wider text-muted-foreground/70">
-            <div className="flex items-center gap-3">
-              <span>{t("shell.footer.copyright", { year })}</span>
-              <span className="hidden h-3 w-px bg-border sm:block" />
-              <span className="hidden sm:block">
-                {t("shell.footer.org")}: {activeOrg.name}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="hidden sm:block">{t("shell.footer.version")}</span>
-              <span className="flex items-center gap-1.5">
-                <Activity className="h-3 w-3 text-success" />
-                <span className="text-success/90">{t("shell.footer.operational")}</span>
-              </span>
-            </div>
-          </footer>
+            {/* Footer pinned at the bottom of the viewport */}
+            <footer className="flex h-8 shrink-0 items-center justify-between gap-3 border-t border-border bg-sidebar/60 px-4 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+              <div className="flex items-center gap-3">
+                <span>{t("shell.footer.copyright", { year })}</span>
+                <span className="hidden h-3 w-px bg-border sm:block" />
+                <span className="hidden sm:block">
+                  {t("shell.footer.org")}: {activeOrg.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="hidden sm:block">{t("shell.footer.version")}</span>
+                <span className="flex items-center gap-1.5">
+                  <Activity className="h-3 w-3 text-success" />
+                  <span className="text-success/90">{t("shell.footer.operational")}</span>
+                </span>
+              </div>
+            </footer>
+          </div>
         </main>
 
         {/* Owner AI panel (overlay) */}
@@ -327,7 +312,7 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
       <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
         <SheetContent side="left" className="w-[280px] border-border bg-sidebar p-0">
           <SheetHeader className="sr-only">
-            <SheetTitle>HayDevOS navigation</SheetTitle>
+            <SheetTitle>{t("shell.navigation")}</SheetTitle>
           </SheetHeader>
           <MobileSidebarContent
             onOpenSettings={() => {

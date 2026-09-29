@@ -34,6 +34,7 @@ import { toast } from "sonner";
 
 import { useLocale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth/AuthContext";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +55,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { allLeads, LEAD_STAGES, LEAD_SOURCES, STAGE_BY_ID, type MockLead, type LeadStage } from "./data";
+import { asLeadRecord, LEAD_STAGES, LEAD_SOURCES, STAGE_BY_ID, type LeadRecord, type LeadSource, type LeadStage } from "./data";
+import { LeadOSDataProvider, useLeadOSData } from "./LeadOSData";
 import { LeadsDashboard } from "./components/LeadsDashboard";
 import { LeadsTable } from "./components/LeadsTable";
 import { PipelineKanban } from "./components/PipelineKanban";
@@ -94,11 +96,21 @@ const TABS: TabDef[] = [
 ];
 
 export function LeadOSView() {
+  const { session } = useAuth();
+  return (
+    <LeadOSDataProvider key={session.activeOrganization.id}>
+      <LeadOSContent />
+    </LeadOSDataProvider>
+  );
+}
+
+function LeadOSContent() {
   const { t } = useLocale();
+  const { overview, loading, error, refresh, createLead, changeStage } = useLeadOSData();
   const [tab, setTab] = useState<TabId>("dashboard");
   const [search, setSearch] = useState("");
   const [newLeadOpen, setNewLeadOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<MockLead | null>(null);
+  const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
   // New lead form state
@@ -107,40 +119,67 @@ export function LeadOSView() {
   const [formEmail, setFormEmail] = useState("");
   const [formValue, setFormValue] = useState("");
   const [formStage, setFormStage] = useState<LeadStage>("new");
-  const [formSource, setFormSource] = useState<MockLead["source"]>("web");
+  const [formSource, setFormSource] = useState<LeadSource>("web");
 
-  const onSelectLead = useCallback((lead: MockLead) => {
+  const onSelectLead = useCallback((lead: LeadRecord) => {
     setSelectedLead(lead);
     setDetailOpen(true);
   }, []);
 
   const onStageChange = useCallback(
-    (leadId: string, newStage: LeadStage) => {
-      setSelectedLead((prev) =>
-        prev && prev.id === leadId ? { ...prev, stage: newStage } : prev,
-      );
+    async (leadId: string, newStage: LeadStage) => {
+      const updated = await changeStage(leadId, { stage: newStage });
+      setSelectedLead((prev) => prev && prev.id === leadId ? asLeadRecord(updated) : prev);
     },
-    [],
+    [changeStage],
   );
 
-  function submitNewLead() {
+  async function submitNewLead() {
     if (!formName.trim()) {
       toast.error(t("common.empty"));
       return;
     }
-    toast.success(t("leados.toast.leadCreated"));
-    setNewLeadOpen(false);
-    setFormName("");
-    setFormCompany("");
-    setFormEmail("");
-    setFormValue("");
-    setFormStage("new");
-    setFormSource("web");
+    try {
+      await createLead({
+        name: formName,
+        company: formCompany || null,
+        email: formEmail || null,
+        source: formSource,
+        stage: formStage,
+        value: formValue || "0",
+        currency: "USD",
+      });
+      toast.success(t("leados.toast.leadCreated"));
+      setNewLeadOpen(false);
+      setFormName("");
+      setFormCompany("");
+      setFormEmail("");
+      setFormValue("");
+      setFormStage("new");
+      setFormSource("web");
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : t("leados.runtime.createFailed"));
+    }
   }
 
-  function exportLeads() {
-    toast.success(t("leados.toast.exported", { n: allLeads.length }));
+  async function exportLeads() {
+    try {
+      const response = await fetch("/api/leados/export", { cache: "no-store" });
+      if (!response.ok) throw new Error(t("leados.runtime.exportFailedStatus", { status: response.status }));
+      const url = URL.createObjectURL(await response.blob());
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `leados-${new Date().toISOString().slice(0, 10)}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      toast.success(t("leados.toast.exported", { n: overview?.dashboard.totalLeads ?? 0 }));
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : t("leados.runtime.exportFailed"));
+    }
   }
+
+  if (loading && !overview) return <div className="p-8 text-sm text-muted-foreground">{t("leados.runtime.loading")}</div>;
+  if (error || !overview) return <div className="p-8 text-sm text-destructive">{error ?? t("leados.runtime.unavailable")} <Button variant="outline" size="sm" onClick={() => void refresh()}>{t("common.retry")}</Button></div>;
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
@@ -165,7 +204,7 @@ export function LeadOSView() {
           </div>
           <div className="flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse-dot" />
-            {allLeads.length} leads · {LEAD_STAGES.length} stages
+            {overview.dashboard.totalLeads} leads · {overview.pipelines.flatMap((pipeline) => pipeline.stages).length} stages
           </div>
         </div>
       </motion.div>
@@ -225,7 +264,7 @@ export function LeadOSView() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={exportLeads}>
+          <Button variant="outline" size="sm" onClick={() => void exportLeads()}>
             <Download className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{t("leados.actions.export")}</span>
           </Button>
@@ -246,8 +285,8 @@ export function LeadOSView() {
           transition={{ duration: 0.2, ease: "easeOut" }}
         >
           {tab === "dashboard" && <LeadsDashboard />}
-          {tab === "leads" && <LeadsTable onSelectLead={onSelectLead} externalQuery={search} />}
-          {tab === "pipeline" && <PipelineKanban onStageChange={(id, s) => onStageChange(id, s)} />}
+          {tab === "leads" && <LeadsTable key={search} onSelectLead={onSelectLead} externalQuery={search} />}
+          {tab === "pipeline" && <PipelineKanban onStageChange={onStageChange} />}
           {tab === "tasks" && <TasksView />}
           {tab === "sources" && <SourcesView />}
           {tab === "analytics" && <AnalyticsView />}
@@ -321,7 +360,7 @@ export function LeadOSView() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="nl-source">{t("leados.table.source")}</Label>
-              <Select value={formSource} onValueChange={(v) => setFormSource(v as MockLead["source"])}>
+              <Select value={formSource} onValueChange={(v) => setFormSource(v as LeadSource)}>
                 <SelectTrigger id="nl-source" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -340,7 +379,7 @@ export function LeadOSView() {
             <Button variant="outline" onClick={() => setNewLeadOpen(false)}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={submitNewLead}>
+            <Button onClick={() => void submitNewLead()}>
               <Plus className="h-3.5 w-3.5" />
               {t("common.create")}
             </Button>

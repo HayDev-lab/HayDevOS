@@ -44,13 +44,7 @@ import {
   type AuditReport,
   type AuditSettings,
 } from "./types";
-import {
-  DEMO_ANSWERS,
-  HISTORY_RUNS,
-  LATEST_RUN,
-  freshReport,
-  getRun,
-} from "./data";
+import { HISTORY_RUNS, freshReport, getRun } from "./data";
 import { computeScores } from "./scoring";
 import { TOTAL_QUESTIONS } from "./questionnaire";
 
@@ -91,9 +85,8 @@ const TABS: TabDef[] = [
 export function BusinessAuditView() {
   const { t } = useLocale();
   const [tab, setTab] = useState<TabId>("questionnaire");
-  const [mode, setMode] = useState<"current" | "demo">("current");
   const [answers, setAnswers] = useState<AnswerMap>({});
-  const [activeReport, setActiveReport] = useState<AuditReport | null>(LATEST_RUN);
+  const [activeReport, setActiveReport] = useState<AuditReport | null>(null);
   const [settings, setSettings] = useState<AuditSettings>(DEFAULT_AUDIT_SETTINGS);
 
   const progress = useMemo(() => {
@@ -118,19 +111,13 @@ export function BusinessAuditView() {
 
   function handleReset() {
     setAnswers({});
-    setMode("current");
-  }
-
-  function loadDemoIntoState() {
-    setAnswers(DEMO_ANSWERS);
-    setMode("demo");
   }
 
   function handleSubmit() {
     // Compute the deterministic report from the live answers. If too few
     // answers are present, we still compute — `computeScores` handles missing
     // answers gracefully (treats them as zero contribution).
-    const report = freshReport(answers, mode);
+    const report = freshReport(answers, "current");
     setActiveReport(report);
     setTab("report");
   }
@@ -143,17 +130,10 @@ export function BusinessAuditView() {
     }
   }
 
-  function handleResetDemo() {
-    setAnswers({});
-    setMode("current");
-    setActiveReport(LATEST_RUN);
-    setTab("history");
-  }
-
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
-      {/* Sticky module header */}
-      <header className="sticky top-14 z-30 -mx-4 mb-4 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      {/* Module header stays in the document flow so it never covers content. */}
+      <header className="mb-4 rounded-xl border border-border/60 bg-card/40 px-4 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-rose/40 bg-rose/10">
@@ -182,7 +162,7 @@ export function BusinessAuditView() {
         onValueChange={(v) => setTab(v as TabId)}
         className="space-y-4"
       >
-        <TabsList className="flex h-auto w-full flex-wrap gap-1 rounded-xl border border-border/60 bg-card/40 p-1">
+        <TabsList className="flex h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl border border-border/60 bg-card/40 p-1 [scrollbar-width:thin]">
           {TABS.map((tabDef) => {
             const Icon = tabDef.icon;
             const isActive = tab === tabDef.id;
@@ -193,7 +173,7 @@ export function BusinessAuditView() {
                 key={tabDef.id}
                 value={tabDef.id}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium data-[state=active]:bg-rose/15 data-[state=active]:text-rose",
+                  "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium data-[state=active]:bg-rose/15 data-[state=active]:text-rose",
                   "transition-colors",
                 )}
               >
@@ -220,8 +200,6 @@ export function BusinessAuditView() {
           >
             <TabsContent value="questionnaire" className="mt-0 focus-visible:outline-none">
               <QuestionnaireView
-                mode={mode}
-                onModeChange={setMode}
                 answers={answers}
                 onAnswer={handleAnswer}
                 onReset={handleReset}
@@ -236,10 +214,7 @@ export function BusinessAuditView() {
                   onOpenCompare={() => setTab("compare")}
                 />
               ) : (
-                <EmptyReport
-                  onStart={() => setTab("questionnaire")}
-                  onUseDemo={loadDemoIntoState}
-                />
+                <EmptyReport onStart={() => setTab("questionnaire")} />
               )}
             </TabsContent>
             <TabsContent value="history" className="mt-0 focus-visible:outline-none">
@@ -255,27 +230,20 @@ export function BusinessAuditView() {
               {activeReport ? (
                 <AutomationMapView report={activeReport} />
               ) : (
-                <EmptyReport
-                  onStart={() => setTab("questionnaire")}
-                  onUseDemo={loadDemoIntoState}
-                />
+                <EmptyReport onStart={() => setTab("questionnaire")} />
               )}
             </TabsContent>
             <TabsContent value="recommendations" className="mt-0 focus-visible:outline-none">
               {activeReport ? (
                 <RecommendationsView report={activeReport} />
               ) : (
-                <EmptyReport
-                  onStart={() => setTab("questionnaire")}
-                  onUseDemo={loadDemoIntoState}
-                />
+                <EmptyReport onStart={() => setTab("questionnaire")} />
               )}
             </TabsContent>
             <TabsContent value="settings" className="mt-0 focus-visible:outline-none">
               <SettingsView
                 settings={settings}
                 onSettingsChange={setSettings}
-                onResetDemo={handleResetDemo}
               />
             </TabsContent>
           </motion.div>
@@ -285,13 +253,7 @@ export function BusinessAuditView() {
   );
 }
 
-function EmptyReport({
-  onStart,
-  onUseDemo,
-}: {
-  onStart: () => void;
-  onUseDemo: () => void;
-}) {
+function EmptyReport({ onStart }: { onStart: () => void }) {
   const { t } = useLocale();
   return (
     <div className="surface-elevated flex flex-col items-center justify-center rounded-xl border border-border/60 p-10 text-center">
@@ -309,13 +271,6 @@ function EmptyReport({
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
         >
           {t("audit.action.startNew")}
-        </button>
-        <button
-          type="button"
-          onClick={onUseDemo}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-        >
-          {t("audit.action.loadDemo")}
         </button>
       </div>
     </div>

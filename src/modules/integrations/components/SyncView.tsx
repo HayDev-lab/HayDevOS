@@ -28,6 +28,7 @@ import { useLocale } from "@/lib/i18n";
 import { cn, formatDateTime, relativeTime } from "@/lib/utils";
 import type { SyncRun, Integration, Provider, IntegrationSettings } from "../types";
 import { SectionHeader, EmptyState, ProviderIcon } from "../shared";
+import { localizeSyncError } from "../localization";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -162,10 +163,10 @@ export function SyncView({
                         {prov?.name ?? integration.providerId}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        {stats?.runs ?? 0} runs ·{" "}
+                        {stats?.runs ?? 0} {t("integration.sync.runs")} ·{" "}
                         {stats?.lastRun
                           ? relativeTime(stats.lastRun.startedAt, locale)
-                          : "never"}
+                          : t("integration.sync.never")}
                       </div>
                     </div>
                   </div>
@@ -196,10 +197,10 @@ export function SyncView({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("common.all")}</SelectItem>
-            <SelectItem value="success">success</SelectItem>
-            <SelectItem value="partial">partial</SelectItem>
-            <SelectItem value="failed">failed</SelectItem>
-            <SelectItem value="running">running</SelectItem>
+            <SelectItem value="success">{t("integration.sync.status.success")}</SelectItem>
+            <SelectItem value="partial">{t("integration.sync.status.partial")}</SelectItem>
+            <SelectItem value="failed">{t("integration.sync.status.failed")}</SelectItem>
+            <SelectItem value="running">{t("integration.sync.status.running")}</SelectItem>
           </SelectContent>
         </Select>
         <div className="text-[11px] text-muted-foreground">
@@ -262,7 +263,7 @@ export function SyncView({
                         variant="outline"
                         className="border-border bg-background/40 px-1.5 py-0 text-[10px] text-muted-foreground"
                       >
-                        {run.triggeredBy}
+                        {t(`integration.sync.trigger.${run.triggeredBy}`)}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-2">
@@ -270,7 +271,9 @@ export function SyncView({
                     </TableCell>
                     <TableCell className="hidden max-w-xs py-2 lg:table-cell">
                       {run.error ? (
-                        <span className="truncate text-[10px] text-rose">{run.error}</span>
+                        <span className="truncate text-[10px] text-rose">
+                          {localizeSyncError(run.error, locale)}
+                        </span>
                       ) : (
                         <span className="text-[10px] text-muted-foreground">—</span>
                       )}
@@ -385,6 +388,7 @@ function SyncStat({
 }
 
 function StatusPill({ status }: { status: SyncRun["status"] }) {
+  const { t } = useLocale();
   const cls =
     status === "success"
       ? "bg-success/15 text-success border-success/30"
@@ -400,7 +404,7 @@ function StatusPill({ status }: { status: SyncRun["status"] }) {
         cls,
       )}
     >
-      {status}
+      {t(`integration.sync.status.${status}`)}
     </span>
   );
 }

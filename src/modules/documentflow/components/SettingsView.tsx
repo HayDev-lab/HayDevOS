@@ -216,11 +216,11 @@ export function SettingsView() {
             <Separator />
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <dt className="text-xs text-muted-foreground">Bucket</dt>
+                <dt className="text-xs text-muted-foreground">{t("docflow.settings.bucket")}</dt>
                 <dd className="font-mono text-xs">{docflowStorageConfig.bucket}</dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">Region</dt>
+                <dt className="text-xs text-muted-foreground">{t("docflow.settings.region")}</dt>
                 <dd className="font-mono text-xs">{docflowStorageConfig.region}</dd>
               </div>
               <div className="col-span-2">
@@ -228,7 +228,7 @@ export function SettingsView() {
                 <dd className="font-mono text-xs">{docflowStorageConfig.endpoint}</dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-xs text-muted-foreground">Encryption</dt>
+                <dt className="text-xs text-muted-foreground">{t("docflow.settings.encryption")}</dt>
                 <dd>
                   <Badge variant="outline" className="bg-lime/10 text-lime border-lime/30">
                     {docflowStorageConfig.encryption}

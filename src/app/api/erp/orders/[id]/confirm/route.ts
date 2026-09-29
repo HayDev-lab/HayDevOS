@@ -1,0 +1,3 @@
+import { NextResponse, type NextRequest } from "next/server"; import { withTenantApi } from "@/lib/api/handler"; import { parseJson } from "@/lib/api/request";
+import { confirmOrder, confirmOrderSchema, erpContext, routeId } from "@/lib/erp"; export const runtime = "nodejs"; export const dynamic = "force-dynamic"; type Route = { params: Promise<{ id: string }> };
+export async function POST(req: NextRequest, route: Route) { return withTenantApi(req, { mutation: true }, async (auth) => { const body = await parseJson(req, confirmOrderSchema); return NextResponse.json({ order: await confirmOrder(erpContext(auth, req), routeId((await route.params).id), body.expectedRevision, body.warehouseId) }); }); }

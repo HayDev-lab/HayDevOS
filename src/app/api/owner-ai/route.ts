@@ -1,24 +1,67 @@
 /**
  * Owner AI — POST /api/owner-ai
  *
- * Receives { messages, conversationId?, mode, orgId, activeModule? }, calls the
- * LLM via z-ai-web-dev-sdk with a system prompt defining the Owner AI role +
+ * Receives { messages, conversationId?, mode, activeModule? }, calls the
+ * LLM via a configured OpenAI-compatible endpoint with a system prompt defining the Owner AI role +
  * available read tools + safe actions, runs the tool-call loop, executes safe
  * actions, queues risky actions as approvals, and returns the assistant
  * response + tool calls + pending approvals.
  *
- * If the LLM SDK is unavailable (no API key, network error, etc.) or the
- * response can't be parsed, the route falls back to the deterministic offline
- * engine (`./offline.ts`) so the panel ALWAYS works for demo.
+ * Development may use the deterministic offline engine. Production fails
+ * closed when provider credentials are absent or the provider is unavailable.
  *
- * The LLM is the ONLY place where z-ai-web-dev-sdk is imported — server-side
- * only, never client.
+ * Provider credentials remain server-side and are never returned to clients.
  */
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import ZAI from "z-ai-web-dev-sdk";
-import type { ChatMessage } from "z-ai-web-dev-sdk";
+import { randomUUID } from "node:crypto";
+import { z } from "zod";
+
+import { ApiError } from "@/lib/api/errors";
+import { withTenantApi } from "@/lib/api/handler";
+import { parseJson } from "@/lib/api/request";
+import type { AuthContext } from "@/lib/auth/session";
+import { getDb } from "@/lib/db";
+import { executeTenantAction } from "@/lib/owner-ai/action-executor";
+import {
+  createOwnerAiCompletion,
+  ownerAiDemoEnabled,
+  type OwnerAiChatMessage,
+} from "@/lib/owner-ai/provider";
+import {
+  extractOwnerAiActions,
+  executableOwnerAiActions,
+  MAX_OWNER_AI_ACTIONS_PER_RUN,
+  OwnerAiActionLimitError,
+} from "@/lib/owner-ai/protocol";
+import { toDomainContext } from "@/lib/leads/context";
+import {
+  findLeadsForOwnerAi,
+  getLeadDashboardForOwnerAi,
+  getRiskLeadsForOwnerAi,
+} from "@/lib/leads/service";
+import {
+  getExpiringQuotesForOwnerAi,
+  getQuoteSummaryForOwnerAi,
+  searchQuotesForOwnerAi,
+} from "@/lib/quotes/service";
+import {
+  findDocumentsForOwnerAi,
+  getDocument,
+  getDocumentSummaryForOwnerAi,
+  getQuoteDocumentForOwnerAi,
+} from "@/lib/documents";
+import {
+  getErpOverview,
+  getOrder as getErpOrder,
+  inventoryListSchema,
+  listInventory,
+  listOrders,
+  listProducts as listErpProducts,
+  orderListSchema,
+  productListSchema,
+} from "@/lib/erp";
 
 import {
   getOrCreateConversation,
@@ -29,6 +72,9 @@ import {
   addToolCall,
   proposeAction,
   listApprovals,
+  markActionResult,
+  assertOwnerAiHistoryCapacity,
+  withPersistentAuditStore,
 } from "./audit";
 import { buildSystemPrompt, PROMPT_VERSION } from "./prompt";
 import { dispatchTool, summarizeToolResult, AVAILABLE_TOOL_NAMES } from "./tools";
@@ -36,7 +82,6 @@ import { offlineRespond } from "./offline";
 import type {
   Approval,
   OwnerAiMessage,
-  OwnerAiRequest,
   OwnerAiResponse,
   ProposedAction,
   ToolCallRecord,
@@ -45,28 +90,145 @@ import type {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Inlined org lookup (do NOT import from the client-side app-store — its
-// "use client" directive causes module-shape issues when imported by a server
-// route). Keep these in sync with src/lib/store/app-store.ts MOCK_ORGS.
-const ORGS = [
-  { id: "org_haydev", name: "HayDev HQ", slug: "haydev-hq", plan: "enterprise" },
-  { id: "org_demo", name: "Demo Corp", slug: "demo-corp", plan: "growth" },
-];
-
 const MAX_TOOL_TURNS = 3; // cap tool-calling loop depth
 const MAX_TOOL_CALLS_PER_TURN = 4; // cap parallel tool calls per LLM response
+const ownerAiRequestSchema = z
+  .object({
+    messages: z
+      .array(
+        z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string().trim().min(1).max(20_000),
+        }).strict(),
+      )
+      .min(1)
+      .max(50),
+    conversationId: z.string().regex(/^[A-Za-z0-9_-]+$/).max(128).optional(),
+    mode: z.enum(["OBSERVE", "ASSIST", "AUTO"]).default("ASSIST"),
+    activeModule: z.string().regex(/^[a-zA-Z0-9_-]+$/).max(64).default("dashboard"),
+  })
+  .strict()
+  .refine((value) => value.messages.at(-1)?.role === "user", {
+    message: "The final message must be from the user",
+    path: ["messages"],
+  });
+
+type OwnerAiInput = z.infer<typeof ownerAiRequestSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 function uid(prefix: string): string {
-  // crypto.randomUUID is available in Node 18+ and Next.js 16 runtimes.
-  return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+  return `${prefix}_${randomUUID().replaceAll("-", "").slice(0, 16)}`;
 }
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+async function dispatchAuthorizedTool(
+  context: AuthContext,
+  name: string,
+  args: Record<string, unknown>,
+) {
+  const startedAt = performance.now();
+  const domainContext = toDomainContext(context, { initiatedBy: "owner_ai" });
+  if (name === "getSalesSummary") {
+    return { result: await getLeadDashboardForOwnerAi(domainContext), durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "getRiskLeads") {
+    return { result: await getRiskLeadsForOwnerAi(domainContext), durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "getQuoteSummary") {
+    return { result: await getQuoteSummaryForOwnerAi(domainContext), durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "getExpiringQuotes") {
+    const requested = typeof args.days === "number" ? args.days : Number(args.days ?? 7);
+    const days = Number.isFinite(requested) ? Math.min(Math.max(Math.trunc(requested), 1), 365) : 7;
+    const quotes = await getExpiringQuotesForOwnerAi(domainContext, days);
+    return { result: { days, count: quotes.length, quotes }, durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "getDocumentSummary") {
+    return { result: await getDocumentSummaryForOwnerAi(domainContext), durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "findDocuments") {
+    const query = typeof args.query === "string" ? args.query.trim() : "";
+    if (!query) throw new ApiError(422, "INVALID_TOOL_INPUT", "Search query is required");
+    const documents = await findDocumentsForOwnerAi(domainContext, query);
+    return { result: { query, count: documents.length, documents }, durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "getDocumentMetadata" || name === "listDocumentVersions") {
+    const documentId = typeof args.documentId === "string" ? args.documentId.trim() : "";
+    if (!documentId) throw new ApiError(422, "INVALID_TOOL_INPUT", "Document id is required");
+    const document = await getDocument(domainContext, documentId);
+    const result = name === "listDocumentVersions" ? { documentId, versions: document.versions ?? [] } : document;
+    return { result, durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "getQuoteDocuments") {
+    const quoteId = typeof args.quoteId === "string" ? args.quoteId.trim() : "";
+    if (!quoteId) throw new ApiError(422, "INVALID_TOOL_INPUT", "Quote id is required");
+    const documents = await getQuoteDocumentForOwnerAi(domainContext, quoteId);
+    return { result: { quoteId, count: documents.length, documents }, durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "findOrders") {
+    const result = await listOrders(domainContext, orderListSchema.parse({
+      limit: 20,
+      ...(typeof args.query === "string" && args.query.trim() ? { q: args.query.trim() } : {}),
+      ...(typeof args.status === "string" ? { status: args.status } : {}),
+    }));
+    return { result, durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "getOrder" || name === "getPaymentStatus") {
+    const orderId = typeof args.orderId === "string" ? args.orderId.trim() : "";
+    if (!orderId) throw new ApiError(422, "INVALID_TOOL_INPUT", "Order id is required");
+    const order = await getErpOrder(domainContext, orderId);
+    return { result: name === "getPaymentStatus" ? { orderId, orderNumber: order.number, currency: order.currency, total: order.total, payments: order.payments } : order, durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "getInventory") {
+    const result = await listInventory(domainContext, inventoryListSchema.parse({
+      limit: 50,
+      ...(typeof args.query === "string" && args.query.trim() ? { q: args.query.trim() } : {}),
+      ...(typeof args.warehouseId === "string" ? { warehouseId: args.warehouseId } : {}),
+      ...(typeof args.availability === "string" ? { availability: args.availability } : {}),
+    }));
+    return { result, durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "findProducts") {
+    const result = await listErpProducts(domainContext, productListSchema.parse({
+      limit: 50,
+      ...(typeof args.query === "string" && args.query.trim() ? { q: args.query.trim() } : {}),
+      ...(typeof args.type === "string" ? { type: args.type } : {}),
+    }));
+    return { result, durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "getCustomerOrders") {
+    const customerId = typeof args.customerId === "string" ? args.customerId.trim() : "";
+    if (!customerId) throw new ApiError(422, "INVALID_TOOL_INPUT", "Customer id is required");
+    const result = await listOrders(domainContext, orderListSchema.parse({ customerId, limit: 50 }));
+    return { result, durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "getErpOverview") {
+    return { result: await getErpOverview(domainContext), durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (name === "searchGlobal") {
+    const query = typeof args.query === "string" ? args.query.trim() : "";
+    if (!query) throw new ApiError(422, "INVALID_TOOL_INPUT", "Search query is required");
+    const [leads, quotes, documents] = await Promise.all([
+      findLeadsForOwnerAi(domainContext, query),
+      searchQuotesForOwnerAi(domainContext, query),
+      findDocumentsForOwnerAi(domainContext, query),
+    ]);
+    return { result: { leads, quotes, documents }, durationMs: Math.round(performance.now() - startedAt) };
+  }
+  if (!ownerAiDemoEnabled()) {
+    throw new ApiError(
+      503,
+      "TENANT_DATA_UNAVAILABLE",
+      "Tenant read tools are not connected to persistent data",
+    );
+  }
+  return dispatchTool(name, args);
 }
 
 /** Parse all ```tool-call ... ``` fenced blocks from an LLM response. */
@@ -96,32 +258,6 @@ function extractToolCalls(text: string): { tool: string; args: Record<string, un
   return out;
 }
 
-/** Parse all ```action ... ``` fenced blocks from an LLM response. */
-function extractActions(text: string): { action: string; args: Record<string, unknown> }[] {
-  const out: { action: string; args: Record<string, unknown> }[] = [];
-  const re = /```action\s*\n([\s\S]*?)```/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    const json = m[1].trim();
-    try {
-      const parsed = JSON.parse(json);
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        typeof parsed.action === "string"
-      ) {
-        out.push({
-          action: parsed.action,
-          args: (parsed.args && typeof parsed.args === "object" ? parsed.args : {}) as Record<string, unknown>,
-        });
-      }
-    } catch {
-      // skip malformed JSON
-    }
-  }
-  return out;
-}
-
 /** Strip fenced tool-call and action blocks from an LLM response. */
 function stripBlocks(text: string): string {
   return text
@@ -131,12 +267,12 @@ function stripBlocks(text: string): string {
     .trim();
 }
 
-/** Build the chat message array the LLM expects (system as assistant role per SDK convention). */
+/** Build the OpenAI-compatible message array with an actual system boundary. */
 function buildLlmMessages(
   systemPrompt: string,
   history: { role: "user" | "assistant"; content: string }[],
-): ChatMessage[] {
-  const msgs: ChatMessage[] = [{ role: "assistant", content: systemPrompt }];
+): OwnerAiChatMessage[] {
+  const msgs: OwnerAiChatMessage[] = [{ role: "system", content: systemPrompt }];
   for (const h of history) {
     msgs.push({ role: h.role, content: h.content });
   }
@@ -148,21 +284,51 @@ function buildLlmMessages(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  let body: OwnerAiRequest;
-  try {
-    body = (await req.json()) as OwnerAiRequest;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  return withTenantApi(req, {
+    mutation: true,
+    rateLimit: { scope: "owner-ai", limit: 30, windowMs: 10 * 60_000 },
+  }, async (context) => {
+    const body = await parseJson(req, ownerAiRequestSchema, 256 * 1024);
+    if (body.mode === "AUTO" && !["OWNER", "ADMIN", "MANAGER"].includes(context.role)) {
+      throw new ApiError(403, "FORBIDDEN", "Execute mode requires manager access");
+    }
+    if (body.mode !== "OBSERVE" && context.role === "VIEWER") {
+      throw new ApiError(403, "FORBIDDEN", "Viewer access is read-only");
+    }
 
-  if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
-    return NextResponse.json({ error: "messages[] is required" }, { status: 400 });
-  }
+    if (body.conversationId) {
+      const conversation = await getDb().aiConversation.findFirst({
+        where: {
+          id: body.conversationId,
+          orgId: context.orgId,
+          userId: context.userId,
+        },
+        select: { id: true },
+      });
+      if (!conversation) {
+        throw new ApiError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
+      }
+    }
 
-  const orgId = body.orgId ?? "org_haydev";
-  const org = ORGS.find((o) => o.id === orgId) ?? ORGS[0];
-  const mode = body.mode ?? "ASSIST";
-  const activeModule = body.activeModule ?? "dashboard";
+    await assertOwnerAiHistoryCapacity(context.orgId, context.userId);
+
+    return withPersistentAuditStore(
+      {
+        orgId: context.orgId,
+        userId: context.userId,
+        focusConversationId: body.conversationId,
+      },
+      () => runOwnerAi(body, context),
+    );
+  });
+}
+
+async function runOwnerAi(body: OwnerAiInput, context: AuthContext) {
+  const orgId = context.orgId;
+  const org = context.organizations.find((candidate) => candidate.id === orgId);
+  if (!org) throw new ApiError(401, "INVALID_SESSION", "Active organization is unavailable");
+  const mode = body.mode;
+  const activeModule = body.activeModule;
 
   // 1. Get or create the conversation.
   const conv = getOrCreateConversation(orgId, mode, body.conversationId);
@@ -183,7 +349,7 @@ export async function POST(req: NextRequest) {
   const run = startRun({
     conversationId: conv.id,
     mode,
-    provider: "z-ai-web-dev-sdk", // tentative — we'll update if offline fallback kicks in
+    provider: "openai-compatible", // tentative — development may use the offline fallback
   });
 
   const toolCallRecords: ToolCallRecord[] = [];
@@ -196,6 +362,7 @@ export async function POST(req: NextRequest) {
   let online = false;
   let model: string | undefined;
   let llmError: string | undefined;
+  let providerError: unknown;
   let finalContent = "";
 
   const systemPrompt = buildSystemPrompt({
@@ -215,8 +382,6 @@ export async function POST(req: NextRequest) {
     }));
 
   try {
-    const zai = await ZAI.create();
-
     // Tool-call loop: ask the LLM, parse tool-call blocks, run tools, append
     // tool results, ask again. Cap at MAX_TOOL_TURNS.
     let turn = 0;
@@ -236,19 +401,12 @@ export async function POST(req: NextRequest) {
         payload: { turn, messageCount: workHistory.length },
         correlationId: run.correlationId,
         promptVersion: PROMPT_VERSION,
-        provider: "z-ai-web-dev-sdk",
+        provider: "openai-compatible",
       });
 
-      const completion = await zai.chat.completions.create({
-        messages: buildLlmMessages(systemPrompt, workHistory),
-        stream: false,
-        thinking: { type: "disabled" },
-      });
-
-      const resp = completion as {
-        choices?: { message?: { content?: string } }[];
-        model?: string;
-      };
+      const resp = await createOwnerAiCompletion(
+        buildLlmMessages(systemPrompt, workHistory),
+      );
       lastAssistantText = resp.choices?.[0]?.message?.content ?? "";
       model = resp.model ?? "glm-4-plus";
       online = true;
@@ -261,7 +419,7 @@ export async function POST(req: NextRequest) {
         payload: { turn, length: lastAssistantText.length, model },
         correlationId: run.correlationId,
         promptVersion: PROMPT_VERSION,
-        provider: "z-ai-web-dev-sdk",
+        provider: "openai-compatible",
         model,
       });
 
@@ -274,7 +432,7 @@ export async function POST(req: NextRequest) {
         const toolResultLines: string[] = [];
         for (const tc of pendingToolCalls) {
           try {
-            const { result, durationMs } = dispatchTool(tc.tool, tc.args);
+            const { result, durationMs } = await dispatchAuthorizedTool(context, tc.tool, tc.args);
             const { summary, count, preview } = summarizeToolResult(tc.tool, result);
             const rec = addToolCall({
               conversationId: conv.id,
@@ -318,7 +476,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse any action blocks from the final assistant text.
-    const proposedActions = extractActions(lastAssistantText);
+    const proposedActions = executableOwnerAiActions(mode, lastAssistantText);
+    const blockedActionCount = mode === "OBSERVE"
+      ? extractOwnerAiActions(lastAssistantText).length
+      : 0;
+    if (blockedActionCount > 0) {
+      addAuditEvent({
+        runId: run.id,
+        conversationId: conv.id,
+        type: "error",
+        message: "Blocked model-proposed actions in OBSERVE mode",
+        payload: { blockedActionCount },
+        correlationId: run.correlationId,
+        promptVersion: PROMPT_VERSION,
+        provider: "openai-compatible",
+        model,
+      });
+    }
     for (const ap of proposedActions) {
       const act = proposeAction({
         conversationId: conv.id,
@@ -333,15 +507,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // For safe actions that auto-executed, append the result inline to the message.
-    const executedSafe = actionRecords.filter((a) => a.safety === "safe" && a.status === "executed");
-    if (executedSafe.length > 0) {
-      const summary = executedSafe
-        .map((a) => `- ✅ **${a.action}** executed: ${a.result}`)
-        .join("\n");
-      finalContent = `${finalContent}\n\n**Actions taken:**\n${summary}`;
-    }
   } catch (e) {
+    if (e instanceof OwnerAiActionLimitError) {
+      endRun(run.id, "failed", "OWNER_AI_ACTION_LIMIT_EXCEEDED");
+      throw new ApiError(
+        502,
+        "OWNER_AI_ACTION_LIMIT_EXCEEDED",
+        `Owner AI returned more than ${MAX_OWNER_AI_ACTIONS_PER_RUN} actions; nothing was executed`,
+      );
+    }
+    providerError = e;
     llmError = (e as Error).message || String(e);
     addAuditEvent({
       runId: run.id,
@@ -356,6 +531,21 @@ export async function POST(req: NextRequest) {
 
   // 5. If the LLM failed or returned empty, fall back to offline mode.
   if (!online || !finalContent.trim()) {
+    const demoEnabled = ownerAiDemoEnabled();
+    if (!demoEnabled) {
+      endRun(run.id, "failed", "OWNER_AI_PROVIDER_UNAVAILABLE");
+      if (
+        providerError instanceof ApiError &&
+        providerError.code === "OWNER_AI_PROVIDER_NOT_CONFIGURED"
+      ) {
+        throw providerError;
+      }
+      throw new ApiError(
+        503,
+        "OWNER_AI_PROVIDER_UNAVAILABLE",
+        "Owner AI is temporarily unavailable",
+      );
+    }
     addAuditEvent({
       runId: run.id,
       conversationId: conv.id,
@@ -365,10 +555,12 @@ export async function POST(req: NextRequest) {
       correlationId: run.correlationId,
       promptVersion: PROMPT_VERSION,
     });
-    const result = offlineRespond(lastUser.content, {
+    const result = await offlineRespond(lastUser.content, {
       conversationId: conv.id,
       runId: run.id,
       mode,
+      allowDemoData: demoEnabled,
+      dispatchRead: (name, args) => dispatchAuthorizedTool(context, name, args),
     });
     finalContent = result.content;
     toolCallRecords.push(...result.toolCalls);
@@ -383,6 +575,30 @@ export async function POST(req: NextRequest) {
     run.provider = "offline-fallback";
     run.offline = true;
     run.model = undefined;
+  }
+
+  for (const action of actionRecords.filter(
+    (candidate) => candidate.safety === "safe" && candidate.status === "proposed",
+  )) {
+    try {
+      const result = await executeTenantAction(context, action.action, action.args);
+      markActionResult(action.id, result);
+    } catch (error) {
+      markActionResult(action.id, {
+        ok: false,
+        message: error instanceof Error ? error.message : "Action execution failed",
+      });
+    }
+  }
+
+  const executedSafe = actionRecords.filter(
+    (action) => action.safety === "safe" && action.status === "executed",
+  );
+  if (executedSafe.length > 0) {
+    const summary = executedSafe
+      .map((action) => `- ✅ **${action.action}** executed: ${action.result}`)
+      .join("\n");
+    finalContent = `${finalContent}\n\n**Actions taken:**\n${summary}`;
   }
 
   // 6. Append the assistant message to the conversation.

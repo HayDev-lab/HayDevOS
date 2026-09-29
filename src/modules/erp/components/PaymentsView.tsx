@@ -218,11 +218,11 @@ function RecordPaymentDialog({
           <div className="space-y-1">
             {invoice ? (
               <>
-                <div>Invoice: <span className="font-mono">{invoice.number}</span></div>
-                <div>Customer: <span className="font-mono">{customerName(invoice.customerId)}</span></div>
-                <div>Amount: <span className="font-mono">{formatCurrency(effectiveAmount, invoice.currency)}</span></div>
-                <div>Method: <span className="font-mono">{method}</span></div>
-                <div>Reference: <span className="font-mono">{reference || "—"}</span></div>
+                <div>{t("erp.payment.invoice")}: <span className="font-mono">{invoice.number}</span></div>
+                <div>{t("erp.payment.customer")}: <span className="font-mono">{customerName(invoice.customerId)}</span></div>
+                <div>{t("erp.payment.amount")}: <span className="font-mono">{formatCurrency(effectiveAmount, invoice.currency)}</span></div>
+                <div>{t("erp.payment.method")}: <span className="font-mono">{method}</span></div>
+                <div>{t("erp.payment.reference")}: <span className="font-mono">{reference || "—"}</span></div>
               </>
             ) : null}
           </div>

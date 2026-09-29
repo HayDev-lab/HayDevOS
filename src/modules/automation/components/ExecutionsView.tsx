@@ -81,7 +81,7 @@ export function ExecutionsView({ runs }: Props) {
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                      {r.durationMs > 0 ? `${r.durationMs}ms` : "—"}
+                      {r.durationMs > 0 ? `${r.durationMs} ${t("automation.analytics.milliseconds")}` : "—"}
                     </TableCell>
                     <TableCell>
                       <span

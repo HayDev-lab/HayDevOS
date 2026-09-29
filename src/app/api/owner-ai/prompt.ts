@@ -16,7 +16,7 @@
 import { TOOL_DEFS, AVAILABLE_TOOL_NAMES } from "./tools";
 import type { OwnerAiMode } from "./types";
 
-export const PROMPT_VERSION = "ownerai-v1.0.0";
+export const PROMPT_VERSION = "ownerai-v1.1.0-documentflow";
 
 /** Risky actions — always require explicit user approval. */
 export const RISKY_ACTION_NAMES = [
@@ -31,6 +31,13 @@ export const RISKY_ACTION_NAMES = [
   "sendWebhook",
   "changeIntegrationConfig",
   "highImpactAutomation",
+  "confirmOrder",
+  "cancelOrder",
+  "adjustInventory",
+  "transferInventory",
+  "createFulfillment",
+  "confirmPayment",
+  "refundPayment",
 ] as const;
 
 /** Safe actions — auto-execute (mock side effects). */
@@ -39,6 +46,8 @@ export const SAFE_ACTION_NAMES = [
   "createInternalNote",
   "assignTask",
   "generateReport",
+  "generateQuoteDocument",
+  "createOrderFromQuote",
 ] as const;
 
 /** Forbidden actions — never allowed, regardless of mode or approval. */
@@ -56,6 +65,8 @@ const ACTION_DESCRIPTIONS: Record<string, string> = {
   createInternalNote: "Add an internal note to an entity (lead, quote, document). Auto-approved.",
   assignTask: "Reassign an existing task to a different user. Auto-approved.",
   generateReport: "Generate a report (daily / weekly / monthly / quarterly). Auto-approved.",
+  generateQuoteDocument: "Generate a tenant-authorized PDF or DOCX from an immutable quote version. Auto-approved.",
+  createOrderFromQuote: "Create exactly one draft order from an accepted immutable quote version. Auto-approved and idempotent.",
   runApprovedAutomation: "Run an automation that is currently blocked on owner approval. REQUIRES APPROVAL.",
   sendExternalMessage: "Send an email/Slack/SMS to an external party. REQUIRES APPROVAL.",
   setLeadStage: "Change a lead's pipeline stage (e.g. to 'won' or 'lost'). REQUIRES APPROVAL.",
@@ -67,6 +78,13 @@ const ACTION_DESCRIPTIONS: Record<string, string> = {
   sendWebhook: "Fire an outgoing webhook. REQUIRES APPROVAL.",
   changeIntegrationConfig: "Modify an integration's config or credentials. REQUIRES APPROVAL.",
   highImpactAutomation: "Run a high-impact automation (bulk update, mass send, destructive). REQUIRES APPROVAL.",
+  confirmOrder: "Confirm an order and atomically reserve stocked items. REQUIRES APPROVAL.",
+  cancelOrder: "Cancel an eligible order and atomically release reservations. REQUIRES APPROVAL.",
+  adjustInventory: "Apply a reasoned inventory adjustment. REQUIRES APPROVAL.",
+  transferInventory: "Atomically transfer stock between warehouses. REQUIRES APPROVAL.",
+  createFulfillment: "Fulfill order quantities and issue reserved stock. REQUIRES APPROVAL.",
+  confirmPayment: "Confirm a pending payment and append a finance event. REQUIRES APPROVAL.",
+  refundPayment: "Append a refund against a confirmed payment. REQUIRES APPROVAL.",
 };
 
 const FACTUALITY_RULES = [

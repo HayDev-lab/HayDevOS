@@ -4,8 +4,7 @@
  * QuestionnaireView — interactive audit flow.
  *
  * Layout:
- *  - Top: mode toggle (Current | Demo) + progress bar + Save & continue +
- *    Submit audit.
+ *  - Top: questionnaire version, progress bar, reset and submit actions.
  *  - Left: category sidebar (6 categories) with per-category progress.
  *  - Right: the active category's questions, each rendered by `QuestionCard`
  *    according to its `type`:
@@ -37,7 +36,6 @@ import {
   ChevronRight,
   ChevronLeft,
   Play,
-  Sparkles,
   Save,
   FileCheck2,
   type LucideIcon,
@@ -66,7 +64,6 @@ import {
   QUESTIONNAIRE_VERSION,
 } from "../questionnaire";
 import { categoryProgress, totalProgress } from "../scoring";
-import { DEMO_ANSWERS } from "../data";
 
 const CATEGORY_ICONS: Record<CategoryId, LucideIcon> = {
   acquisition: Target,
@@ -87,8 +84,6 @@ const CATEGORY_ACCENT: Record<CategoryId, string> = {
 };
 
 interface Props {
-  mode: "current" | "demo";
-  onModeChange: (mode: "current" | "demo") => void;
   answers: AnswerMap;
   onAnswer: (questionId: string, value: number | boolean | string | string[], evidence?: string) => void;
   onReset: () => void;
@@ -98,8 +93,6 @@ interface Props {
 }
 
 export function QuestionnaireView({
-  mode,
-  onModeChange,
   answers,
   onAnswer,
   onReset,
@@ -121,16 +114,6 @@ export function QuestionnaireView({
 
   const questions = QUESTIONS_BY_CATEGORY[activeCategory];
 
-  function loadDemo() {
-    onModeChange("demo");
-    // Apply demo answers via onAnswer for each — we delegate to the parent to
-    // actually merge them.
-    for (const a of Object.values(DEMO_ANSWERS)) {
-      onAnswer(a.questionId, a.value, a.evidence);
-    }
-    toast.success(t("audit.toast.demoLoaded"));
-  }
-
   function clearAll() {
     onReset();
     toast.info(t("audit.toast.cleared"));
@@ -138,55 +121,14 @@ export function QuestionnaireView({
 
   return (
     <div className="space-y-4">
-      {/* Header strip: mode toggle + progress + actions */}
+      {/* Header strip: version + progress + actions */}
       <section className="surface-elevated rounded-xl border border-border/60 p-4">
         <div className="flex flex-wrap items-center gap-3">
-          {/* Mode toggle */}
-          <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-card/60 p-1">
-            <button
-              type="button"
-              onClick={() => onModeChange("current")}
-              className={cn(
-                "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-                mode === "current"
-                  ? "bg-rose/15 text-rose"
-                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-              )}
-              aria-pressed={mode === "current"}
-            >
-              {t("audit.mode.current")}
-            </button>
-            <button
-              type="button"
-              onClick={() => onModeChange("demo")}
-              className={cn(
-                "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-                mode === "demo"
-                  ? "bg-rose/15 text-rose"
-                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-              )}
-              aria-pressed={mode === "demo"}
-            >
-              {t("audit.mode.demo")}
-            </button>
-          </div>
-
-          <div className="hidden text-[11px] text-muted-foreground sm:block">
-            <span className="font-mono">QV: {QUESTIONNAIRE_VERSION}</span>
+          <div className="text-[11px] text-muted-foreground">
+            <span className="font-mono">{t("audit.questionnaire.version")}: {QUESTIONNAIRE_VERSION}</span>
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={loadDemo}
-              className="h-8 gap-1.5 border-border/60 text-muted-foreground hover:text-foreground"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t("audit.action.loadDemo")}</span>
-              <span className="sm:hidden">{t("audit.action.loadDemoShort")}</span>
-            </Button>
             <Button
               type="button"
               size="sm"

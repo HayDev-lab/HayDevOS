@@ -46,16 +46,13 @@ import {
 } from "@/components/ui/table";
 
 import {
-  allLeads,
   conversionFunnel,
-  leadVelocitySeries,
   sourceRoiSeries,
-  slaComplianceOverTime,
-  getTeamStats,
   LEAD_STAGES,
   STAGE_BY_ID,
   SOURCE_BY_ID,
 } from "../data";
+import { useLeadOSData } from "../LeadOSData";
 import { OwnerAvatar } from "./shared";
 import type { LucideIcon } from "lucide-react";
 
@@ -92,8 +89,10 @@ const SOURCE_COLORS: string[] = [
 
 export function AnalyticsView() {
   const { t } = useLocale();
+  const { overview } = useLeadOSData();
+  const data = overview!;
 
-  const funnel = useMemo(() => conversionFunnel(allLeads), []);
+  const funnel = useMemo(() => conversionFunnel(data.stageStats), [data.stageStats]);
   const funnelData = useMemo(
     () =>
       funnel.map((f) => ({
@@ -105,13 +104,16 @@ export function AnalyticsView() {
     [funnel, t],
   );
 
-  const velocity = useMemo(() => leadVelocitySeries(), []);
+  const velocity = useMemo(
+    () => data.leadsOverTime.map((bucket) => ({ week: bucket.week, minutes: 0, deals: bucket.count })),
+    [data.leadsOverTime],
+  );
   const velocityData = useMemo(
     () => velocity.map((v) => ({ week: v.week, minutes: v.minutes, deals: v.deals })),
     [velocity],
   );
 
-  const roi = useMemo(() => sourceRoiSeries(allLeads), []);
+  const roi = useMemo(() => sourceRoiSeries(data.sourceStats), [data.sourceStats]);
   const roiData = useMemo(
     () =>
       roi.map((r, i) => ({
@@ -124,13 +126,19 @@ export function AnalyticsView() {
     [roi, t],
   );
 
-  const slaSeries = useMemo(() => slaComplianceOverTime(), []);
+  const slaSeries = useMemo(() => {
+    const eligible = Math.max(data.dashboard.activeLeads, 1);
+    return [{
+      week: new Date().toISOString().slice(0, 10),
+      pct: Math.max(0, Math.round(((eligible - data.dashboard.slaBreached) / eligible) * 100)),
+    }];
+  }, [data.dashboard.activeLeads, data.dashboard.slaBreached]);
   const slaData = useMemo(
     () => slaSeries.map((s) => ({ week: s.week, pct: s.pct })),
     [slaSeries],
   );
 
-  const teamStats = useMemo(() => getTeamStats(allLeads), []);
+  const teamStats = data.teamStats;
 
   return (
     <div className="flex flex-col gap-6">
@@ -360,9 +368,9 @@ export function AnalyticsView() {
 
       {/* Footer summary */}
       <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-wider text-muted-foreground/60">
-        <span>{LEAD_STAGES.length} stages · {allLeads.length} leads</span>
+        <span>{LEAD_STAGES.length} stages · {data.dashboard.totalLeads} leads</span>
         <span>
-          avg velocity {Math.round(velocity.reduce((s, v) => s + v.minutes, 0) / velocity.length)}m ·{" "}
+          {velocity.reduce((sum, item) => sum + item.deals, 0)} leads ·{" "}
           {slaData[slaData.length - 1]?.pct ?? 0}% SLA
         </span>
       </div>

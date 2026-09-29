@@ -22,6 +22,7 @@ import {
 } from "@/lib/utils";
 import type { IntegrationAuditEntry, IntegrationAuditAction, Provider } from "../types";
 import { SectionHeader, EmptyState } from "../shared";
+import { localizeAuditActor, localizeAuditMessage } from "../localization";
 
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,19 @@ const ACTION_TONE: Record<IntegrationAuditAction, StatusTone> = {
   config_updated: "warning",
 };
 
+const ACTION_TRANSLATION: Record<IntegrationAuditAction, string> = {
+  connect: "connect",
+  disconnect: "disconnect",
+  refresh_auth: "refreshAuth",
+  rotate_credential: "rotateCredential",
+  revoke_credential: "revokeCredential",
+  test: "test",
+  sync: "sync",
+  webhook_received: "webhookReceived",
+  webhook_replayed: "webhookReplayed",
+  config_updated: "configUpdated",
+};
+
 export function AuditView({ audit, providers }: Props) {
   const { t, locale } = useLocale();
   const [query, setQuery] = useState("");
@@ -77,13 +91,13 @@ export function AuditView({ audit, providers }: Props) {
       if (actionFilter !== "all" && a.action !== actionFilter) return false;
       if (!q) return true;
       return (
-        a.actor.toLowerCase().includes(q) ||
-        a.message.toLowerCase().includes(q) ||
+        localizeAuditActor(a.actor, locale).toLowerCase().includes(q) ||
+        localizeAuditMessage(a.message, locale).toLowerCase().includes(q) ||
         a.ip.toLowerCase().includes(q) ||
         a.providerId.toLowerCase().includes(q)
       );
     });
-  }, [audit, query, actionFilter]);
+  }, [audit, query, actionFilter, locale]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -100,16 +114,16 @@ export function AuditView({ audit, providers }: Props) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("common.all")}</SelectItem>
-            <SelectItem value="connect">connect</SelectItem>
-            <SelectItem value="disconnect">disconnect</SelectItem>
-            <SelectItem value="refresh_auth">refresh_auth</SelectItem>
-            <SelectItem value="rotate_credential">rotate_credential</SelectItem>
-            <SelectItem value="revoke_credential">revoke_credential</SelectItem>
-            <SelectItem value="test">test</SelectItem>
-            <SelectItem value="sync">sync</SelectItem>
-            <SelectItem value="webhook_received">webhook_received</SelectItem>
-            <SelectItem value="webhook_replayed">webhook_replayed</SelectItem>
-            <SelectItem value="config_updated">config_updated</SelectItem>
+            <SelectItem value="connect">{t("integration.audit.action.connect")}</SelectItem>
+            <SelectItem value="disconnect">{t("integration.audit.action.disconnect")}</SelectItem>
+            <SelectItem value="refresh_auth">{t("integration.audit.action.refreshAuth")}</SelectItem>
+            <SelectItem value="rotate_credential">{t("integration.audit.action.rotateCredential")}</SelectItem>
+            <SelectItem value="revoke_credential">{t("integration.audit.action.revokeCredential")}</SelectItem>
+            <SelectItem value="test">{t("integration.audit.action.test")}</SelectItem>
+            <SelectItem value="sync">{t("integration.audit.action.sync")}</SelectItem>
+            <SelectItem value="webhook_received">{t("integration.audit.action.webhookReceived")}</SelectItem>
+            <SelectItem value="webhook_replayed">{t("integration.audit.action.webhookReplayed")}</SelectItem>
+            <SelectItem value="config_updated">{t("integration.audit.action.configUpdated")}</SelectItem>
           </SelectContent>
         </Select>
         <div className="relative w-full max-w-xs">
@@ -163,7 +177,7 @@ export function AuditView({ audit, providers }: Props) {
                           cls.text,
                         )}
                       >
-                        {entry.action}
+                        {t(`integration.audit.action.${ACTION_TRANSLATION[entry.action]}`)}
                       </span>
                     </TableCell>
                     <TableCell className="py-2.5 text-[11px] text-foreground">
@@ -172,7 +186,7 @@ export function AuditView({ audit, providers }: Props) {
                     <TableCell className="hidden py-2.5 md:table-cell">
                       <div className="flex items-center gap-1.5 text-[11px] text-foreground">
                         <User className="h-3 w-3 text-muted-foreground" />
-                        {entry.actor}
+                        {localizeAuditActor(entry.actor, locale)}
                       </div>
                     </TableCell>
                     <TableCell className="hidden py-2.5 lg:table-cell">
@@ -193,7 +207,7 @@ export function AuditView({ audit, providers }: Props) {
                       </div>
                     </TableCell>
                     <TableCell className="py-2.5 text-[11px] text-muted-foreground">
-                      {entry.message}
+                      {localizeAuditMessage(entry.message, locale)}
                     </TableCell>
                   </TableRow>
                 );

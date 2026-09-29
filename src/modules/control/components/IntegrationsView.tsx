@@ -117,7 +117,7 @@ export function IntegrationsView({ summary }: { summary: IntegrationHealthSummar
                       </span>
                     </div>
                     <p className="mt-0.5 text-[10px] text-muted-foreground/80">
-                      {i.eventsProcessed.toLocaleString()} events ·{" "}
+                      {i.eventsProcessed.toLocaleString("en-US")} events ·{" "}
                       {i.lastSyncAt ? relativeTime(i.lastSyncAt, locale) : t("control.integrations.neverSynced")}
                     </p>
                   </div>

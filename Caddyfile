@@ -1,23 +1,27 @@
-:81 {
-	@transform_port_query {
-		query XTransformPort=*
+www.{$HAYDEV_DOMAIN} {
+	redir https://{$HAYDEV_DOMAIN}{uri} permanent
+}
+
+{$HAYDEV_DOMAIN} {
+	encode zstd gzip
+
+	@documentUpload path /api/documents/upload
+	request_body @documentUpload {
+		max_size 26MB
 	}
 
-	handle @transform_port_query {
-		reverse_proxy localhost:{query.XTransformPort} {
-			header_up Host {host}
-			header_up X-Forwarded-For {remote_host}
-			header_up X-Forwarded-Proto {scheme}
-			header_up X-Real-IP {remote_host}
-		}
+	@standardRequest {
+		not path /api/documents/upload
+	}
+	request_body @standardRequest {
+		max_size 512KB
 	}
 
-	handle {
-		reverse_proxy localhost:3000 {
-			header_up Host {host}
-			header_up X-Forwarded-For {remote_host}
-			header_up X-Forwarded-Proto {scheme}
-			header_up X-Real-IP {remote_host}
-		}
+	reverse_proxy 127.0.0.1:3000 {
+		header_up Host {host}
+		header_up X-Forwarded-Host {host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Real-IP {remote_host}
 	}
 }

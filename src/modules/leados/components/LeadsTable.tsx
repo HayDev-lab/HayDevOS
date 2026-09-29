@@ -10,7 +10,7 @@
  * drawer (calls onSelectLead).
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -42,17 +42,18 @@ import {
 } from "@/components/ui/table";
 
 import {
-  allLeads,
+  asLeadRecord,
   LEAD_STAGES,
   LEAD_SOURCES,
   STAGE_BY_ID,
   SOURCE_BY_ID,
   getSlaStatus,
   type SlaStatus,
-  type MockLead,
+  type LeadRecord,
   type LeadStage,
   type LeadSource,
 } from "../data";
+import { useLeadOSData } from "../LeadOSData";
 import { StageBadge, SourceBadge, OwnerAvatar, SlaBadge } from "./shared";
 
 type SortKey = "name" | "company" | "value" | "lastActivity" | "stage";
@@ -69,7 +70,7 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
 
 interface LeadsTableProps {
   /** Called when a row is clicked. */
-  onSelectLead?: (lead: MockLead) => void;
+  onSelectLead?: (lead: LeadRecord) => void;
   /** Optional external search query (from the LeadOSView toolbar). */
   externalQuery?: string;
   /** Cap the number of rows shown (default 15). */
@@ -83,50 +84,48 @@ export function LeadsTable({ onSelectLead, externalQuery, limit = 15 }: LeadsTab
   const [sourceFilter, setSourceFilter] = useState<LeadSource | "all">("all");
   const [sortKey, setSortKey] = useState<SortKey>("lastActivity");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [leads, setLeads] = useState<LeadRecord[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const { listLeads } = useLeadOSData();
 
-  const query = (externalQuery ?? internalQuery).trim().toLowerCase();
+  const query = (externalQuery ?? internalQuery).trim();
 
-  const filtered = useMemo(() => {
-    let result = allLeads;
-    if (query) {
-      result = result.filter(
-        (l) =>
-          l.name.toLowerCase().includes(query) ||
-          (l.company ?? "").toLowerCase().includes(query) ||
-          (l.email ?? "").toLowerCase().includes(query),
-      );
-    }
-    if (stageFilter !== "all") {
-      result = result.filter((l) => l.stage === stageFilter);
-    }
-    if (sourceFilter !== "all") {
-      result = result.filter((l) => l.source === sourceFilter);
-    }
-    const dir = sortDir === "asc" ? 1 : -1;
-    result = [...result].sort((a, b) => {
-      switch (sortKey) {
-        case "name":
-          return a.name.localeCompare(b.name) * dir;
-        case "company":
-          return (a.company ?? "").localeCompare(b.company ?? "") * dir;
-        case "value":
-          return (a.value - b.value) * dir;
-        case "stage": {
-          const ai = LEAD_STAGES.findIndex((s) => s.id === a.stage);
-          const bi = LEAD_STAGES.findIndex((s) => s.id === b.stage);
-          return (ai - bi) * dir;
-        }
-        case "lastActivity":
-        default:
-          return (
-            (new Date(a.lastActivityAt).getTime() - new Date(b.lastActivityAt).getTime()) * dir
-          );
-      }
-    });
-    return result.slice(0, limit);
-  }, [query, stageFilter, sourceFilter, sortKey, sortDir, limit]);
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void listLeads({
+        q: query || undefined,
+        stage: stageFilter === "all" ? undefined : stageFilter,
+        source: sourceFilter === "all" ? undefined : sourceFilter,
+        sort: sortKey === "lastActivity" ? "lastActivityAt" : sortKey === "company" ? "name" : sortKey,
+        direction: sortDir,
+        page,
+        limit,
+      }).then((result) => {
+        if (cancelled) return;
+        setLeads(result.items.map(asLeadRecord));
+        setTotal(result.total);
+        setTotalPages(result.totalPages);
+        setLoadError(null);
+      }).catch((cause) => {
+        if (cancelled) return;
+        setLeads([]);
+        setLoadError(cause instanceof Error ? cause.message : "Lead list could not be loaded");
+      });
+    }, 200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [listLeads, query, stageFilter, sourceFilter, sortKey, sortDir, page, limit]);
+
+  const filtered = useMemo(() => leads, [leads]);
 
   function toggleSort(key: SortKey) {
+    setPage(1);
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -143,13 +142,13 @@ export function LeadsTable({ onSelectLead, externalQuery, limit = 15 }: LeadsTab
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={internalQuery}
-            onChange={(e) => setInternalQuery(e.target.value)}
+            onChange={(e) => { setInternalQuery(e.target.value); setPage(1); }}
             placeholder={t("leados.search.placeholder")}
             className="pl-8"
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={stageFilter} onValueChange={(v) => setStageFilter(v as LeadStage | "all")}>
+          <Select value={stageFilter} onValueChange={(v) => { setStageFilter(v as LeadStage | "all"); setPage(1); }}>
             <SelectTrigger size="sm" className="w-[140px]">
               <SelectValue placeholder={t("leados.table.filterStage")} />
             </SelectTrigger>
@@ -162,7 +161,7 @@ export function LeadsTable({ onSelectLead, externalQuery, limit = 15 }: LeadsTab
               ))}
             </SelectContent>
           </Select>
-          <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as LeadSource | "all")}>
+          <Select value={sourceFilter} onValueChange={(v) => { setSourceFilter(v as LeadSource | "all"); setPage(1); }}>
             <SelectTrigger size="sm" className="w-[140px]">
               <SelectValue placeholder={t("leados.table.filterSource")} />
             </SelectTrigger>
@@ -294,7 +293,7 @@ export function LeadsTable({ onSelectLead, externalQuery, limit = 15 }: LeadsTab
                 <TableCell colSpan={8} className="py-12 text-center">
                   <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
                     <Inbox className="h-6 w-6 opacity-50" />
-                    {t("misc.noResults")}
+                    {loadError ?? t("misc.noResults")}
                   </div>
                 </TableCell>
               </TableRow>
@@ -306,12 +305,21 @@ export function LeadsTable({ onSelectLead, externalQuery, limit = 15 }: LeadsTab
       {/* Footer */}
       <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground">
         <span>
-          {filtered.length} / {allLeads.length}
+          {filtered.length} / {total}
         </span>
         <span>
           {stageFilter !== "all" ? t(STAGE_BY_ID[stageFilter as LeadStage].labelKey) : t("leados.table.allStages")}
           {" · "}
           {sourceFilter !== "all" ? t(SOURCE_BY_ID[sourceFilter as LeadSource].labelKey) : t("leados.table.allSources")}
+        </span>
+        <span className="flex items-center gap-2">
+          <button type="button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} className="disabled:opacity-40">
+            Previous
+          </button>
+          {page} / {Math.max(totalPages, 1)}
+          <button type="button" disabled={page >= totalPages} onClick={() => setPage((value) => value + 1)} className="disabled:opacity-40">
+            Next
+          </button>
         </span>
       </div>
     </Card>

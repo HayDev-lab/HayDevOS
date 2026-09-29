@@ -235,11 +235,11 @@ export function PricingRulesView() {
                   </div>
                   <div className="mt-2 grid grid-cols-3 gap-1.5 font-mono text-xs">
                     <div className="rounded bg-background/50 p-1.5">
-                      <div className="text-[10px] text-muted-foreground">unit</div>
+                      <div className="text-[10px] text-muted-foreground">{t("quoteflow.catalog.unit")}</div>
                       <div className="text-foreground">{formatCurrency(sample.unitPrice, "USD")}</div>
                     </div>
                     <div className="rounded bg-background/50 p-1.5">
-                      <div className="text-[10px] text-muted-foreground">setup</div>
+                      <div className="text-[10px] text-muted-foreground">{t("quoteflow.rules.setupFee")}</div>
                       <div className="text-amber">{formatCurrency(sample.setupFee, "USD")}</div>
                     </div>
                     <div className="rounded bg-background/50 p-1.5">
@@ -286,15 +286,9 @@ function RuleFormView({
   onChange: (v: RuleForm) => void;
 }) {
   const { t } = useLocale();
-  const [local, setLocal] = useState<RuleForm>(value);
-
-  useEffect(() => {
-    setLocal(value);
-  }, [value]);
 
   const update = (patch: Partial<RuleForm>) => {
-    const next = { ...local, ...patch };
-    setLocal(next);
+    const next = { ...value, ...patch };
     onChange(next);
   };
 
@@ -303,11 +297,11 @@ function RuleFormView({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("quoteflow.rules.name")}</Label>
-          <Input value={local.name} onChange={(e) => update({ name: e.target.value })} className="h-9" />
+          <Input value={value.name} onChange={(e) => update({ name: e.target.value })} className="h-9" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("quoteflow.rules.type")}</Label>
-          <Select value={local.type} onValueChange={(v) => update({ type: v as PricingRuleType })}>
+          <Select value={value.type} onValueChange={(v) => update({ type: v as PricingRuleType })}>
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
               {(["tiered", "minimum", "setup", "recurring", "markup"] as PricingRuleType[]).map((tp) => (
@@ -319,11 +313,11 @@ function RuleFormView({
       </div>
 
       <div className="flex items-center gap-2">
-        <Switch checked={local.active} onCheckedChange={(c) => update({ active: c })} />
+        <Switch checked={value.active} onCheckedChange={(c) => update({ active: c })} />
         <Label className="text-sm text-muted-foreground">{t("quoteflow.rules.active")}</Label>
       </div>
 
-      {local.type === "tiered" && (
+      {value.type === "tiered" && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-xs text-muted-foreground">{t("quoteflow.rules.tiers")}</Label>
@@ -332,21 +326,21 @@ function RuleFormView({
               variant="outline"
               className="h-7 gap-1"
               onClick={() =>
-                update({ tiers: [...(local.tiers ?? []), { qty: 1, unitPrice: 0 }] })
+                update({ tiers: [...(value.tiers ?? []), { qty: 1, unitPrice: 0 }] })
               }
             >
               <Plus className="h-3 w-3" />
               {t("quoteflow.rules.addTier")}
             </Button>
           </div>
-          {(local.tiers ?? []).map((tier, i) => (
+          {(value.tiers ?? []).map((tier, i) => (
             <div key={i} className="flex items-center gap-2">
               <Input
                 type="number"
                 min={0}
                 value={tier.qty}
                 onChange={(e) => {
-                  const tiers = [...(local.tiers ?? [])];
+                  const tiers = [...(value.tiers ?? [])];
                   tiers[i] = { ...tier, qty: Number(e.target.value) };
                   update({ tiers });
                 }}
@@ -359,7 +353,7 @@ function RuleFormView({
                 step="0.01"
                 value={tier.unitPrice}
                 onChange={(e) => {
-                  const tiers = [...(local.tiers ?? [])];
+                  const tiers = [...(value.tiers ?? [])];
                   tiers[i] = { ...tier, unitPrice: Number(e.target.value) };
                   update({ tiers });
                 }}
@@ -369,7 +363,7 @@ function RuleFormView({
                 size="sm"
                 variant="ghost"
                 className="h-9 w-9 p-0 text-rose hover:text-rose"
-                onClick={() => update({ tiers: (local.tiers ?? []).filter((_, idx) => idx !== i) })}
+                onClick={() => update({ tiers: (value.tiers ?? []).filter((_, idx) => idx !== i) })}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -378,39 +372,39 @@ function RuleFormView({
         </div>
       )}
 
-      {local.type === "minimum" && (
+      {value.type === "minimum" && (
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("quoteflow.rules.minPrice")}</Label>
           <Input
             type="number"
             min={0}
             step="0.01"
-            value={local.minPrice ?? 0}
+            value={value.minPrice ?? 0}
             onChange={(e) => update({ minPrice: Number(e.target.value) })}
             className="h-9 font-mono"
           />
         </div>
       )}
 
-      {local.type === "setup" && (
+      {value.type === "setup" && (
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("quoteflow.rules.setupFee")}</Label>
           <Input
             type="number"
             min={0}
             step="0.01"
-            value={local.setupFee ?? 0}
+            value={value.setupFee ?? 0}
             onChange={(e) => update({ setupFee: Number(e.target.value) })}
             className="h-9 font-mono"
           />
         </div>
       )}
 
-      {local.type === "recurring" && (
+      {value.type === "recurring" && (
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("quoteflow.rules.recurringPeriod")}</Label>
           <Select
-            value={local.recurringPeriod ?? "monthly"}
+            value={value.recurringPeriod ?? "monthly"}
             onValueChange={(v) => update({ recurringPeriod: v as "monthly" | "yearly" })}
           >
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
@@ -422,14 +416,14 @@ function RuleFormView({
         </div>
       )}
 
-      {local.type === "markup" && (
+      {value.type === "markup" && (
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">{t("quoteflow.rules.markupPct")}</Label>
           <Input
             type="number"
             min={0}
             step="0.1"
-            value={local.markupPct ?? 0}
+            value={value.markupPct ?? 0}
             onChange={(e) => update({ markupPct: Number(e.target.value) })}
             className="h-9 font-mono"
           />
@@ -437,9 +431,9 @@ function RuleFormView({
       )}
 
       <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">SKU (optional)</Label>
+        <Label className="text-xs text-muted-foreground">{t("quoteflow.runtime.skuOptional")}</Label>
         <Input
-          value={local.appliesToSku ?? ""}
+          value={value.appliesToSku ?? ""}
           onChange={(e) => update({ appliesToSku: e.target.value || undefined })}
           placeholder="e.g. HAY-ENT-AN"
           className="h-9 font-mono"

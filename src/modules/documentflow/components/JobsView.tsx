@@ -157,7 +157,7 @@ export function JobsView({
 
         <div className="grid grid-cols-[auto_minmax(0,1.4fr)_auto_minmax(0,1fr)_auto_auto_auto] items-center gap-3 border-b border-border bg-muted/30 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
           <span>{t("docflow.jobs.type")}</span>
-          <span>Document</span>
+          <span>{t("docflow.runtime.document")}</span>
           <span>{t("docflow.inbox.status")}</span>
           <span className="hidden md:inline">{t("docflow.jobs.worker")}</span>
           <span className="hidden lg:inline">{t("docflow.jobs.started")}</span>

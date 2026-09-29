@@ -10,7 +10,9 @@ export type OwnerAiMode = "OBSERVE" | "ASSIST" | "AUTO";
 
 export type TimeWindow = "today" | "7d" | "30d" | "quarter";
 
-export type Provider = "z-ai-web-dev-sdk" | "offline-fallback";
+export type Provider = "openai-compatible" | "offline-fallback";
+
+export type OwnerAiSystemProvider = Provider | "unavailable";
 
 export type AssistantMessageRole = "user" | "assistant";
 
@@ -134,7 +136,7 @@ export interface AgentRun {
   offline: boolean;
   /** Error message, if status=failed. */
   error?: string;
-  /** Provider used (z-ai-web-dev-sdk or offline-fallback). */
+  /** Provider used (OpenAI-compatible endpoint or development fallback). */
   provider: Provider;
   /** Model id, when known. */
   model?: string;
@@ -182,7 +184,7 @@ export interface AuditEvent {
 export interface OwnerAiSystemConfig {
   promptVersion: string;
   defaultMode: OwnerAiMode;
-  provider: Provider;
+  provider: OwnerAiSystemProvider;
   model: string | null;
   forbiddenActions: string[];
   factualityRules: string[];
@@ -198,7 +200,6 @@ export interface OwnerAiRequest {
   messages: { role: AssistantMessageRole; content: string }[];
   conversationId?: string;
   mode: OwnerAiMode;
-  orgId: string;
   /** Active module id at the time of the request (for context chip). */
   activeModule?: string;
 }
@@ -229,8 +230,6 @@ export interface OwnerAiApproveRequest {
   approvalId: string;
   decision: "approved" | "rejected";
   reason?: string;
-  decidedBy: string;
-  orgId: string;
 }
 
 export interface OwnerAiApproveResponse {

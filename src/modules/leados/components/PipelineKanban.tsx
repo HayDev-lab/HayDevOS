@@ -5,7 +5,7 @@
  *
  * 7 columns (New, Contacted, Qualified, Proposal, Negotiation, Won, Lost).
  * Each lead is a card (name, company, value, owner avatar, SLA dot). Drag
- * between columns updates stage (mock — local state + toast).
+ * between columns persists the stage through the tenant-scoped LeadOS API.
  * Columns show count + total value.
  */
 
@@ -30,60 +30,66 @@ import { cn, formatCurrency, formatCompact } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 import {
-  allLeads,
+  asLeadRecord,
   LEAD_STAGES,
   STAGE_BY_ID,
   getSlaStatus,
-  SLA_POLICIES,
   type LeadStage,
-  type MockLead,
+  type LeadRecord,
 } from "../data";
+import { useLeadOSData } from "../LeadOSData";
 import { OwnerAvatar } from "./shared";
 
 interface PipelineKanbanProps {
   /** Optional: controlled leads (otherwise uses allLeads). */
-  leads?: MockLead[];
+  leads?: LeadRecord[];
   /** Notify parent of stage change (e.g., to refresh detail). */
-  onStageChange?: (leadId: string, newStage: LeadStage) => void;
+  onStageChange?: (leadId: string, newStage: LeadStage) => Promise<void>;
 }
 
 export function PipelineKanban({ leads: initialLeads, onStageChange }: PipelineKanbanProps) {
   const { t, locale } = useLocale();
-  const [leads, setLeads] = useState<MockLead[]>(initialLeads ?? allLeads);
-  const [activeLead, setActiveLead] = useState<MockLead | null>(null);
+  const { overview, changeStage } = useLeadOSData();
+  const sourceLeads = useMemo(
+    () => initialLeads ?? (overview?.leads.map(asLeadRecord) ?? []),
+    [initialLeads, overview],
+  );
+  const [activeLead, setActiveLead] = useState<LeadRecord | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
   const byStage = useMemo(() => {
-    const map: Record<LeadStage, MockLead[]> = {
+    const map: Record<LeadStage, LeadRecord[]> = {
       new: [], contacted: [], qualified: [], proposal: [], negotiation: [], won: [], lost: [],
     };
-    for (const l of leads) map[l.stage].push(l);
+    for (const l of sourceLeads) map[l.stage].push(l);
     return map;
-  }, [leads]);
+  }, [sourceLeads]);
 
   function handleDragStart(e: DragStartEvent) {
     const id = String(e.active.id);
-    const lead = leads.find((l) => l.id === id);
+    const lead = sourceLeads.find((l) => l.id === id);
     setActiveLead(lead ?? null);
   }
 
-  function handleDragEnd(e: DragEndEvent) {
+  async function handleDragEnd(e: DragEndEvent) {
     setActiveLead(null);
     const leadId = String(e.active.id);
     const overId = e.over?.id ? String(e.over.id) : null;
     if (!overId) return;
     const newStage = overId.replace("col-", "") as LeadStage;
     if (!LEAD_STAGES.some((s) => s.id === newStage)) return;
-    const lead = leads.find((l) => l.id === leadId);
+    const lead = sourceLeads.find((l) => l.id === leadId);
     if (!lead || lead.stage === newStage) return;
-    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, stage: newStage } : l)));
-    onStageChange?.(leadId, newStage);
-    toast.success(
-      t("leados.toast.stageMoved", { name: lead.name, stage: t(STAGE_BY_ID[newStage].labelKey) }),
-    );
+    try {
+      if (onStageChange) await onStageChange(leadId, newStage);
+      else await changeStage(leadId, { stage: newStage });
+      toast.success(t("leados.toast.stageMoved", { name: lead.name, stage: t(STAGE_BY_ID[newStage].labelKey) }));
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Stage could not be updated");
+    }
   }
 
   return (
@@ -95,7 +101,7 @@ export function PipelineKanban({ leads: initialLeads, onStageChange }: PipelineK
     >
       <div className="flex flex-col gap-3">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-          {t("leados.pipeline.dragHint")} · {t("leados.settings.firstResponseTarget")}: {SLA_POLICIES.firstResponseHours}h
+          {t("leados.pipeline.dragHint")} · {t("leados.settings.firstResponseTarget")}: {Math.round((overview?.slaPolicy.firstResponseMinutes ?? 0) / 60)}h
         </p>
         <ScrollArea className="w-full pb-2">
           <div className="flex gap-3 pb-2" style={{ minWidth: "min-content" }}>
@@ -135,7 +141,7 @@ function KanbanColumn({
   locale,
 }: {
   stage: LeadStage;
-  leads: MockLead[];
+  leads: LeadRecord[];
   t: (key: string, params?: Record<string, string | number>) => string;
   locale: string;
 }) {
@@ -196,7 +202,7 @@ function DraggableCard({
   t,
   locale,
 }: {
-  lead: MockLead;
+  lead: LeadRecord;
   t: (key: string, params?: Record<string, string | number>) => string;
   locale: string;
 }) {
@@ -223,7 +229,7 @@ function LeadCard({
   locale,
   dragging,
 }: {
-  lead: MockLead;
+  lead: LeadRecord;
   t: (key: string, params?: Record<string, string | number>) => string;
   locale: string;
   dragging?: boolean;

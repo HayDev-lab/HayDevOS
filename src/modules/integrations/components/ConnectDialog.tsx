@@ -328,14 +328,16 @@ function OAuthFlow({
                   className="mt-0.5"
                 />
                 <div className="flex-1">
-                  <code className="font-mono text-[11px] text-foreground">{scope}</code>
-                  <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  <div className="text-[11px] font-medium text-foreground">
                     {t(`integration.scope.${scope}`)}
                   </div>
+                  <code className="mt-0.5 block font-mono text-[9px] text-muted-foreground" title={scope}>
+                    {scope}
+                  </code>
                 </div>
                 {checked && (
                   <Badge className="bg-cyan/15 text-cyan border-cyan/30 px-1.5 py-0 text-[9px]">
-                    granted
+                    {t("integration.connect.granted")}
                   </Badge>
                 )}
               </label>

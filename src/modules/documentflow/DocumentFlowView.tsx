@@ -1,534 +1,159 @@
 "use client";
 
-/**
- * DocumentFlowView — main view for the DocumentFlow AI module.
- *
- * Owns the in-memory state (documents, batches, schemas, jobs, exports,
- * workers) and runs the pipeline simulation that advances documents
- * through their stages every 1.5 s. Surfaces 9 tabs:
- *   Inbox · Documents · Batches · Review Queue · Schemas · Jobs ·
- *   Exports · Analytics · Settings.
- *
- * Wired into the module registry under the `docsmart` id (see registry.ts).
- */
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Archive, Download, FileText, Loader2, RefreshCw, Search, ShieldCheck, Upload } from "lucide-react";
+import { toast } from "sonner";
 
-import * as React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Inbox as InboxIcon,
-  FileText,
-  Layers,
-  ClipboardCheck,
-  FileSearch,
-  Cpu,
-  FileOutput,
-  BarChart3,
-  Settings as SettingsIcon,
-  ScanLine,
-} from "lucide-react";
+import { useAuth } from "@/components/auth/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { DocumentDto } from "@/lib/documents/types";
+import { t as translateText, useLocale } from "@/lib/i18n";
+import { archiveDocumentRequest, fetchDocuments, uploadDocumentFile } from "./api";
 
-import { useLocale } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+const ACCEPT = ".pdf,.docx,.xlsx,.csv,.txt,.png,.jpg,.jpeg";
 
-import {
-  type DocRecord,
-  type DocBatch,
-  type ExtractionSchema,
-  type DocJob,
-  type DocExport,
-  type DocWorker,
-  type DocPipelineStage,
-  type DocumentStatus,
-  type FieldReviewAction,
-  type ExportFormat,
-  PIPELINE_STAGES,
-  STAGE_PROGRESS,
-  stageToStatus,
-  classifySample,
-  buildSampleFields,
-  docflowDocuments,
-  docflowBatches,
-  docflowSchemas,
-  docflowJobs,
-  docflowExports,
-  docflowWorkers,
-} from "./data";
-import { InboxView } from "./components/InboxView";
-import { UploadDialog } from "./components/UploadDialog";
-import { DocumentsView } from "./components/DocumentsView";
-import { DocumentViewer } from "./components/DocumentViewer";
-import { ReviewQueueView } from "./components/ReviewQueueView";
-import { BatchesView } from "./components/BatchesView";
-import { SchemasView } from "./components/SchemasView";
-import { JobsView } from "./components/JobsView";
-import { ExportsView } from "./components/ExportsView";
-import { AnalyticsView } from "./components/AnalyticsView";
-import { SettingsView } from "./components/SettingsView";
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
 
-type TabKey =
-  | "inbox"
-  | "documents"
-  | "batches"
-  | "reviewQueue"
-  | "schemas"
-  | "jobs"
-  | "exports"
-  | "analytics"
-  | "settings";
+function statusTone(status: string) {
+  if (status === "ACTIVE") return "bg-lime/10 text-lime";
+  if (status === "FAILED") return "bg-rose/10 text-rose";
+  if (status === "ARCHIVED") return "bg-muted text-muted-foreground";
+  return "bg-amber/10 text-amber";
+}
 
-const ACTIVE_STAGES: DocPipelineStage[] = [
-  "ingest",
-  "parse",
-  "ocr",
-  "classify",
-  "extract",
-  "validate",
-];
+function DocumentFlowContent() {
+  const { session } = useAuth();
+  const { locale } = useLocale();
+  const t = useCallback((key: string, params?: Record<string, string | number>) => translateText(key, locale, params), [locale]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [documents, setDocuments] = useState<DocumentDto[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export function DocumentFlowView() {
-  const { t } = useLocale();
-  const [tab, setTab] = useState<TabKey>("inbox");
-  const [documents, setDocuments] = useState<DocRecord[]>(docflowDocuments);
-  const [batches] = useState<DocBatch[]>(docflowBatches);
-  const [schemas, setSchemas] = useState<ExtractionSchema[]>(docflowSchemas);
-  const [jobs] = useState<DocJob[]>(docflowJobs);
-  const [exportsList, setExportsList] = useState<DocExport[]>(docflowExports);
-  const [workers] = useState<DocWorker[]>(docflowWorkers);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const page = await fetchDocuments(search);
+      setDocuments(page.items);
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("docflow.runtime.loadFailed"));
+    } finally {
+      setLoading(false);
+    }
+  }, [search]);
 
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [viewerDocId, setViewerDocId] = useState<string | null>(null);
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Pipeline simulation — every 1.5 s, advance any document that is in an
-  // active pipeline stage. Stop at "review" (awaiting human action) or
-  // "export" (terminal). Uses the functional setState form so the interval
-  // callback always sees the latest document state.
-  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const interval = setInterval(() => {
-      setDocuments((prev) => {
-        let changed = false;
-        const next = prev.map((doc) => {
-          if (!ACTIVE_STAGES.includes(doc.stage)) return doc;
-          const idx = PIPELINE_STAGES.indexOf(doc.stage);
-          const nextStage = PIPELINE_STAGES[idx + 1] as DocPipelineStage | undefined;
-          if (!nextStage) return doc;
-          changed = true;
-
-          let classification = doc.classification;
-          let confidence = doc.confidence;
-          let ocrLang = doc.ocrLang;
-          let fields = doc.fields;
-          let status: DocumentStatus = stageToStatus(nextStage);
-          let versions = doc.versions;
-
-          if (nextStage === "classify" && !classification) {
-            const sample = classifySample(doc.filename);
-            classification = sample.classification;
-            confidence = sample.confidence;
-            ocrLang = sample.ocrLang ?? ocrLang;
-            versions = [
-              ...versions,
-              {
-                version: versions.length + 1,
-                editedAt: new Date().toISOString(),
-                editedBy: "AI Classifier",
-                note: `Classified as ${classification}`,
-              },
-            ];
-          }
-          if (nextStage === "extract" && fields.length === 0 && classification) {
-            fields = buildSampleFields(classification, doc.filename);
-            versions = [
-              ...versions,
-              {
-                version: versions.length + 1,
-                editedAt: new Date().toISOString(),
-                editedBy: "AI Extractor",
-                note: "Initial extraction",
-              },
-            ];
-          }
-          if (nextStage === "review") {
-            status = "reviewed";
-            versions = [
-              ...versions,
-              {
-                version: versions.length + 1,
-                editedAt: new Date().toISOString(),
-                editedBy: "Pipeline",
-                note: "Awaiting human review",
-              },
-            ];
-          }
-
-          return {
-            ...doc,
-            stage: nextStage,
-            status,
-            progressPct: STAGE_PROGRESS[nextStage],
-            classification,
-            confidence,
-            ocrLang,
-            fields,
-            versions,
-            updatedAt: new Date().toISOString(),
-          };
-        });
-        return changed ? next : prev;
-      });
-    }, 1500);
-    return () => clearInterval(interval);
-  }, []);
-
-  // The viewer document is derived from `documents` so the viewer always
-  // shows the latest pipeline state without needing a sync effect.
-  const viewerDoc = viewerDocId
-    ? documents.find((d) => d.id === viewerDocId) ?? null
-    : null;
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Actions
-  // ─────────────────────────────────────────────────────────────────────────
-  const handleUploaded = useCallback((docs: DocRecord[]) => {
-    setDocuments((prev) => [...docs, ...prev]);
-    setTab("inbox");
-  }, []);
-
-  const updateDoc = useCallback((updated: DocRecord) => {
-    setDocuments((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
-  }, []);
-
-  const openViewer = useCallback((doc: DocRecord) => setViewerDocId(doc.id), []);
-  const closeViewer = useCallback(() => setViewerDocId(null), []);
-
-  const approveDoc = useCallback((id: string) => {
-    setDocuments((prev) =>
-      prev.map((d) =>
-        d.id === id
-          ? {
-              ...d,
-              status: "approved",
-              stage: "export",
-              progressPct: 100,
-              version: d.version + 1,
-              updatedAt: new Date().toISOString(),
-              versions: [
-                ...d.versions,
-                {
-                  version: d.version + 1,
-                  editedAt: new Date().toISOString(),
-                  editedBy: "Aram Hayrapetyan",
-                  note: "Approved for export",
-                },
-              ],
-            }
-          : d,
-      ),
-    );
-  }, []);
-
-  const rejectDoc = useCallback((id: string) => {
-    setDocuments((prev) =>
-      prev.map((d) =>
-        d.id === id
-          ? {
-              ...d,
-              status: "rejected",
-              updatedAt: new Date().toISOString(),
-              version: d.version + 1,
-              versions: [
-                ...d.versions,
-                {
-                  version: d.version + 1,
-                  editedAt: new Date().toISOString(),
-                  editedBy: "Aram Hayrapetyan",
-                  note: "Rejected",
-                },
-              ],
-            }
-          : d,
-      ),
-    );
-  }, []);
-
-  const deleteDoc = useCallback((id: string) => {
-    setDocuments((prev) => prev.filter((d) => d.id !== id));
-  }, []);
-
-  const bulkAction = useCallback(
-    (ids: string[], action: "classify" | "extract" | "approve" | "delete") => {
-      setDocuments((prev) => {
-        if (action === "delete") return prev.filter((d) => !ids.includes(d.id));
-        return prev.map((d) => {
-          if (!ids.includes(d.id)) return d;
-          if (action === "classify") {
-            const sample = classifySample(d.filename);
-            return {
-              ...d,
-              classification: sample.classification,
-              confidence: sample.confidence,
-              ocrLang: sample.ocrLang ?? d.ocrLang,
-              stage: "classify" as DocPipelineStage,
-              status: "classified" as DocumentStatus,
-              progressPct: STAGE_PROGRESS.classify,
-              updatedAt: new Date().toISOString(),
-            };
-          }
-          if (action === "extract") {
-            const cls = d.classification ?? classifySample(d.filename).classification;
-            return {
-              ...d,
-              classification: cls,
-              confidence: d.confidence ?? 0.88,
-              fields: d.fields.length ? d.fields : buildSampleFields(cls, d.filename),
-              stage: "extract" as DocPipelineStage,
-              status: "extracted" as DocumentStatus,
-              progressPct: STAGE_PROGRESS.extract,
-              updatedAt: new Date().toISOString(),
-            };
-          }
-          if (action === "approve") {
-            return {
-              ...d,
-              status: "approved" as DocumentStatus,
-              stage: "export" as DocPipelineStage,
-              progressPct: 100,
-              updatedAt: new Date().toISOString(),
-            };
-          }
-          return d;
-        });
-      });
-    },
-    [],
-  );
-
-  const acceptField = useCallback((docId: string, fieldKey: string) => {
-    setDocuments((prev) =>
-      prev.map((d) =>
-        d.id === docId
-          ? {
-              ...d,
-              fields: d.fields.map((f) =>
-                f.key === fieldKey
-                  ? {
-                      ...f,
-                      reviewed: true,
-                      reviewAction: "accept" as FieldReviewAction,
-                      validation: "valid" as const,
-                    }
-                  : f,
-              ),
-              updatedAt: new Date().toISOString(),
-            }
-          : d,
-      ),
-    );
-  }, []);
-
-  const saveSchema = useCallback((schema: ExtractionSchema) => {
-    setSchemas((prev) => {
-      const idx = prev.findIndex((s) => s.id === schema.id);
-      if (idx === -1) return [...prev, schema];
-      return prev.map((s) => (s.id === schema.id ? schema : s));
+    let cancelled = false;
+    void fetchDocuments().then((page) => {
+      if (cancelled) return;
+      setDocuments(page.items);
+      setError(null);
+    }).catch((cause) => {
+      if (!cancelled) setError(cause instanceof Error ? cause.message : t("docflow.runtime.loadFailed"));
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
-  }, []);
+    return () => { cancelled = true; };
+  }, [t]);
 
-  const deleteSchema = useCallback((id: string) => {
-    setSchemas((prev) => prev.filter((s) => s.id !== id));
-  }, []);
+  const canUpload = session.activeOrganization.role !== "VIEWER";
+  const canArchive = ["OWNER", "ADMIN", "MANAGER"].includes(session.activeOrganization.role);
+  const available = useMemo(() => documents.filter((document) =>
+    document.status === "ACTIVE" && ["CLEAN", "NOT_REQUIRED"].includes(document.scanStatus ?? "")), [documents]);
 
-  const queueExport = useCallback((format: ExportFormat) => {
-    const target =
-      format === "csv"
-        ? "Finance — CSV bundle"
-        : format === "json"
-          ? "Data lake (S3)"
-          : format === "erp_quickbooks"
-            ? "QuickBooks Online"
-            : format === "erp_sap"
-              ? "SAP S/4HANA"
-              : "Microsoft Dynamics";
-    const ex: DocExport = {
-      id: "ex_" + Math.random().toString(36).slice(2, 6),
-      orgId: "org_haydev",
-      target,
-      format,
-      records: 0,
-      status: "queued",
-      createdAt: new Date().toISOString(),
-      createdByName: "Aram Hayrapetyan",
-    };
-    setExportsList((prev) => [ex, ...prev]);
-  }, []);
+  const uploadFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    if (files.length > 10) { toast.error(t("docflow.runtime.maxFiles")); return; }
+    setUploading(true);
+    let completed = 0;
+    try {
+      for (const file of Array.from(files)) {
+        if (file.size > MAX_FILE_BYTES) { toast.error(t("docflow.runtime.fileTooLarge", { name: file.name })); continue; }
+        try { await uploadDocumentFile(file); completed += 1; }
+        catch (cause) { toast.error(`${file.name}: ${cause instanceof Error ? cause.message : t("docflow.runtime.uploadFailed")}`); }
+      }
+      if (completed) {
+        toast.success(t("docflow.runtime.uploadStored", { count: completed }));
+        await refresh();
+      }
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
 
-  const rerunExport = useCallback((id: string) => {
-    setExportsList((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? { ...e, status: "queued", records: 0, createdAt: new Date().toISOString() }
-          : e,
-      ),
-    );
-  }, []);
-
-  const downloadExport = useCallback((_id: string) => {
-    // Mock — in production this would stream the file from object storage.
-  }, []);
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Tab metadata
-  // ─────────────────────────────────────────────────────────────────────────
-  const TABS: { key: TabKey; icon: typeof InboxIcon; labelKey: string }[] = useMemo(
-    () => [
-      { key: "inbox", icon: InboxIcon, labelKey: "docflow.tab.inbox" },
-      { key: "documents", icon: FileText, labelKey: "docflow.tab.documents" },
-      { key: "batches", icon: Layers, labelKey: "docflow.tab.batches" },
-      { key: "reviewQueue", icon: ClipboardCheck, labelKey: "docflow.tab.reviewQueue" },
-      { key: "schemas", icon: FileSearch, labelKey: "docflow.tab.schemas" },
-      { key: "jobs", icon: Cpu, labelKey: "docflow.tab.jobs" },
-      { key: "exports", icon: FileOutput, labelKey: "docflow.tab.exports" },
-      { key: "analytics", icon: BarChart3, labelKey: "docflow.tab.analytics" },
-      { key: "settings", icon: SettingsIcon, labelKey: "docflow.tab.settings" },
-    ],
-    [],
-  );
-
-  const inboxCount = documents.filter(
-    (d) => ACTIVE_STAGES.includes(d.stage) || d.status === "pending" || d.status === "processing",
-  ).length;
-  const reviewCount = documents.filter(
-    (d) => d.fields.some((f) => !f.reviewed || f.confidence < 0.9 || f.validation === "warning" || f.validation === "invalid"),
-  ).length;
-  const queuedJobs = jobs.filter((j) => j.status === "queued" || j.status === "running").length;
-
-  const counts: Partial<Record<TabKey, number>> = {
-    inbox: inboxCount,
-    reviewQueue: reviewCount,
-    jobs: queuedJobs,
+  const archive = async (document: DocumentDto) => {
+    try {
+      await archiveDocumentRequest(document.id);
+      toast.success(t("docflow.runtime.archived", { title: document.title }));
+      await refresh();
+    } catch (cause) { toast.error(cause instanceof Error ? cause.message : t("docflow.runtime.archiveFailed")); }
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-amber/10 text-amber glow-cyan">
-              <ScanLine size={20} />
-            </span>
-            <span className="text-gradient-brand">{t("docflow.title")}</span>
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("docflow.subtitle")}</p>
+    <div className="mx-auto w-full max-w-[1400px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="grid size-11 place-items-center rounded-xl bg-amber/10 text-amber"><FileText /></span>
+          <div><h1 className="text-2xl font-semibold text-gradient-brand">DocumentFlow</h1><p className="text-sm text-muted-foreground">{t("docflow.runtime.subtitle")}</p></div>
         </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => void refresh()} disabled={loading}><RefreshCw className="mr-2 size-4" />{t("common.refresh")}</Button>
+          {canUpload && <Button onClick={() => inputRef.current?.click()} disabled={uploading}><Upload className="mr-2 size-4" />{uploading ? t("docflow.upload.uploading") : t("docflow.inbox.upload")}</Button>}
+          <input ref={inputRef} className="hidden" type="file" multiple accept={ACCEPT} onChange={(event) => void uploadFiles(event.target.files)} />
+        </div>
+      </header>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-border bg-card p-4"><p className="text-xs text-muted-foreground">{t("docflow.runtime.persisted")}</p><p className="mt-1 text-2xl font-semibold">{documents.length}</p></div>
+        <div className="rounded-xl border border-border bg-card p-4"><p className="text-xs text-muted-foreground">{t("docflow.runtime.released")}</p><p className="mt-1 text-2xl font-semibold text-lime">{available.length}</p></div>
+        <div className="rounded-xl border border-border bg-card p-4"><p className="text-xs text-muted-foreground">{t("docflow.runtime.securityBoundary")}</p><p className="mt-2 flex items-center gap-2 text-sm"><ShieldCheck className="size-4 text-cyan" />{session.activeOrganization.name}</p></div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="w-full">
-        <div className="overflow-x-auto pb-1">
-          <TabsList className="flex h-auto w-max gap-0.5 bg-card/60 p-1">
-            {TABS.map((tb) => (
-              <TabsTrigger
-                key={tb.key}
-                value={tb.key}
-                className="gap-1.5 px-3 py-1.5 text-xs data-[state=active]:bg-lime/10 data-[state=active]:text-lime"
-              >
-                <tb.icon size={14} />
-                <span className="whitespace-nowrap">{t(tb.labelKey)}</span>
-                {counts[tb.key] !== undefined && counts[tb.key]! > 0 && (
-                  <span
-                    className={cn(
-                      "ml-1 rounded px-1.5 py-0 text-[10px] font-mono tabular-nums",
-                      tb.key === "reviewQueue"
-                        ? "bg-amber/15 text-amber"
-                        : tb.key === "jobs"
-                          ? "bg-cyan/15 text-cyan"
-                          : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {counts[tb.key]}
-                  </span>
-                )}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+      <form className="relative max-w-lg" onSubmit={(event) => { event.preventDefault(); void refresh(); }}>
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("docflow.runtime.search")} className="pl-9" maxLength={200} />
+      </form>
+
+      {error ? <div className="rounded-xl border border-destructive/40 p-6"><p>{error}</p><Button className="mt-3" onClick={() => void refresh()}>{t("common.retry")}</Button></div> : loading ? <div className="grid min-h-52 place-items-center"><Loader2 className="size-7 animate-spin text-cyan" /></div> : (
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-left text-muted-foreground"><tr><th className="p-3">{t("docflow.runtime.document")}</th><th className="p-3">{t("docflow.runtime.source")}</th><th className="p-3">{t("docflow.viewer.version")}</th><th className="p-3">{t("docflow.runtime.integrity")}</th><th className="p-3">{t("common.status")}</th><th className="p-3 text-right">{t("common.actions")}</th></tr></thead>
+            <tbody>{documents.map((document) => {
+              const downloadable = document.status === "ACTIVE" && ["CLEAN", "NOT_REQUIRED"].includes(document.scanStatus ?? "");
+              return <tr key={document.id} className="border-t border-border align-top">
+                <td className="p-3"><p className="max-w-sm truncate font-medium">{document.title}</p><p className="mt-1 text-xs text-muted-foreground">{document.filename} · {formatBytes(document.sizeBytes)}</p></td>
+                <td className="p-3"><p>{t(`docflow.runtime.source.${document.sourceType.toLowerCase()}`)}</p><p className="text-xs text-muted-foreground">{document.sourceId ?? t("docflow.runtime.manualUpload")}</p></td>
+                <td className="p-3">v{document.currentVersionNumber}</td>
+                <td className="p-3 font-mono text-xs">{document.currentVersion?.sha256 ? `${document.currentVersion.sha256.slice(0, 12)}…` : "—"}</td>
+                <td className="p-3"><span className={`rounded-full px-2 py-1 text-xs ${statusTone(document.status)}`}>{t(`docflow.status.${document.status.toLowerCase()}`)}</span><p className="mt-1 text-xs text-muted-foreground">{document.scanStatus ? t(`docflow.runtime.scan.${document.scanStatus.toLowerCase()}`) : t("docflow.runtime.noArtifact")}</p></td>
+                <td className="p-3"><div className="flex justify-end gap-1">
+                  <Button asChild={downloadable} variant="ghost" size="sm" disabled={!downloadable} title={downloadable ? t("docflow.runtime.authorizedDownload") : t("docflow.runtime.notReleased")}>{downloadable ? <a href={`/api/documents/${encodeURIComponent(document.id)}/download`}><Download className="size-4" /></a> : <span><Download className="size-4" /></span>}</Button>
+                  {canArchive && <Button variant="ghost" size="sm" onClick={() => void archive(document)} title={t("docflow.runtime.archive")}><Archive className="size-4" /></Button>}
+                </div></td>
+              </tr>;
+            })}</tbody>
+          </table>
+          {documents.length === 0 && <p className="p-10 text-center text-muted-foreground">{t("docflow.runtime.empty")}</p>}
         </div>
-
-        {/* Tab body */}
-        <div className="mt-4">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={tab}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.18 }}
-            >
-              {tab === "inbox" && (
-                <InboxView
-                  documents={documents}
-                  onOpenViewer={openViewer}
-                  onOpenUpload={() => setUploadOpen(true)}
-                  onApprove={approveDoc}
-                  onBulkAction={bulkAction}
-                />
-              )}
-              {tab === "documents" && (
-                <DocumentsView documents={documents} onOpenViewer={openViewer} />
-              )}
-              {tab === "batches" && (
-                <BatchesView
-                  batches={batches}
-                  documents={documents}
-                  onOpenViewer={openViewer}
-                />
-              )}
-              {tab === "reviewQueue" && (
-                <ReviewQueueView
-                  documents={documents}
-                  onOpenViewer={openViewer}
-                  onAcceptField={acceptField}
-                />
-              )}
-              {tab === "schemas" && (
-                <SchemasView schemas={schemas} onSave={saveSchema} onDelete={deleteSchema} />
-              )}
-              {tab === "jobs" && <JobsView jobs={jobs} workers={workers} />}
-              {tab === "exports" && (
-                <ExportsView
-                  exports={exportsList}
-                  onQueueExport={queueExport}
-                  onRerun={rerunExport}
-                  onDownload={downloadExport}
-                />
-              )}
-              {tab === "analytics" && <AnalyticsView />}
-              {tab === "settings" && <SettingsView />}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </Tabs>
-
-      {/* Upload dialog */}
-      <UploadDialog
-        open={uploadOpen}
-        onOpenChange={setUploadOpen}
-        onUploaded={handleUploaded}
-        uploaderId="usr_owner"
-        uploaderName="Aram Hayrapetyan"
-      />
-
-      {/* Document viewer */}
-      <DocumentViewer
-        doc={viewerDoc}
-        onClose={closeViewer}
-        onUpdateDoc={updateDoc}
-        onApprove={approveDoc}
-        onReject={rejectDoc}
-      />
+      )}
+      <p className="text-xs text-muted-foreground">{t("docflow.runtime.securityHint")}</p>
     </div>
   );
 }
+
+export function DocumentFlowView() {
+  const { session } = useAuth();
+  return <DocumentFlowContent key={session.activeOrganization.id} />;
+}
+
+export default DocumentFlowView;

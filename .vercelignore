@@ -1,0 +1,34 @@
+# Local build and dependency caches must never be uploaded to Vercel.
+node_modules/
+.next/
+.npm-cache/
+.git/
+.vercel/
+.tmp/
+.artifacts/
+deploy/
+.kilo/
+tool-results/
+dev.log
+
+# Local databases, backups and migration evidence are not runtime assets.
+/db/
+/backups/
+/backup/
+/upload/
+/download/
+*.db
+*.sqlite
+*.sqlite3
+*.zip
+
+# Tests, local tooling and operator documentation are not needed in the deployment bundle.
+tests/
+docs/
+.zscripts/
+prisma/sqlite-migrations-archive/
+
+# Never send local secrets or environment files to Vercel.
+.env
+.env.*
+!.env.example

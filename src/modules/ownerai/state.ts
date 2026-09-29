@@ -122,6 +122,20 @@ function applyResponse(state: OwnerAiState, resp: OwnerAiResponse): Partial<Owne
   };
 }
 
+const EMPTY_TENANT_STATE = {
+  conversations: [],
+  activeConversationId: null,
+  agentRuns: [],
+  toolCalls: [],
+  approvals: [],
+  actions: [],
+  auditEvents: [],
+  config: null,
+  isProcessing: false,
+  initialized: false,
+  lastError: null,
+} satisfies Partial<OwnerAiState>;
+
 export const useOwnerAiStore = create<OwnerAiState>((set, get) => ({
   conversations: [],
   activeConversationId: null,
@@ -243,7 +257,6 @@ export const useOwnerAiStore = create<OwnerAiState>((set, get) => ({
           messages: history,
           conversationId: conv?.id,
           mode,
-          orgId,
           activeModule,
         } as OwnerAiRequest),
       });
@@ -321,7 +334,6 @@ export const useOwnerAiStore = create<OwnerAiState>((set, get) => ({
         body: JSON.stringify({
           approvalId,
           decision,
-          decidedBy,
           reason,
         } as OwnerAiApproveRequest),
       });
@@ -354,6 +366,11 @@ export const useOwnerAiStore = create<OwnerAiState>((set, get) => ({
     }
   },
 }));
+
+/** Clear all tenant-derived browser state on login, logout, or org switch. */
+export function resetOwnerAiClientState(): void {
+  useOwnerAiStore.setState(EMPTY_TENANT_STATE);
+}
 
 // Helper selectors (re-exported for components)
 export function activeConversation(state: OwnerAiState): Conversation | undefined {

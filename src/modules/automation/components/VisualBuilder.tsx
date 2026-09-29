@@ -51,6 +51,7 @@ import {
   type ActionType,
   type ConditionOp,
 } from "../types";
+import { localizeAutomationText } from "../localization";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,7 +125,7 @@ function configFromRows(rows: ConfigRow[]): Record<string, unknown> {
 }
 
 export function VisualBuilder({ automation, onPatch }: Props) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [name, setName] = useState(automation.name);
   const [description, setDescription] = useState(automation.description ?? "");
   const [trigger, setTrigger] = useState<Trigger>(automation.trigger);
@@ -339,7 +340,7 @@ export function VisualBuilder({ automation, onPatch }: Props) {
                 <SelectContent>
                   {TRIGGER_TYPES.map((tt) => (
                     <SelectItem key={tt} value={tt}>
-                      <span className="font-mono text-xs">{tt}</span>
+                      <span className="text-xs">{localizeAutomationText(tt, locale)}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -559,7 +560,7 @@ function ConditionRow({
   onPatch: (patch: Partial<Condition>) => void;
   onRemove: () => void;
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   return (
     <div className="rounded-lg border border-border bg-card/60 p-2.5">
       <div className="mb-2 flex items-center justify-between">
@@ -596,7 +597,7 @@ function ConditionRow({
           <SelectContent>
             {CONDITION_OPS.map((op) => (
               <SelectItem key={op} value={op} className="font-mono text-xs">
-                {op}
+                {localizeAutomationText(op, locale)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -639,7 +640,7 @@ function ActionBlock({
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const risky = isRiskyAction(action.type);
   const requiresApproval = action.requiresApproval ?? false;
 
@@ -698,7 +699,7 @@ function ActionBlock({
         <SelectContent>
           {ACTION_TYPES.map((at) => (
             <SelectItem key={at} value={at} className="font-mono text-xs">
-              {isRiskyAction(at) ? "⚠ " : ""}{at}
+              {isRiskyAction(at) ? "⚠ " : ""}{localizeAutomationText(at, locale)}
             </SelectItem>
           ))}
         </SelectContent>

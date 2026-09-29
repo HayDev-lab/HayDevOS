@@ -1,0 +1,15 @@
+SELECT
+  (SELECT COUNT(*) FROM public."Organization") AS organizations,
+  (SELECT COUNT(*) FROM public."User") AS users,
+  (SELECT COUNT(*) FROM public."Quote") AS quotes,
+  (SELECT COUNT(*) FROM public."QuoteVersion") AS quote_versions,
+  (SELECT COUNT(*) FROM public."QuoteApproval") AS quote_approvals,
+  (SELECT COUNT(*) FROM public."GeneratedQuoteDocument") AS quote_documents,
+  (SELECT COUNT(*) FROM public._prisma_migrations WHERE migration_name = '20260925070000_quoteflow_production_domain' AND finished_at IS NOT NULL AND rolled_back_at IS NULL AND checksum = '26b1dfb7912fe092e09db4b39a0bf6ebe9c4746ba04a1fe971d5094964552e70') AS gate4_ledger_match,
+  (SELECT COUNT(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relname IN ('Quote','QuoteItem','QuoteVersion','QuoteApproval','QuoteEvent','QuoteNumberCounter','QuoteSettings','GeneratedQuoteDocument','Product','Customer') AND c.relrowsecurity) AS quoteflow_rls_tables,
+  (SELECT COUNT(*) FROM information_schema.role_table_grants WHERE table_schema = 'public' AND grantee IN ('anon','authenticated')) AS browser_table_grants,
+  (SELECT COUNT(*) FROM information_schema.role_table_grants WHERE table_schema = 'public' AND table_name = '_prisma_migrations' AND grantee = 'haydev_runtime') AS runtime_ledger_grants,
+  (SELECT COUNT(*) FROM information_schema.role_table_grants WHERE table_schema = 'public' AND table_name IN ('QuoteVersion','QuoteApproval','QuoteEvent','QuoteNumberCounter','QuoteSettings','GeneratedQuoteDocument') AND grantee = 'haydev_runtime') AS runtime_new_table_grants,
+  (SELECT COUNT(*) FROM pg_constraint WHERE connamespace = 'public'::regnamespace AND conname IN ('QuoteItem_quoteId_orgId_fkey','QuoteItem_productId_orgId_fkey','QuoteVersion_quoteId_orgId_fkey','QuoteApproval_quoteVersionId_quoteId_orgId_fkey','GeneratedQuoteDocument_quoteVersionId_quoteId_orgId_fkey')) AS tenant_fk_constraints,
+  (SELECT COUNT(*) FROM pg_trigger WHERE NOT tgisinternal AND tgname IN ('QuoteVersion_runtime_immutable','QuoteEvent_runtime_immutable','GeneratedQuoteDocument_runtime_immutable','QuoteApproval_runtime_protected','Quote_version_links_same_quote')) AS history_triggers,
+  (SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolbypassrls FROM pg_roles WHERE rolname = 'haydev_runtime') AS runtime_has_elevated_privilege;

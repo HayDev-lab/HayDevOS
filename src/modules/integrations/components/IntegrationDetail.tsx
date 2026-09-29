@@ -52,6 +52,11 @@ import {
   MaskedField,
   HealthDot,
 } from "../shared";
+import {
+  localizeAuditActor,
+  localizeAuditMessage,
+  localizeSyncError,
+} from "../localization";
 
 import {
   Sheet,
@@ -142,10 +147,10 @@ export function IntegrationDetail({
                           </div>
                           <div className="flex-1 pb-2">
                             <div className="text-[11px] font-medium text-foreground">
-                              {entry.message}
+                              {localizeAuditMessage(entry.message, locale)}
                             </div>
                             <div className="mt-0.5 text-[10px] text-muted-foreground">
-                              {formatDateTime(entry.createdAt, locale)} · {entry.actor} · {entry.ip}
+                              {formatDateTime(entry.createdAt, locale)} · {localizeAuditActor(entry.actor, locale)} · {entry.ip}
                             </div>
                           </div>
                         </div>
@@ -201,16 +206,21 @@ export function IntegrationDetail({
                                 : "border-rose/30 bg-rose/5",
                             )}
                           >
-                            <code className="font-mono text-[11px] text-foreground">{scope}</code>
+                            <span>
+                              <span className="block text-[11px] font-medium text-foreground">
+                                {t(`integration.scope.${scope}`)}
+                              </span>
+                              <code className="block font-mono text-[9px] text-muted-foreground">{scope}</code>
+                            </span>
                             {granted ? (
                               <Badge className="bg-lime/15 text-lime border-lime/30 px-1.5 py-0 text-[10px]">
                                 <CheckCircle2 className="mr-0.5 h-2.5 w-2.5" />
-                                granted
+                                {t("integration.connect.granted")}
                               </Badge>
                             ) : (
                               <Badge className="bg-rose/15 text-rose border-rose/30 px-1.5 py-0 text-[10px]">
                                 <XCircle className="mr-0.5 h-2.5 w-2.5" />
-                                missing
+                                {t("integration.connect.missing")}
                               </Badge>
                             )}
                           </div>
@@ -257,7 +267,7 @@ export function IntegrationDetail({
                           </div>
                           {run.error && (
                             <div className="mt-0.5 truncate text-[10px] text-rose">
-                              {run.error}
+                              {localizeSyncError(run.error, locale)}
                             </div>
                           )}
                         </div>
@@ -295,7 +305,9 @@ export function IntegrationDetail({
                                   : "bg-rose/15 text-rose border-rose/30",
                               )}
                             >
-                              HMAC {wh.hmacVerified ? "verified" : "unverified"}
+                              HMAC {wh.hmacVerified
+                                ? t("integration.webhooks.verified")
+                                : t("integration.webhooks.unverified")}
                             </Badge>
                           </div>
                           <code className="mt-1 block truncate font-mono text-[10px] text-foreground">
@@ -344,7 +356,7 @@ export function IntegrationDetail({
                                   : "text-rose",
                             )}
                           >
-                            {ev.status}
+                            {t(`integration.webhooks.status.${ev.status}`)}
                           </span>
                         </div>
                       ))}
@@ -428,6 +440,7 @@ function Section({
 }
 
 function StatusPill({ status }: { status: SyncRun["status"] }) {
+  const { t } = useLocale();
   const cls =
     status === "success"
       ? "bg-success/15 text-success border-success/30"
@@ -443,7 +456,7 @@ function StatusPill({ status }: { status: SyncRun["status"] }) {
         cls,
       )}
     >
-      {status}
+      {t(`integration.sync.status.${status}`)}
     </span>
   );
 }

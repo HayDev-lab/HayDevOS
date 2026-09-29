@@ -10,7 +10,13 @@
  * Approvals / Audit / Settings tabs.
  */
 
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+
+import { withTenantApi } from "@/lib/api/handler";
+import {
+  ownerAiDemoEnabled,
+  ownerAiProviderConfigured,
+} from "@/lib/owner-ai/provider";
 
 import {
   listConversations,
@@ -21,59 +27,53 @@ import {
   listAuditEvents,
   getSystemConfig,
   getAuditStats,
+  withPersistentAuditStore,
 } from "../audit";
 import type { OwnerAiStateResponse } from "../types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Cached provider/model detection (run once per server process).
-let cachedProvider: "z-ai-web-dev-sdk" | "offline-fallback" | null = null;
-let cachedModel: string | null = null;
-
-async function detectProvider(): Promise<{
-  provider: "z-ai-web-dev-sdk" | "offline-fallback";
+function detectProvider(): {
+  provider: "openai-compatible" | "offline-fallback" | "unavailable";
   model: string | null;
-}> {
-  if (cachedProvider !== null) {
-    return { provider: cachedProvider, model: cachedModel };
+} {
+  if (ownerAiProviderConfigured()) {
+    return {
+      provider: "openai-compatible",
+      model: process.env.OWNER_AI_MODEL!.trim(),
+    };
   }
-  try {
-    const ZAIModule = await import("z-ai-web-dev-sdk");
-    const ZAI = ZAIModule.default;
-    const zai = await ZAI.create();
-    const resp = await zai.chat.completions.create({
-      messages: [
-        { role: "assistant", content: "Reply with the word ok." },
-        { role: "user", content: "ok?" },
-      ],
-      stream: false,
-      thinking: { type: "disabled" },
-    });
-    const model = (resp as { model?: string }).model ?? "glm-4-plus";
-    cachedProvider = "z-ai-web-dev-sdk";
-    cachedModel = model;
-    return { provider: cachedProvider, model: cachedModel };
-  } catch {
-    cachedProvider = "offline-fallback";
-    cachedModel = null;
-    return { provider: cachedProvider, model: cachedModel };
+  if (ownerAiDemoEnabled()) {
+    return { provider: "offline-fallback", model: null };
   }
+  return { provider: "unavailable", model: null };
 }
 
-export async function GET() {
-  const { provider, model } = await detectProvider();
-  const config = getSystemConfig(provider, model);
+export async function GET(req: NextRequest) {
+  return withTenantApi(req, {}, async (context) =>
+    withPersistentAuditStore(
+      {
+        orgId: context.orgId,
+        userId: context.userId,
+        scope: ["OWNER", "ADMIN"].includes(context.role) ? "tenant" : "user",
+      },
+      async () => {
+        const { provider, model } = detectProvider();
+        const config = getSystemConfig(provider, model);
 
-  const response: OwnerAiStateResponse = {
-    conversations: listConversations(),
-    agentRuns: listAgentRuns(),
-    toolCalls: listToolCalls(),
-    approvals: listApprovals(),
-    actions: listActions(),
-    auditEvents: listAuditEvents(),
-    config,
-    stats: getAuditStats(),
-  };
-  return NextResponse.json(response);
+        const response: OwnerAiStateResponse = {
+          conversations: listConversations(),
+          agentRuns: listAgentRuns(),
+          toolCalls: listToolCalls(),
+          approvals: listApprovals(),
+          actions: listActions(),
+          auditEvents: listAuditEvents(),
+          config,
+          stats: getAuditStats(),
+        };
+        return NextResponse.json(response);
+      },
+    ),
+  );
 }

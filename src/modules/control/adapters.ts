@@ -41,8 +41,13 @@ import type {
   ModuleHealth,
   AttentionItem,
   AiInsight,
+  ControlTranslator,
 } from "./types";
 import { buildAttentionFeed, buildAiInsights, OWNER_NAMES, ownerName, WORKER_SNAPSHOT } from "./data";
+import { t as translateText } from "@/lib/i18n";
+
+const getTranslator = (translator?: ControlTranslator): ControlTranslator =>
+  translator ?? ((key, params) => translateText(key, "en", params));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Window helpers
@@ -168,16 +173,17 @@ export const MODULE_LABELS: Record<string, string> = {
 // Executive snapshot
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getExecutiveSnapshot(window: TimeWindow): ExecutiveSnapshot {
+export function getExecutiveSnapshot(window: TimeWindow, translator?: ControlTranslator): ExecutiveSnapshot {
+  const tr = getTranslator(translator);
   const range = resolveWindow(window);
-  const kpis = buildExecutiveKpis(range);
-  const attentionTop = buildAttentionFeed().slice(0, 5);
-  const moduleHealth = buildModuleHealth();
+  const kpis = buildExecutiveKpis(range, tr);
+  const attentionTop = buildAttentionFeed(tr).slice(0, 5);
+  const moduleHealth = buildModuleHealth(tr);
   const ecosystem = buildEcosystem(moduleHealth);
   return { window: range, kpis, attentionTop, moduleHealth, ecosystem };
 }
 
-function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
+function buildExecutiveKpis(range: WindowRange, tr: ControlTranslator): KpiCardData[] {
   const kpis: KpiCardData[] = [];
 
   // 1. Revenue (paid invoices in window)
@@ -203,7 +209,7 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
     }),
     moduleId: "erphub",
     sourceLabel: MODULE_LABELS.erphub,
-    hint: `${paidInWindow.length} paid invoices`,
+    hint: tr("control.text.hint.paidInvoices", { count: paidInWindow.length }),
     unit: "currency",
   });
 
@@ -215,12 +221,12 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
     labelKey: "control.kpi.pipeline",
     displayValue: formatCompact(pipeline),
     value: pipeline,
-    deltaPct: 8.1, // snapshot — illustrative delta
+    deltaPct: 0,
     tone: "cyan",
     sparkline: anchoredSparkline(pipeline / 1000).map((v) => v * 1000),
     moduleId: "leados",
     sourceLabel: MODULE_LABELS.leados,
-    hint: `${openLeads.length} open leads`,
+    hint: tr("control.text.hint.openLeads", { count: openLeads.length }),
     unit: "currency",
   });
 
@@ -231,12 +237,12 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
     labelKey: "control.kpi.activeLeads",
     displayValue: String(activeLeads),
     value: activeLeads,
-    deltaPct: deltaPct(activeLeads, activeLeads - 1),
+    deltaPct: activeLeads === 0 ? 0 : deltaPct(activeLeads, activeLeads - 1),
     tone: "amber",
     sparkline: anchoredSparkline(activeLeads),
     moduleId: "leados",
     sourceLabel: MODULE_LABELS.leados,
-    hint: "Open pipeline leads",
+    hint: tr("control.text.hint.openPipeline"),
   });
 
   // 4. Won deals (count in window)
@@ -252,7 +258,7 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
     sparkline: countSparkline(mockLeads.filter((l) => l.stage === "won"), (l) => l.updatedAt, range),
     moduleId: "leados",
     sourceLabel: MODULE_LABELS.leados,
-    hint: `Won in last ${range.days}d`,
+    hint: tr("control.text.hint.wonLastDays", { days: range.days }),
   });
 
   // 5. Quote sent value (sent quotes in window)
@@ -270,7 +276,7 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
     sparkline: countSparkline(mockQuotes.filter((q) => q.status === "sent"), (q) => q.createdAt, range).map((c) => c * 50_000),
     moduleId: "quoteflow",
     sourceLabel: MODULE_LABELS.quoteflow,
-    hint: `${sentInWindow.length} sent quotes`,
+    hint: tr("control.text.hint.sentQuotes", { count: sentInWindow.length }),
     unit: "currency",
   });
 
@@ -283,12 +289,12 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
     labelKey: "control.kpi.acceptRate",
     displayValue: `${acceptRate.toFixed(0)}%`,
     value: acceptRate,
-    deltaPct: 3.2,
+    deltaPct: 0,
     tone: "lime",
     sparkline: anchoredSparkline(acceptRate, 0.04),
     moduleId: "quoteflow",
     sourceLabel: MODULE_LABELS.quoteflow,
-    hint: `${accepted}/${decided} decided`,
+    hint: tr("control.text.hint.decided", { accepted, total: decided }),
     unit: "percent",
   });
 
@@ -301,12 +307,12 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
     labelKey: "control.kpi.docReview",
     displayValue: String(docReview.length),
     value: docReview.length,
-    deltaPct: deltaPct(docReview.length, docReview.length - 1),
+    deltaPct: docReview.length === 0 ? 0 : deltaPct(docReview.length, docReview.length - 1),
     tone: "amber",
     sparkline: anchoredSparkline(docReview.length),
     moduleId: "docsmart",
     sourceLabel: MODULE_LABELS.docsmart,
-    hint: "Awaiting reviewer sign-off",
+    hint: tr("control.text.hint.awaitingReview"),
   });
 
   // 8. Automation failures (sum of failed runs)
@@ -316,12 +322,14 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
     labelKey: "control.kpi.autoFailures",
     displayValue: formatCompact(autoFailures),
     value: autoFailures,
-    deltaPct: -2.1,
+    deltaPct: 0,
     tone: "rose",
     sparkline: anchoredSparkline(autoFailures, 0.06),
     moduleId: "autopilot",
     sourceLabel: MODULE_LABELS.autopilot,
-    hint: `${mockAutomations.filter((a) => a.runs.failed > 0).length} automations affected`,
+    hint: tr("control.text.hint.automationsAffected", {
+      count: mockAutomations.filter((automation) => automation.runs.failed > 0).length,
+    }),
   });
 
   // 9. SLA breaches (current count)
@@ -336,7 +344,7 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
     sparkline: anchoredSparkline(slaBreaches, 0.05),
     moduleId: "leados",
     sourceLabel: MODULE_LABELS.leados,
-    hint: "Lead response SLA",
+    hint: tr("control.text.hint.leadResponse"),
   });
 
   // 10. Overdue invoices
@@ -352,7 +360,7 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
     sparkline: anchoredSparkline(overdueTotal / 1000).map((v) => v * 1000),
     moduleId: "erphub",
     sourceLabel: MODULE_LABELS.erphub,
-    hint: `${overdueInv.length} invoices overdue`,
+    hint: tr("control.text.hint.overdueInvoices", { count: overdueInv.length }),
     unit: "currency",
   });
 
@@ -370,7 +378,7 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
     sparkline: anchoredSparkline(healthPct, 0.03),
     moduleId: "connect",
     sourceLabel: MODULE_LABELS.connect,
-    hint: `${connected}/${total} connected`,
+    hint: tr("control.text.hint.connected", { connected, total }),
     unit: "percent",
   });
 
@@ -381,7 +389,7 @@ function buildExecutiveKpis(range: WindowRange): KpiCardData[] {
 // Module health grid
 // ─────────────────────────────────────────────────────────────────────────────
 
-function buildModuleHealth(): ModuleHealthEntry[] {
+function buildModuleHealth(tr: ControlTranslator): ModuleHealthEntry[] {
   const out: ModuleHealthEntry[] = [];
 
   // LeadOS
@@ -391,9 +399,15 @@ function buildModuleHealth(): ModuleHealthEntry[] {
   out.push({
     moduleId: "leados",
     nameKey: "module.leados",
-    health: slaBreaches > 0 ? "critical" : leadsWarn > 0 ? "warning" : "healthy",
-    score: 1 - (slaBreaches + leadsWarn * 0.5) / Math.max(1, leadsTotal),
-    summary: slaBreaches > 0 ? `${slaBreaches} SLA breach${slaBreaches === 1 ? "" : "es"}` : leadsWarn > 0 ? `${leadsWarn} new leads awaiting response` : "Pipeline healthy",
+    health: leadsTotal === 0 ? "offline" : slaBreaches > 0 ? "critical" : leadsWarn > 0 ? "warning" : "healthy",
+    score: leadsTotal === 0 ? 0 : 1 - (slaBreaches + leadsWarn * 0.5) / leadsTotal,
+    summary: leadsTotal === 0
+      ? tr("control.text.health.noData")
+      : slaBreaches > 0
+      ? tr("control.text.health.slaBreaches", { count: slaBreaches })
+      : leadsWarn > 0
+        ? tr("control.text.health.leadsWaiting", { count: leadsWarn })
+        : tr("control.text.health.salesHealthy"),
     counts: { ok: leadsTotal - slaBreaches - leadsWarn, warn: leadsWarn, crit: slaBreaches },
   });
 
@@ -408,9 +422,15 @@ function buildModuleHealth(): ModuleHealthEntry[] {
   out.push({
     moduleId: "quoteflow",
     nameKey: "module.quoteflow",
-    health: qExpired > 0 ? "warning" : qExpiring > 0 ? "warning" : "healthy",
-    score: 1 - (qExpired + qExpiring * 0.5) / Math.max(1, qTotal),
-    summary: qExpired > 0 ? `${qExpired} expired quote${qExpired === 1 ? "" : "s"}` : qExpiring > 0 ? `${qExpiring} expiring soon` : "Quotes on track",
+    health: qTotal === 0 ? "offline" : qExpired > 0 ? "warning" : qExpiring > 0 ? "warning" : "healthy",
+    score: qTotal === 0 ? 0 : 1 - (qExpired + qExpiring * 0.5) / qTotal,
+    summary: qTotal === 0
+      ? tr("control.text.health.noData")
+      : qExpired > 0
+      ? tr("control.text.health.expiredQuotes", { count: qExpired })
+      : qExpiring > 0
+        ? tr("control.text.health.expiringQuotes", { count: qExpiring })
+        : tr("control.text.health.quotesHealthy"),
     counts: { ok: qTotal - qExpired - qExpiring, warn: qExpiring, crit: 0 },
   });
 
@@ -422,9 +442,13 @@ function buildModuleHealth(): ModuleHealthEntry[] {
   out.push({
     moduleId: "docsmart",
     nameKey: "module.docsmart",
-    health: dBacklog > 4 ? "warning" : dBacklog > 0 ? "warning" : "healthy",
-    score: 1 - dBacklog / Math.max(1, dTotal),
-    summary: dBacklog > 0 ? `${dBacklog} awaiting review` : "All documents processed",
+    health: dTotal === 0 ? "offline" : dBacklog > 4 ? "warning" : dBacklog > 0 ? "warning" : "healthy",
+    score: dTotal === 0 ? 0 : 1 - dBacklog / dTotal,
+    summary: dTotal === 0
+      ? tr("control.text.health.noData")
+      : dBacklog > 0
+      ? tr("control.text.health.documentsWaiting", { count: dBacklog })
+      : tr("control.text.health.documentsHealthy"),
     counts: { ok: dTotal - dBacklog, warn: dBacklog, crit: 0 },
   });
 
@@ -435,22 +459,33 @@ function buildModuleHealth(): ModuleHealthEntry[] {
   out.push({
     moduleId: "autopilot",
     nameKey: "module.autopilot",
-    health: aFailing > 2 ? "critical" : aFailing > 0 ? "warning" : "healthy",
-    score: 1 - (aFailing * 0.7 + aPaused * 0.2) / Math.max(1, aTotal),
-    summary: aFailing > 0 ? `${aFailing} automation${aFailing === 1 ? "" : "s"} with failures` : `${aTotal - aPaused} active automations`,
+    health: aTotal === 0 ? "offline" : aFailing > 2 ? "critical" : aFailing > 0 ? "warning" : "healthy",
+    score: aTotal === 0 ? 0 : 1 - (aFailing * 0.7 + aPaused * 0.2) / aTotal,
+    summary: aTotal === 0
+      ? tr("control.text.health.noData")
+      : aFailing > 0
+      ? tr("control.text.health.automationsFailing", { count: aFailing })
+      : tr("control.text.health.automationsActive", { count: aTotal - aPaused }),
     counts: { ok: aTotal - aFailing - aPaused, warn: aPaused, crit: aFailing },
   });
 
   // ERP Hub
   const invTotal = mockInvoices.length;
+  const erpTotal = invTotal + mockProducts.length;
   const invOverdue = mockInvoices.filter((i) => i.status === "overdue").length;
   const lowStock = mockProducts.filter((p) => p.stock <= 12).length;
   out.push({
     moduleId: "erphub",
     nameKey: "module.erphub",
-    health: invOverdue > 0 ? "critical" : lowStock > 0 ? "warning" : "healthy",
-    score: 1 - (invOverdue + lowStock * 0.4) / Math.max(1, invTotal),
-    summary: invOverdue > 0 ? `${invOverdue} overdue invoice${invOverdue === 1 ? "" : "s"}` : lowStock > 0 ? `${lowStock} low-stock SKU${lowStock === 1 ? "" : "s"}` : "Finances healthy",
+    health: erpTotal === 0 ? "offline" : invOverdue > 0 ? "critical" : lowStock > 0 ? "warning" : "healthy",
+    score: erpTotal === 0 ? 0 : 1 - (invOverdue + lowStock * 0.4) / erpTotal,
+    summary: erpTotal === 0
+      ? tr("control.text.health.noData")
+      : invOverdue > 0
+      ? tr("control.text.health.invoicesOverdue", { count: invOverdue })
+      : lowStock > 0
+        ? tr("control.text.health.lowStock", { count: lowStock })
+        : tr("control.text.health.financeHealthy"),
     counts: { ok: invTotal - invOverdue, warn: lowStock, crit: invOverdue },
   });
 
@@ -462,9 +497,15 @@ function buildModuleHealth(): ModuleHealthEntry[] {
   out.push({
     moduleId: "connect",
     nameKey: "module.connect",
-    health: iError > 0 ? "critical" : iDegraded > 0 ? "warning" : "healthy",
-    score: iTotal > 0 ? iConnected / iTotal : 1,
-    summary: iError > 0 ? `${iError} integration${iError === 1 ? "" : "s"} down` : iDegraded > 0 ? `${iDegraded} need re-auth` : `${iConnected}/${iTotal} connected`,
+    health: iTotal === 0 ? "offline" : iError > 0 ? "critical" : iDegraded > 0 ? "warning" : "healthy",
+    score: iTotal > 0 ? iConnected / iTotal : 0,
+    summary: iTotal === 0
+      ? tr("control.text.health.noData")
+      : iError > 0
+      ? tr("control.text.health.integrationsDown", { count: iError })
+      : iDegraded > 0
+        ? tr("control.text.health.integrationsReauth", { count: iDegraded })
+        : tr("control.text.hint.connected", { connected: iConnected, total: iTotal }),
     counts: { ok: iConnected, warn: iDegraded, crit: iError },
   });
 
@@ -514,11 +555,12 @@ function buildEcosystem(health: ModuleHealthEntry[]): ExecutiveSnapshot["ecosyst
 // Needs-attention items (window-aware)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getAttentionItems(window: TimeWindow): { window: WindowRange; items: AttentionItem[] } {
+export function getAttentionItems(window: TimeWindow, translator?: ControlTranslator): { window: WindowRange; items: AttentionItem[] } {
+  const tr = getTranslator(translator);
   const range = resolveWindow(window);
   // Attention items are derived from current state; the window affects what
   // we surface as "due soon" — for narrower windows, include INFO items too.
-  const all = buildAttentionFeed();
+  const all = buildAttentionFeed(tr);
   const items = range.days <= 1
     ? all
     : all;
@@ -529,7 +571,8 @@ export function getAttentionItems(window: TimeWindow): { window: WindowRange; it
 // Sales summary
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getSalesSummary(window: TimeWindow): SalesSummary {
+export function getSalesSummary(window: TimeWindow, translator?: ControlTranslator): SalesSummary {
+  const tr = getTranslator(translator);
   const range = resolveWindow(window);
   const openLeads = mockLeads.filter((l) => l.stage !== "won" && l.stage !== "lost");
   const pipeline = openLeads.reduce((s, l) => s + l.value, 0);
@@ -549,12 +592,12 @@ export function getSalesSummary(window: TimeWindow): SalesSummary {
       labelKey: "control.kpi.pipeline",
       displayValue: formatCompact(pipeline),
       value: pipeline,
-      deltaPct: 8.1,
+      deltaPct: 0,
       tone: "cyan",
       sparkline: anchoredSparkline(pipeline / 1000).map((v) => v * 1000),
       moduleId: "leados",
       sourceLabel: MODULE_LABELS.leados,
-      hint: `${openLeads.length} open leads`,
+      hint: tr("control.text.hint.openLeads", { count: openLeads.length }),
       unit: "currency",
     },
     {
@@ -567,7 +610,7 @@ export function getSalesSummary(window: TimeWindow): SalesSummary {
       sparkline: countSparkline(mockLeads, (l) => l.createdAt, range),
       moduleId: "leados",
       sourceLabel: MODULE_LABELS.leados,
-      hint: `${newLeadsInWindow} new in window`,
+      hint: tr("control.text.hint.newInPeriod", { count: newLeadsInWindow }),
     },
     {
       id: "sales-won",
@@ -579,19 +622,19 @@ export function getSalesSummary(window: TimeWindow): SalesSummary {
       sparkline: countSparkline(won, (l) => l.updatedAt, range),
       moduleId: "leados",
       sourceLabel: MODULE_LABELS.leados,
-      hint: `Won in last ${range.days}d`,
+      hint: tr("control.text.hint.wonLastDays", { days: range.days }),
     },
     {
       id: "sales-conversion",
       labelKey: "control.kpi.conversion",
       displayValue: `${conversionRate.toFixed(1)}%`,
       value: conversionRate,
-      deltaPct: 2.1,
+      deltaPct: 0,
       tone: "violet",
       sparkline: anchoredSparkline(conversionRate, 0.04),
       moduleId: "leados",
       sourceLabel: MODULE_LABELS.leados,
-      hint: `${won.length}/${totalLeads} lead→won`,
+      hint: tr("control.text.hint.leadConversion", { won: won.length, total: totalLeads }),
       unit: "percent",
     },
     {
@@ -599,12 +642,12 @@ export function getSalesSummary(window: TimeWindow): SalesSummary {
       labelKey: "control.kpi.avgDealSize",
       displayValue: formatCompact(avgDealSize),
       value: avgDealSize,
-      deltaPct: 6.5,
+      deltaPct: 0,
       tone: "lime",
       sparkline: anchoredSparkline(avgDealSize / 1000).map((v) => v * 1000),
       moduleId: "leados",
       sourceLabel: MODULE_LABELS.leados,
-      hint: `Across ${won.length} won deals`,
+      hint: tr("control.text.hint.wonDeals", { count: won.length }),
       unit: "currency",
     },
     {
@@ -612,12 +655,12 @@ export function getSalesSummary(window: TimeWindow): SalesSummary {
       labelKey: "control.kpi.wonValue",
       displayValue: formatCompact(wonValueWindow),
       value: wonValueWindow,
-      deltaPct: 12.4,
+      deltaPct: 0,
       tone: "lime",
       sparkline: countSparkline(won, (l) => l.updatedAt, range).map((c) => c * 200_000),
       moduleId: "leados",
       sourceLabel: MODULE_LABELS.leados,
-      hint: `Revenue won in window`,
+      hint: tr("control.text.hint.wonRevenue"),
       unit: "currency",
     },
   ];
@@ -708,7 +751,8 @@ export function getSalesSummary(window: TimeWindow): SalesSummary {
 // Quote summary
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getQuoteSummary(window: TimeWindow): QuoteSummary {
+export function getQuoteSummary(window: TimeWindow, translator?: ControlTranslator): QuoteSummary {
+  const tr = getTranslator(translator);
   const range = resolveWindow(window);
 
   const sent = mockQuotes.filter((q) => q.status === "sent");
@@ -752,7 +796,7 @@ export function getQuoteSummary(window: TimeWindow): QuoteSummary {
       sparkline: countSparkline(sent, (q) => q.createdAt, range).map((c) => c * 100_000),
       moduleId: "quoteflow",
       sourceLabel: MODULE_LABELS.quoteflow,
-      hint: `${sent.length} active sent quotes`,
+      hint: tr("control.text.hint.activeSentQuotes", { count: sent.length }),
       unit: "currency",
     },
     {
@@ -760,12 +804,12 @@ export function getQuoteSummary(window: TimeWindow): QuoteSummary {
       labelKey: "control.kpi.acceptRate",
       displayValue: `${acceptRate.toFixed(0)}%`,
       value: acceptRate,
-      deltaPct: 3.2,
+      deltaPct: 0,
       tone: "lime",
       sparkline: anchoredSparkline(acceptRate, 0.05),
       moduleId: "quoteflow",
       sourceLabel: MODULE_LABELS.quoteflow,
-      hint: `${accepted.length}/${decided} decided`,
+      hint: tr("control.text.hint.decided", { accepted: accepted.length, total: decided }),
       unit: "percent",
     },
     {
@@ -778,7 +822,7 @@ export function getQuoteSummary(window: TimeWindow): QuoteSummary {
       sparkline: anchoredSparkline(expiringSoon.length),
       moduleId: "quoteflow",
       sourceLabel: MODULE_LABELS.quoteflow,
-      hint: `Within 7 days`,
+      hint: tr("control.text.hint.withinSevenDays"),
     },
     {
       id: "quote-pending-approvals",
@@ -790,19 +834,19 @@ export function getQuoteSummary(window: TimeWindow): QuoteSummary {
       sparkline: anchoredSparkline(pendingApprovals.length),
       moduleId: "quoteflow",
       sourceLabel: MODULE_LABELS.quoteflow,
-      hint: `Discount > 10% drafts`,
+      hint: tr("control.text.hint.largeDiscountDrafts"),
     },
     {
       id: "quote-accepted-value",
       labelKey: "control.kpi.acceptedValue",
       displayValue: formatCompact(acceptedValue),
       value: acceptedValue,
-      deltaPct: 14.2,
+      deltaPct: 0,
       tone: "lime",
       sparkline: anchoredSparkline(acceptedValue / 1000).map((v) => v * 1000),
       moduleId: "quoteflow",
       sourceLabel: MODULE_LABELS.quoteflow,
-      hint: `${accepted.length} accepted quotes`,
+      hint: tr("control.text.hint.acceptedQuotes", { count: accepted.length }),
       unit: "currency",
     },
     {
@@ -815,7 +859,7 @@ export function getQuoteSummary(window: TimeWindow): QuoteSummary {
       sparkline: anchoredSparkline(draft.length),
       moduleId: "quoteflow",
       sourceLabel: MODULE_LABELS.quoteflow,
-      hint: `Awaiting send`,
+      hint: tr("control.text.hint.awaitingSend"),
     },
   ];
 
@@ -834,7 +878,8 @@ export function getQuoteSummary(window: TimeWindow): QuoteSummary {
 // Document summary
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getDocumentSummary(window: TimeWindow): DocumentSummary {
+export function getDocumentSummary(window: TimeWindow, translator?: ControlTranslator): DocumentSummary {
+  const tr = getTranslator(translator);
   const range = resolveWindow(window);
 
   const statusDefs: { status: string; labelKey: string; tone: KpiTone }[] = [
@@ -891,7 +936,7 @@ export function getDocumentSummary(window: TimeWindow): DocumentSummary {
       sparkline: countSparkline(mockDocuments, (d) => d.createdAt, range),
       moduleId: "docsmart",
       sourceLabel: MODULE_LABELS.docsmart,
-      hint: `Awaiting reviewer sign-off`,
+      hint: tr("control.text.hint.awaitingReview"),
     },
     {
       id: "doc-processing",
@@ -903,7 +948,7 @@ export function getDocumentSummary(window: TimeWindow): DocumentSummary {
       sparkline: anchoredSparkline(processing),
       moduleId: "docsmart",
       sourceLabel: MODULE_LABELS.docsmart,
-      hint: `In AI pipeline`,
+      hint: tr("control.text.hint.inDocumentProcessing"),
     },
     {
       id: "doc-failed",
@@ -915,19 +960,19 @@ export function getDocumentSummary(window: TimeWindow): DocumentSummary {
       sparkline: anchoredSparkline(failed),
       moduleId: "docsmart",
       sourceLabel: MODULE_LABELS.docsmart,
-      hint: `Rejected documents`,
+      hint: tr("control.text.hint.rejectedDocuments"),
     },
     {
       id: "doc-avg-conf",
       labelKey: "control.kpi.docConfidence",
       displayValue: `${(avgConfidence * 100).toFixed(0)}%`,
       value: avgConfidence * 100,
-      deltaPct: 1.2,
+      deltaPct: 0,
       tone: "lime",
       sparkline: anchoredSparkline(avgConfidence * 100, 0.03),
       moduleId: "docsmart",
       sourceLabel: MODULE_LABELS.docsmart,
-      hint: `Across ${allConf.length} extracted fields`,
+      hint: tr("control.text.hint.extractedFields", { count: allConf.length }),
       unit: "percent",
     },
   ];
@@ -939,7 +984,8 @@ export function getDocumentSummary(window: TimeWindow): DocumentSummary {
 // Automation summary
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getAutomationSummary(window: TimeWindow): AutomationSummary {
+export function getAutomationSummary(window: TimeWindow, translator?: ControlTranslator): AutomationSummary {
+  const tr = getTranslator(translator);
   const range = resolveWindow(window);
 
   const active = mockAutomations.filter((a) => a.status === "active").length;
@@ -979,31 +1025,31 @@ export function getAutomationSummary(window: TimeWindow): AutomationSummary {
       sparkline: anchoredSparkline(active),
       moduleId: "autopilot",
       sourceLabel: MODULE_LABELS.autopilot,
-      hint: `Of ${total} automations`,
+      hint: tr("control.text.hint.ofAutomations", { count: total }),
     },
     {
       id: "auto-failures",
       labelKey: "control.kpi.autoFailures",
       displayValue: formatCompact(failuresSum),
       value: failuresSum,
-      deltaPct: -2.1,
+      deltaPct: 0,
       tone: "rose",
       sparkline: anchoredSparkline(failuresSum, 0.06),
       moduleId: "autopilot",
       sourceLabel: MODULE_LABELS.autopilot,
-      hint: `${failing.length} automations affected`,
+      hint: tr("control.text.hint.automationsAffected", { count: failing.length }),
     },
     {
       id: "auto-success-rate",
       labelKey: "control.kpi.autoSuccessRate",
       displayValue: `${successRate.toFixed(1)}%`,
       value: successRate,
-      deltaPct: 0.4,
+      deltaPct: 0,
       tone: successRate >= 99 ? "lime" : successRate >= 95 ? "amber" : "rose",
       sparkline: anchoredSparkline(successRate, 0.01),
       moduleId: "autopilot",
       sourceLabel: MODULE_LABELS.autopilot,
-      hint: `${formatCompact(totalRuns)} total runs`,
+      hint: tr("control.text.hint.totalRuns", { count: formatCompact(totalRuns) }),
       unit: "percent",
     },
     {
@@ -1016,7 +1062,7 @@ export function getAutomationSummary(window: TimeWindow): AutomationSummary {
       sparkline: anchoredSparkline(pendingApprovals.length),
       moduleId: "autopilot",
       sourceLabel: MODULE_LABELS.autopilot,
-      hint: `Approval-gate automations`,
+      hint: tr("control.text.hint.approvalAutomations"),
     },
     {
       id: "auto-queue",
@@ -1028,7 +1074,7 @@ export function getAutomationSummary(window: TimeWindow): AutomationSummary {
       sparkline: anchoredSparkline(queueDepth),
       moduleId: "autopilot",
       sourceLabel: MODULE_LABELS.autopilot,
-      hint: `${workersOnline}/${WORKER_SNAPSHOT.length} workers online`,
+      hint: tr("control.text.hint.workersOnline", { online: workersOnline, total: WORKER_SNAPSHOT.length }),
     },
   ];
 
@@ -1039,7 +1085,8 @@ export function getAutomationSummary(window: TimeWindow): AutomationSummary {
 // Finance summary
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getFinanceSummary(window: TimeWindow): FinanceSummary {
+export function getFinanceSummary(window: TimeWindow, translator?: ControlTranslator): FinanceSummary {
+  const tr = getTranslator(translator);
   const range = resolveWindow(window);
 
   const paid = mockInvoices.filter((i) => i.status === "paid");
@@ -1125,7 +1172,7 @@ export function getFinanceSummary(window: TimeWindow): FinanceSummary {
       sparkline: countSparkline(paid, (i) => i.createdAt, range).map((c) => c * 100_000),
       moduleId: "erphub",
       sourceLabel: MODULE_LABELS.erphub,
-      hint: `${paidInWindow.length} paid invoices in window`,
+      hint: tr("control.text.hint.paidInvoices", { count: paidInWindow.length }),
       unit: "currency",
     },
     {
@@ -1133,12 +1180,12 @@ export function getFinanceSummary(window: TimeWindow): FinanceSummary {
       labelKey: "control.kpi.arOutstanding",
       displayValue: formatCompact(arOutstanding),
       value: arOutstanding,
-      deltaPct: 4.0,
+      deltaPct: 0,
       tone: "amber",
       sparkline: anchoredSparkline(arOutstanding / 1000).map((v) => v * 1000),
       moduleId: "erphub",
       sourceLabel: MODULE_LABELS.erphub,
-      hint: `${sent.length + overdue.length} open invoices`,
+      hint: tr("control.text.hint.openInvoices", { count: sent.length + overdue.length }),
       unit: "currency",
     },
     {
@@ -1151,7 +1198,7 @@ export function getFinanceSummary(window: TimeWindow): FinanceSummary {
       sparkline: anchoredSparkline(overdueTotal / 1000).map((v) => v * 1000),
       moduleId: "erphub",
       sourceLabel: MODULE_LABELS.erphub,
-      hint: `${overdue.length} overdue invoice${overdue.length === 1 ? "" : "s"}`,
+      hint: tr("control.text.hint.overdueInvoices", { count: overdue.length }),
       unit: "currency",
     },
     {
@@ -1164,19 +1211,19 @@ export function getFinanceSummary(window: TimeWindow): FinanceSummary {
       sparkline: anchoredSparkline(lowStock.length),
       moduleId: "erphub",
       sourceLabel: MODULE_LABELS.erphub,
-      hint: `SKU${lowStock.length === 1 ? "" : "s"} at or below 12`,
+      hint: tr("control.text.hint.lowStockThreshold", { count: lowStock.length }),
     },
     {
       id: "fin-margin",
       labelKey: "control.kpi.margin",
       displayValue: `${margin.toFixed(0)}%`,
       value: margin,
-      deltaPct: 1.1,
+      deltaPct: 0,
       tone: "lime",
       sparkline: anchoredSparkline(margin, 0.02),
       moduleId: "erphub",
       sourceLabel: MODULE_LABELS.erphub,
-      hint: `Gross margin (proxy)`,
+      hint: tr("control.text.hint.grossMargin"),
       unit: "percent",
     },
     {
@@ -1189,7 +1236,7 @@ export function getFinanceSummary(window: TimeWindow): FinanceSummary {
       sparkline: anchoredSparkline(draft.length),
       moduleId: "erphub",
       sourceLabel: MODULE_LABELS.erphub,
-      hint: `Awaiting send`,
+      hint: tr("control.text.hint.awaitingSend"),
     },
   ];
 
@@ -1200,7 +1247,8 @@ export function getFinanceSummary(window: TimeWindow): FinanceSummary {
 // Integration health summary
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getIntegrationHealth(window: TimeWindow): IntegrationHealthSummary {
+export function getIntegrationHealth(window: TimeWindow, translator?: ControlTranslator): IntegrationHealthSummary {
+  const tr = getTranslator(translator);
   const range = resolveWindow(window);
 
   const total = mockIntegrations.length;
@@ -1234,7 +1282,11 @@ export function getIntegrationHealth(window: TimeWindow): IntegrationHealthSumma
     .map((i) => ({
       id: i.id,
       provider: i.provider,
-      message: i.status === "error" ? "Sync error — check connector logs" : i.status === "reauth_required" ? "OAuth token expired — re-authorize" : "Disconnected by user",
+      message: i.status === "error"
+        ? tr("control.text.integration.syncError")
+        : i.status === "reauth_required"
+          ? tr("control.text.integration.reauthorize")
+          : tr("control.text.integration.disconnected"),
       ts: i.lastSyncAt ?? i.createdAt,
     }));
 
@@ -1251,7 +1303,7 @@ export function getIntegrationHealth(window: TimeWindow): IntegrationHealthSumma
       sparkline: anchoredSparkline(connected.length),
       moduleId: "connect",
       sourceLabel: MODULE_LABELS.connect,
-      hint: `Connected providers`,
+      hint: tr("control.text.hint.connectedProviders"),
     },
     {
       id: "int-health",
@@ -1263,7 +1315,7 @@ export function getIntegrationHealth(window: TimeWindow): IntegrationHealthSumma
       sparkline: anchoredSparkline(healthPct, 0.03),
       moduleId: "connect",
       sourceLabel: MODULE_LABELS.connect,
-      hint: `Healthy providers`,
+      hint: tr("control.text.hint.healthyProviders"),
       unit: "percent",
     },
     {
@@ -1276,7 +1328,7 @@ export function getIntegrationHealth(window: TimeWindow): IntegrationHealthSumma
       sparkline: anchoredSparkline(degraded.length + reauth.length),
       moduleId: "connect",
       sourceLabel: MODULE_LABELS.connect,
-      hint: `Degraded + reauth required`,
+      hint: tr("control.text.hint.degradedProviders"),
     },
     {
       id: "int-reauth",
@@ -1288,7 +1340,7 @@ export function getIntegrationHealth(window: TimeWindow): IntegrationHealthSumma
       sparkline: anchoredSparkline(reauth.length),
       moduleId: "connect",
       sourceLabel: MODULE_LABELS.connect,
-      hint: `OAuth re-authorization needed`,
+      hint: tr("control.text.hint.reauthorizationNeeded"),
     },
     {
       id: "int-failures",
@@ -1300,7 +1352,7 @@ export function getIntegrationHealth(window: TimeWindow): IntegrationHealthSumma
       sparkline: anchoredSparkline(error.length + disconnected.length),
       moduleId: "connect",
       sourceLabel: MODULE_LABELS.connect,
-      hint: `Error + disconnected`,
+      hint: tr("control.text.hint.failedProviders"),
     },
   ];
 
@@ -1311,7 +1363,8 @@ export function getIntegrationHealth(window: TimeWindow): IntegrationHealthSumma
 // SLA / operations summary
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getSlaOperations(window: TimeWindow): SlaOperationsSummary {
+export function getSlaOperations(window: TimeWindow, translator?: ControlTranslator): SlaOperationsSummary {
+  const tr = getTranslator(translator);
   const range = resolveWindow(window);
 
   // SLA breaches
@@ -1355,7 +1408,7 @@ export function getSlaOperations(window: TimeWindow): SlaOperationsSummary {
     processingFailures.push({
       id: `pf-auto-${a.id}`,
       source: "Autopilot",
-      message: `${a.name} — ${a.runs.failed} failed run${a.runs.failed === 1 ? "" : "s"}`,
+      message: tr("control.text.failure.automation", { name: a.name, count: a.runs.failed }),
       ts: a.runs.lastRunAt ?? a.createdAt,
     });
   }
@@ -1363,7 +1416,7 @@ export function getSlaOperations(window: TimeWindow): SlaOperationsSummary {
     processingFailures.push({
       id: `pf-doc-${d.id}`,
       source: "DocSmart",
-      message: `${d.filename} — rejected during processing`,
+      message: tr("control.text.failure.document", { filename: d.filename }),
       ts: d.createdAt,
     });
   }
@@ -1385,7 +1438,7 @@ export function getSlaOperations(window: TimeWindow): SlaOperationsSummary {
       sparkline: anchoredSparkline(firstResponseBreaches, 0.05),
       moduleId: "leados",
       sourceLabel: MODULE_LABELS.leados,
-      hint: `First-response SLA breaches`,
+      hint: tr("control.text.hint.firstResponseBreaches"),
     },
     {
       id: "sla-followup",
@@ -1397,7 +1450,7 @@ export function getSlaOperations(window: TimeWindow): SlaOperationsSummary {
       sparkline: anchoredSparkline(followUpBreaches),
       moduleId: "leados",
       sourceLabel: MODULE_LABELS.leados,
-      hint: `Open leads idle 3+ days`,
+      hint: tr("control.text.hint.inactiveLeads"),
     },
     {
       id: "sla-failures",
@@ -1409,7 +1462,7 @@ export function getSlaOperations(window: TimeWindow): SlaOperationsSummary {
       sparkline: anchoredSparkline(totalFailures),
       moduleId: "autopilot",
       sourceLabel: "Autopilot + DocSmart",
-      hint: `Failed runs + rejected docs`,
+      hint: tr("control.text.hint.processingFailures"),
     },
     {
       id: "sla-queue",
@@ -1421,7 +1474,7 @@ export function getSlaOperations(window: TimeWindow): SlaOperationsSummary {
       sparkline: anchoredSparkline(totalQueue),
       moduleId: "autopilot",
       sourceLabel: MODULE_LABELS.autopilot,
-      hint: `${workerBacklog.length} workers with backlog`,
+      hint: tr("control.text.hint.workersWithBacklog", { count: workerBacklog.length }),
     },
     {
       id: "sla-workers",
@@ -1433,7 +1486,7 @@ export function getSlaOperations(window: TimeWindow): SlaOperationsSummary {
       sparkline: anchoredSparkline(WORKER_SNAPSHOT.filter((w) => w.status === "online").length),
       moduleId: "autopilot",
       sourceLabel: MODULE_LABELS.autopilot,
-      hint: `Worker pool status`,
+      hint: tr("control.text.hint.workerStatus"),
     },
   ];
 
@@ -1444,9 +1497,10 @@ export function getSlaOperations(window: TimeWindow): SlaOperationsSummary {
 // AI insights (window-aware — older insights filtered for narrow windows)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getAiInsights(window: TimeWindow): { window: WindowRange; insights: AiInsight[] } {
+export function getAiInsights(window: TimeWindow, translator?: ControlTranslator): { window: WindowRange; insights: AiInsight[] } {
+  const tr = getTranslator(translator);
   const range = resolveWindow(window);
-  const all = buildAiInsights();
+  const all = buildAiInsights(tr);
   // For narrow windows (today/7d), drop insights older than the window.
   const insights = range.days <= 7
     ? all.filter((i) => new Date(i.ts).getTime() >= range.startMs)

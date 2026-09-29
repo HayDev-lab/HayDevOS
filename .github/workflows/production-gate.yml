@@ -1,0 +1,74 @@
+name: production-gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: haydev_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d haydev_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/haydev_ci
+      DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/haydev_ci
+      APP_ORIGINS: https://ci.invalid
+      HAYDEV_DOMAIN: ci.example.invalid
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_SECRET_KEY: sb_secret_ci
+      HAYDEV_DOCUMENT_BUCKET: haydev-documents
+      MALWARE_SCANNER_PROVIDER: metadefender
+      METADEFENDER_API_KEY: ci-placeholder-not-a-real-key
+      HAYDEV_ALLOW_DEMO_DATA: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npm run db:generate
+      - name: Apply committed migrations
+        run: npm run db:deploy
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit and artifact tests
+        run: |
+          npm run test:malware
+          npm run test:sla
+          npm run test:quoteflow-pricing
+          npm run test:documentflow
+          npm run test:security-structure
+          npm run test:security-integration
+      # Database/tenant integration suites run only in the protected deployment
+      # pipeline against an ephemeral PostgreSQL database, never against live
+      # production from an untrusted pull request.
+      - name: Dependency audit
+        run: npm run security:audit
+      - name: Production build
+        run: npm run build

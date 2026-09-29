@@ -28,6 +28,7 @@ import {
 import { useAppStore } from "@/lib/store/app-store";
 import { useLocale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth/AuthContext";
 
 interface KeycapProps {
   /** Key text, e.g. "⌘K", "g l", "?". */
@@ -70,6 +71,7 @@ function Row({ labelKey, keys }: RowProps) {
 
 export function ShortcutsHelpDialog() {
   const { t } = useLocale();
+  const { session } = useAuth();
   const { shortcutsOpen, setShortcutsOpen } = useAppStore();
 
   return (
@@ -110,7 +112,7 @@ export function ShortcutsHelpDialog() {
             <Row labelKey="shortcuts.row.docsmart" keys={["g", "o"]} />
             <Row labelKey="shortcuts.row.autopilot" keys={["g", "a"]} />
             <Row labelKey="shortcuts.row.erphub" keys={["g", "e"]} />
-            <Row labelKey="shortcuts.row.control" keys={["g", "c"]} />
+            {session.user.role !== "OWNER" && <Row labelKey="shortcuts.row.control" keys={["g", "c"]} />}
             <Row labelKey="shortcuts.row.connect" keys={["g", "i"]} />
             <Row labelKey="shortcuts.row.audit" keys={["g", "b"]} />
             <Row labelKey="shortcuts.row.owneraiModule" keys={["g", "u"]} />
@@ -124,7 +126,6 @@ export function ShortcutsHelpDialog() {
           <ul className="rounded-lg border border-border bg-card/40">
             <Row labelKey="shortcuts.row.newContextual" keys={["n"]} />
             <Row labelKey="shortcuts.row.refresh" keys={["r"]} />
-            <Row labelKey="shortcuts.row.toggleTheme" keys={["t"]} />
             <Row labelKey="shortcuts.row.shortcuts" keys={["?"]} />
           </ul>
 

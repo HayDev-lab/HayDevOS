@@ -93,6 +93,26 @@ export const TOOL_DEFS: ToolDef[] = [
     params: { window: '"today" | "7d" | "30d" | "quarter" (default "30d")' },
   },
   {
+    name: "findDocuments",
+    description: "Search the current organization's persisted document metadata by title, filename, or source id.",
+    params: { query: "string (required)" },
+  },
+  {
+    name: "getDocumentMetadata",
+    description: "Get tenant-authorized metadata for one persisted document, including immutable version metadata but never storage credentials.",
+    params: { documentId: "string (required)" },
+  },
+  {
+    name: "listDocumentVersions",
+    description: "List immutable metadata versions for one tenant-authorized document.",
+    params: { documentId: "string (required)" },
+  },
+  {
+    name: "getQuoteDocuments",
+    description: "List persisted PDF/DOCX/JSON artifacts generated from immutable versions of a quote.",
+    params: { quoteId: "string (required)" },
+  },
+  {
     name: "getAutomationSummary",
     description:
       "Get the automation summary: KPIs (active, paused, success rate, failed runs, pending approvals), runs over time, top failing automations, pending approvals.",
@@ -108,6 +128,41 @@ export const TOOL_DEFS: ToolDef[] = [
     description:
       "Get the ERP/finance summary: KPIs (revenue, AR, overdue count, overdue amount, low stock count), AR aging buckets, overdue invoices, low-stock products, revenue by customer type.",
     params: { window: '"today" | "7d" | "30d" | "quarter" (default "30d")' },
+  },
+  {
+    name: "findOrders",
+    description: "Search authoritative tenant orders by order number or customer name, with server-computed payment state.",
+    params: { query: "string (optional)", status: "order status (optional)" },
+  },
+  {
+    name: "getOrder",
+    description: "Get one tenant-authorized order with immutable item snapshots, revision, fulfillment count, and computed payment state.",
+    params: { orderId: "string (required)" },
+  },
+  {
+    name: "getInventory",
+    description: "Get authoritative on-hand, reserved, and available inventory balances for the tenant.",
+    params: { query: "string (optional)", warehouseId: "string (optional)", availability: '"all" | "available" | "low" | "out"' },
+  },
+  {
+    name: "findProducts",
+    description: "Search the canonical tenant product catalog, including stocked/non-stocked/service classification.",
+    params: { query: "string (optional)", type: '"STOCKED_PRODUCT" | "NON_STOCKED_PRODUCT" | "SERVICE" (optional)' },
+  },
+  {
+    name: "getCustomerOrders",
+    description: "List authoritative orders for one canonical customer.",
+    params: { customerId: "string (required)" },
+  },
+  {
+    name: "getPaymentStatus",
+    description: "Get an order payment status computed from confirmed append-only payments and refunds without implicit FX conversion.",
+    params: { orderId: "string (required)" },
+  },
+  {
+    name: "getErpOverview",
+    description: "Get authoritative ERP order, inventory, and confirmed finance event totals grouped by currency.",
+    params: {},
   },
   {
     name: "getIntegrationHealth",
@@ -537,9 +592,20 @@ const TOOL_FN_TABLE: Record<string, (args: Record<string, unknown>) => unknown> 
   getQuoteSummary: tool_getQuoteSummary,
   getExpiringQuotes: tool_getExpiringQuotes,
   getDocumentSummary: tool_getDocumentSummary,
+  findDocuments: () => { throw new Error("Authenticated tenant document service required"); },
+  getDocumentMetadata: () => { throw new Error("Authenticated tenant document service required"); },
+  listDocumentVersions: () => { throw new Error("Authenticated tenant document service required"); },
+  getQuoteDocuments: () => { throw new Error("Authenticated tenant document service required"); },
   getAutomationSummary: tool_getAutomationSummary,
   getFailedAutomations: tool_getFailedAutomations,
   getFinanceSummary: tool_getFinanceSummary,
+  findOrders: () => { throw new Error("Authenticated tenant ERP service required"); },
+  getOrder: () => { throw new Error("Authenticated tenant ERP service required"); },
+  getInventory: () => { throw new Error("Authenticated tenant ERP service required"); },
+  findProducts: () => { throw new Error("Authenticated tenant ERP service required"); },
+  getCustomerOrders: () => { throw new Error("Authenticated tenant ERP service required"); },
+  getPaymentStatus: () => { throw new Error("Authenticated tenant ERP service required"); },
+  getErpOverview: () => { throw new Error("Authenticated tenant ERP service required"); },
   getIntegrationHealth: tool_getIntegrationHealth,
   searchGlobal: tool_searchGlobal,
   getTimeline: tool_getTimeline,
@@ -641,8 +707,8 @@ function safeStringify(v: unknown): string {
 // The registry is the single source of truth for the Owner AI tool/action
 // surface. It includes:
 //   - read tools (kind="read", requiresApproval=false, execute returns data)
-//   - safe actions (kind="safe-action", requiresApproval=false, execute runs
-//     the mock side effect and returns a result string)
+//   - safe actions (kind="safe-action", requiresApproval=false, execution is
+//     deliberately blocked here and must go through the tenant executor)
 //   - risky actions (kind="risky-action", requiresApproval=true, execute does
 //     NOT run — it returns a { requiresApproval: true, action, args } marker
 //     that the route turns into a pending approval)
@@ -671,7 +737,7 @@ export interface ToolRegistryEntry {
   kind: ToolKind;
   /**
    * Execute the tool/action. For read tools: returns the data payload. For
-   * safe actions: runs the mock side effect and returns a result string. For
+   * safe actions: fails closed so callers use the tenant executor. For
    * risky actions: does NOT execute — returns a marker that the caller must
    * turn into a pending approval.
    */
@@ -728,43 +794,20 @@ function buildReadEntries(): ToolRegistryEntry[] {
   }));
 }
 
-// — Safe-action entries (auto-execute, mock side effects) —
+// Safe-action metadata. Actual execution belongs to action-executor.ts.
 function execSafeAction(
   name: string,
-  args: Record<string, unknown>,
-): string {
-  switch (name) {
-    case "createTask": {
-      const title = String(args.title ?? "Untitled task");
-      const assignee = String(args.assignee ?? "unassigned");
-      const dueAt = String(args.dueAt ?? "");
-      return `Task created: "${title}" → ${assignee}${dueAt ? `, due ${dueAt}` : ""} (mock — no DB write)`;
-    }
-    case "createInternalNote": {
-      const entityType = String(args.entityType ?? "lead");
-      const entityId = String(args.entityId ?? "—");
-      const body = String(args.body ?? "").slice(0, 120);
-      return `Internal note added to ${entityType} ${entityId}: "${body}" (mock — no DB write)`;
-    }
-    case "assignTask": {
-      const taskId = String(args.taskId ?? "—");
-      const assigneeId = String(args.assigneeId ?? "—");
-      return `Task ${taskId} reassigned to ${assigneeId} (mock — no DB write)`;
-    }
-    case "generateReport": {
-      const type = String(args.type ?? "weekly");
-      const window = String(args.window ?? "7d");
-      return `Report generated: ${type} (${window}) — saved to Reports (mock — no DB write)`;
-    }
-    default:
-      return `Action ${name} executed (mock)`;
-  }
+  _args: Record<string, unknown>,
+): never {
+  throw new Error(
+    `Action ${name} must be executed through the authenticated tenant action executor`,
+  );
 }
 
 const SAFE_ACTION_ENTRIES: ToolRegistryEntry[] = [
   {
     name: "createTask",
-    description: "Create a task with title, assignee, and due date. Auto-approved (mock side effect).",
+    description: "Create a tenant-scoped task with title, assignee, and due date.",
     parameters: {
       title: { type: "string", required: true, description: "Task title" },
       assignee: { type: "string", required: true, description: "Assignee id or name" },
@@ -778,7 +821,7 @@ const SAFE_ACTION_ENTRIES: ToolRegistryEntry[] = [
   },
   {
     name: "createInternalNote",
-    description: "Add an internal note to an entity (lead, quote, document). Auto-approved (mock side effect).",
+    description: "Add a tenant-scoped internal note to an entity.",
     parameters: {
       entityType: { type: "string", required: true, description: "lead | quote | document | customer" },
       entityId: { type: "string", required: true, description: "Entity id" },
@@ -790,7 +833,7 @@ const SAFE_ACTION_ENTRIES: ToolRegistryEntry[] = [
   },
   {
     name: "assignTask",
-    description: "Reassign an existing task to a different user. Auto-approved (mock side effect).",
+    description: "Reassign an existing tenant task to a member.",
     parameters: {
       taskId: { type: "string", required: true, description: "Task id" },
       assigneeId: { type: "string", required: true, description: "New assignee id" },
@@ -801,7 +844,7 @@ const SAFE_ACTION_ENTRIES: ToolRegistryEntry[] = [
   },
   {
     name: "generateReport",
-    description: "Generate a report (daily / weekly / monthly / quarterly). Auto-approved (mock side effect).",
+    description: "Persist a tenant report request (daily / weekly / monthly / quarterly).",
     parameters: {
       type: { type: "string", enum: ["daily", "weekly", "monthly", "quarterly"], default: "weekly", description: "Report cadence" },
       window: { type: "string", enum: [...WINDOW_ENUM], default: "7d", description: "Time window covered" },
@@ -809,6 +852,19 @@ const SAFE_ACTION_ENTRIES: ToolRegistryEntry[] = [
     requiresApproval: false,
     kind: "safe-action",
     execute: (args) => execSafeAction("generateReport", args),
+  },
+  {
+    name: "generateQuoteDocument",
+    description: "Generate a verified PDF or DOCX from a persisted immutable quote version.",
+    parameters: {
+      quoteId: { type: "string", required: true, description: "Quote id" },
+      versionId: { type: "string", description: "Optional immutable quote version id" },
+      format: { type: "string", enum: ["pdf", "docx"], default: "pdf", description: "Artifact format" },
+      locale: { type: "string", enum: ["hy", "ru", "en"], default: "en", description: "Document language" },
+    },
+    requiresApproval: false,
+    kind: "safe-action",
+    execute: (args) => execSafeAction("generateQuoteDocument", args),
   },
 ];
 

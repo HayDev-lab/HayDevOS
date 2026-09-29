@@ -98,7 +98,8 @@ export function NotificationsPopover() {
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="glass-strong w-[min(92vw,380px)] p-0"
+        collisionPadding={8}
+        className="max-h-[calc(100dvh-1rem)] w-[min(92vw,380px)] overflow-hidden bg-popover p-0 shadow-2xl"
       >
         <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5">
           <div className="flex items-center gap-2">
@@ -119,14 +120,21 @@ export function NotificationsPopover() {
             size="sm"
             onClick={markAllRead}
             disabled={unread === 0}
-            className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+            aria-label={t("shell.notifications.markAllRead")}
+            title={t("shell.notifications.markAllRead")}
+            className="size-7 shrink-0 p-0 text-muted-foreground hover:text-foreground"
           >
             <CheckCheck className="h-3.5 w-3.5" />
-            {t("shell.notifications.markAllRead")}
+            <span className="sr-only">
+              {t("shell.notifications.markAllRead")}
+            </span>
           </Button>
         </div>
 
-        <ScrollArea className="max-h-[60vh]">
+        <ScrollArea
+          type="always"
+          className="h-[min(70dvh,640px)] overscroll-contain"
+        >
           {items.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-4 py-10 text-sm text-muted-foreground">
               <Bell className="h-5 w-5 text-muted-foreground/60" />

@@ -190,7 +190,7 @@ export function SchedulesView({ schedules, onUpdate }: Props) {
                       {s.lastRunAt ? relativeTime(s.lastRunAt, locale) : "—"}
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                      {s.lastDurationMs > 0 ? `${s.lastDurationMs}ms` : "—"}
+                      {s.lastDurationMs > 0 ? `${s.lastDurationMs} ${t("automation.analytics.milliseconds")}` : "—"}
                     </TableCell>
                     <TableCell>
                       <span

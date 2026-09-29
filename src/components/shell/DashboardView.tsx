@@ -33,17 +33,17 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { useLocale } from "@/lib/i18n";
-import { useAppStore, MOCK_ORGS } from "@/lib/store/app-store";
+import { t as translateText, type Locale, useLocale } from "@/lib/i18n";
+import { useAuth } from "@/components/auth/AuthContext";
+import { useAppStore } from "@/lib/store/app-store";
 import {
   mockKpis,
   mockLeads,
-  mockQuotes,
   mockDocuments,
   mockAutomations,
   mockIntegrations,
 } from "@/lib/mock";
-import { ModuleRegistry, getModule } from "@/lib/modules/registry";
+import { ModuleRegistry } from "@/lib/modules/registry";
 import { formatDate, toneClasses, cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -51,6 +51,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { buildAttentionFeed as buildControlAttentionFeed, ControlView } from "@/modules/control";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // "Needs attention" feed — derived from mock data + a couple of inline items.
@@ -74,88 +75,19 @@ const PRIORITY_TONE: Record<Priority, "rose" | "amber" | "cyan" | "muted"> = {
   INFO: "muted",
 };
 
-function buildAttentionFeed(): AttentionItem[] {
-  const items: AttentionItem[] = [];
-
-  // SLA breaches from leads
-  for (const lead of mockLeads.filter((l) => l.slaBreached).slice(0, 2)) {
-    items.push({
-      id: `att-lead-${lead.id}`,
-      title: `${lead.name} — SLA breached`,
-      body: `Lead from ${lead.company ?? "—"} breached response SLA. Owner ${lead.ownerId}.`,
-      priority: "CRITICAL",
-      module: "leados",
-      ts: lead.slaDueAt ?? lead.updatedAt,
-    });
-  }
-
-  // Failed automations
-  for (const a of mockAutomations.filter((a) => a.runs.failed > 0).slice(0, 1)) {
-    items.push({
-      id: `att-auto-${a.id}`,
-      title: `${a.name} — ${a.runs.failed} failed run${a.runs.failed === 1 ? "" : "s"}`,
-      body: `Last run ${a.runs.lastRunAt ?? "—"}. Trigger: ${a.triggerType}.`,
-      priority: "HIGH",
-      module: "autopilot",
-      ts: a.runs.lastRunAt ?? a.createdAt,
-    });
-  }
-
-  // Documents awaiting review
-  const pendingDocs = mockDocuments.filter(
-    (d) => d.status === "extracted" || d.status === "pending",
-  );
-  if (pendingDocs[0]) {
-    items.push({
-      id: `att-doc-${pendingDocs[0].id}`,
-      title: `${pendingDocs[0].filename} — awaiting review`,
-      body: `Classification ${pendingDocs[0].classification ?? "—"}. Needs reviewer sign-off.`,
-      priority: "MEDIUM",
-      module: "docsmart",
-      ts: pendingDocs[0].createdAt,
-    });
-  }
-
-  // Integration re-auth
-  const reauth = mockIntegrations.find((i) => i.status === "reauth_required");
-  if (reauth) {
-    items.push({
-      id: `att-int-${reauth.id}`,
-      title: `${reauth.provider} — re-authorization required`,
-      body: `Integration sync paused. ${reauth.eventsProcessed.toLocaleString()} events processed before disconnect.`,
-      priority: "HIGH",
-      module: "connect",
-      ts: reauth.lastSyncAt ?? reauth.createdAt,
-    });
-  }
-
-  // Pending quote follow-up
-  const sentQuote = mockQuotes.find((q) => q.status === "sent");
-  if (sentQuote) {
-    items.push({
-      id: `att-quote-${sentQuote.id}`,
-      title: `${sentQuote.number} — follow-up due`,
-      body: `Sent quote worth $${(sentQuote.total / 1000).toFixed(1)}K. Valid until ${formatDate(sentQuote.validUntil, "en")}.`,
-      priority: "MEDIUM",
-      module: "quoteflow",
-      ts: sentQuote.createdAt,
-    });
-  }
-
-  // Info: new inbound lead
-  const newLead = mockLeads.find((l) => l.stage === "new");
-  if (newLead) {
-    items.push({
-      id: `att-new-${newLead.id}`,
-      title: `${newLead.name} — new inbound lead`,
-      body: `Source: ${newLead.source}. No owner response yet.`,
-      priority: "INFO",
-      module: "leados",
-      ts: newLead.createdAt,
-    });
-  }
-
-  return items.slice(0, 5);
+function buildAttentionFeed(locale: Locale): AttentionItem[] {
+  return buildControlAttentionFeed(
+    (key, params) => translateText(key, locale, params),
+  )
+    .slice(0, 5)
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      body: item.body,
+      priority: item.priority,
+      module: item.moduleId,
+      ts: item.ts,
+    }));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -304,9 +236,10 @@ function HealthDot({ status }: { status: "ok" | "warn" | "err" }) {
 
 export function DashboardView() {
   const { locale, t } = useLocale();
-  const { user, activeOrgId, setActiveModule } = useAppStore();
-  const org = MOCK_ORGS.find((o) => o.id === activeOrgId) ?? MOCK_ORGS[0];
-  const attention = useMemo(() => buildAttentionFeed(), []);
+  const { session } = useAuth();
+  const { user, activeOrganization: org } = session;
+  const { setActiveModule } = useAppStore();
+  const attention = useMemo(() => buildAttentionFeed(locale), [locale]);
 
   const today = formatDate(new Date(), locale);
 
@@ -337,6 +270,10 @@ export function DashboardView() {
       },
     },
   ];
+
+  if (user.role === "OWNER") {
+    return <ControlView ownerHome />;
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
@@ -436,7 +373,7 @@ export function DashboardView() {
                 {t("dashboard.needsAttentionSub")}
               </span>
             </div>
-            <ScrollArea className="max-h-[420px]">
+            <ScrollArea className="h-[420px] overflow-hidden">
               <ul className="divide-y divide-border">
                 {attention.map((item) => {
                   const tone = PRIORITY_TONE[item.priority];
@@ -506,7 +443,7 @@ export function DashboardView() {
                 {t("dashboard.moduleStatus")}
               </h2>
             </div>
-            <ScrollArea className="max-h-[420px]">
+            <ScrollArea className="h-[420px] overflow-hidden">
               <ul className="divide-y divide-border">
                 {ModuleRegistry.filter((m) => m.id !== "settings").map((m) => {
                   const health = moduleHealth(m.id);
@@ -521,10 +458,10 @@ export function DashboardView() {
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-foreground">
-                          {t(m.nameKey) || m.description}
+                          {t(m.nameKey)}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {m.description}
+                          {t(m.id === "dashboard" ? "dashboard.moduleDescription" : `${m.nameKey}.desc`)}
                         </p>
                       </div>
                       <HealthDot status={health} />
@@ -548,9 +485,7 @@ export function DashboardView() {
       {/* Footer accent */}
       <div className="mt-8 flex items-center justify-between gap-2 text-[10px] uppercase tracking-wider text-muted-foreground/60">
         <span>{t("shell.footer.version")}</span>
-        <span>
-          {ModuleRegistry.length} modules · {getModule("dashboard")?.id}
-        </span>
+        <span>{t("dashboard.moduleCount", { count: ModuleRegistry.length })}</span>
       </div>
     </div>
   );

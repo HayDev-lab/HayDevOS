@@ -100,7 +100,7 @@ export function AutomationsView({ summary }: { summary: AutomationSummary }) {
                       </span>
                     </div>
                     <p className="mt-0.5 text-[10px] text-muted-foreground/80">
-                      {a.failed.toLocaleString()} / {a.total.toLocaleString()} {t("control.automations.runsFailed")}
+                      {a.failed.toLocaleString("en-US")} / {a.total.toLocaleString("en-US")} {t("control.automations.runsFailed")}
                       {a.lastRunAt ? ` · ${relativeTime(a.lastRunAt, locale)}` : ""}
                     </p>
                     <div className="mt-1 h-1 overflow-hidden rounded-full bg-muted">

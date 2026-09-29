@@ -7,6 +7,3 @@
 
 export { ErpCrmView } from "./ErpCrmView";
 export { default } from "./ErpCrmView";
-
-// Re-export data layer for downstream consumers (dashboards, automations, etc.)
-export * from "./data";

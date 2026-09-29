@@ -12,6 +12,11 @@
 
 export type TimeWindow = "today" | "7d" | "30d" | "quarter" | "custom";
 
+export type ControlTranslator = (
+  key: string,
+  params?: Record<string, string | number>,
+) => string;
+
 export interface WindowRange {
   /** Inclusive start (ms epoch). */
   startMs: number;

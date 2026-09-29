@@ -45,8 +45,6 @@ import {
   credentials as seedCredentials,
   integrationAudit as seedAudit,
   integrationSettings as seedSettings,
-  providerById,
-  credentialById,
 } from "./data";
 import type {
   Integration,
@@ -73,6 +71,11 @@ import { AuditView } from "./components/AuditView";
 import { AnalyticsView } from "./components/AnalyticsView";
 import { SettingsView } from "./components/SettingsView";
 import { NoPlaintextBadge } from "./shared";
+import {
+  localizeCapability,
+  localizeDisplayText,
+  localizeProvider,
+} from "./localization";
 
 type TabId =
   | "providers"
@@ -85,7 +88,7 @@ type TabId =
   | "settings";
 
 export function IntegrationHubView() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [tab, setTab] = useState<TabId>("providers");
 
   // Shared in-memory state.
@@ -95,6 +98,38 @@ export function IntegrationHubView() {
   const [syncRuns, setSyncRuns] = useState<SyncRun[]>(seedSyncRuns);
   const [audit, setAudit] = useState<IntegrationAuditEntry[]>(seedAudit);
   const [settings, setSettings] = useState<IntegrationSettings>(seedSettings);
+
+  const localizedProviders = useMemo(
+    () => seedProviders.map((provider) => localizeProvider(provider, locale)),
+    [locale],
+  );
+  const localizedIntegrations = useMemo(
+    () =>
+      integrations.map((integration) => ({
+        ...integration,
+        label: localizeDisplayText(integration.label, locale),
+        capabilitiesInUse: integration.capabilitiesInUse.map((capability) =>
+          localizeCapability(capability, locale),
+        ),
+      })),
+    [integrations, locale],
+  );
+  const localizedCredentials = useMemo(
+    () =>
+      credentials.map((credential) => ({
+        ...credential,
+        label: localizeDisplayText(credential.label, locale),
+      })),
+    [credentials, locale],
+  );
+  const localizedEndpoints = useMemo(
+    () =>
+      webhookEndpoints.map((endpoint) => ({
+        ...endpoint,
+        name: localizeDisplayText(endpoint.name, locale),
+      })),
+    [locale],
+  );
 
   // Dialog / drawer state.
   const [connectProvider, setConnectProvider] = useState<Provider | null>(null);
@@ -107,14 +142,14 @@ export function IntegrationHubView() {
   );
 
   const selectedIntegration = useMemo(
-    () => integrations.find((i) => i.id === selectedIntegrationId) ?? null,
-    [integrations, selectedIntegrationId],
+    () => localizedIntegrations.find((i) => i.id === selectedIntegrationId) ?? null,
+    [localizedIntegrations, selectedIntegrationId],
   );
   const selectedProvider = selectedIntegration
-    ? providerById(selectedIntegration.providerId) ?? null
+    ? localizedProviders.find((provider) => provider.id === selectedIntegration.providerId) ?? null
     : null;
   const selectedCredential = selectedIntegration
-    ? credentialById(selectedIntegration.credentialId) ?? null
+    ? localizedCredentials.find((credential) => credential.id === selectedIntegration.credentialId) ?? null
     : null;
 
   // Derived per-integration data for the detail drawer.
@@ -141,9 +176,9 @@ export function IntegrationHubView() {
   const selectedEndpoints = useMemo(
     () =>
       selectedProvider
-        ? webhookEndpoints.filter((w) => w.providerId === selectedProvider.id)
+        ? localizedEndpoints.filter((w) => w.providerId === selectedProvider.id)
         : [],
-    [selectedProvider],
+    [localizedEndpoints, selectedProvider],
   );
   const selectedEvents = useMemo(
     () =>
@@ -172,8 +207,7 @@ export function IntegrationHubView() {
   // ─────────────────────────────────────────────────────────────────────
 
   function openConnect(provider: Provider) {
-    setConnectProvider(provider);
-    setConnectOpen(true);
+    toast.info(t("integration.connect.serverRequired", { name: provider.name }));
   }
 
   function handleConnect(provider: Provider, scopes: string[]) {
@@ -491,15 +525,15 @@ export function IntegrationHubView() {
 
         <TabsContent value="providers" className="mt-0">
           <ProvidersCatalog
-            providers={seedProviders}
+            providers={localizedProviders}
             connectedProviderIds={connectedProviderIds}
             onConnect={openConnect}
           />
         </TabsContent>
         <TabsContent value="connected" className="mt-0">
           <ConnectedView
-            integrations={integrations}
-            providers={seedProviders}
+            integrations={localizedIntegrations}
+            providers={localizedProviders}
             onSelect={(i) => setSelectedIntegrationId(i.id)}
             onTest={handleTest}
             onSync={handleSync}
@@ -509,31 +543,31 @@ export function IntegrationHubView() {
         </TabsContent>
         <TabsContent value="credentials" className="mt-0">
           <CredentialsVault
-            credentials={credentials}
-            providers={seedProviders}
+            credentials={localizedCredentials}
+            providers={localizedProviders}
             onRotate={handleRotate}
           />
         </TabsContent>
         <TabsContent value="webhooks" className="mt-0">
           <WebhooksView
-            endpoints={webhookEndpoints}
+            endpoints={localizedEndpoints}
             events={webhookEvents}
-            providers={seedProviders}
+            providers={localizedProviders}
             onReplay={handleReplay}
           />
         </TabsContent>
         <TabsContent value="sync" className="mt-0">
           <SyncView
             runs={syncRuns}
-            integrations={integrations}
-            providers={seedProviders}
+            integrations={localizedIntegrations}
+            providers={localizedProviders}
             settings={settings}
             onRunNow={handleSync}
             onUpdateSettings={(p) => setSettings((prev) => ({ ...prev, ...p }))}
           />
         </TabsContent>
         <TabsContent value="audit" className="mt-0">
-          <AuditView audit={audit} providers={seedProviders} />
+          <AuditView audit={audit} providers={localizedProviders} />
         </TabsContent>
         <TabsContent value="analytics" className="mt-0">
           <AnalyticsView integrations={integrations} credentials={credentials} />

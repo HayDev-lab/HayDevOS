@@ -268,7 +268,11 @@ function TimelineStep({
             <span className="text-xs font-medium text-foreground">{step.label}</span>
           </div>
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            {step.durationMs > 0 && <span className="font-mono">{step.durationMs}ms</span>}
+            {step.durationMs > 0 && (
+              <span className="font-mono">
+                {step.durationMs} {t("automation.analytics.milliseconds")}
+              </span>
+            )}
             {step.retries > 0 && (
               <Badge variant="outline" className="border-amber/30 bg-amber/10 px-1 py-0 text-[9px] text-amber">
                 <RotateCw className="mr-0.5 h-2.5 w-2.5" />

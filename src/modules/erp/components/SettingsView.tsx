@@ -163,7 +163,7 @@ export function SettingsView() {
                 <Table>
                   <TableHeader className="sticky top-0 z-10 bg-card">
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="w-20">Code</TableHead>
+                      <TableHead className="w-20">{t("erp.settings.code")}</TableHead>
                       <TableHead>{t("erp.settings.account")}</TableHead>
                       <TableHead>{t("erp.settings.type")}</TableHead>
                       <TableHead className="text-right">{t("erp.settings.balance")}</TableHead>
@@ -198,7 +198,7 @@ export function SettingsView() {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead>{t("erp.settings.taxName")}</TableHead>
-                    <TableHead>Country</TableHead>
+                    <TableHead>{t("erp.settings.country")}</TableHead>
                     <TableHead className="text-right">{t("erp.settings.rate")}</TableHead>
                     <TableHead>{t("common.status")}</TableHead>
                   </TableRow>
@@ -213,9 +213,9 @@ export function SettingsView() {
                       </TableCell>
                       <TableCell>
                         {tx.default ? (
-                          <Badge variant="outline" className="border-lime/30 bg-lime/10 text-lime">Default</Badge>
+                          <Badge variant="outline" className="border-lime/30 bg-lime/10 text-lime">{t("erp.settings.default")}</Badge>
                         ) : (
-                          <Badge variant="outline" className="border-border bg-muted text-muted-foreground">Available</Badge>
+                          <Badge variant="outline" className="border-border bg-muted text-muted-foreground">{t("erp.inventory.available")}</Badge>
                         )}
                       </TableCell>
                     </TableRow>
@@ -235,7 +235,7 @@ export function SettingsView() {
                   <TableRow className="hover:bg-transparent">
                     <TableHead>{t("erp.settings.currency")}</TableHead>
                     <TableHead>{t("erp.settings.symbol")}</TableHead>
-                    <TableHead className="text-right">FX rate (→ USD)</TableHead>
+                    <TableHead className="text-right">{t("erp.settings.fxRate")}</TableHead>
                     <TableHead>{t("common.status")}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -247,9 +247,9 @@ export function SettingsView() {
                       <TableCell className="text-right text-sm font-mono">{c.rate.toFixed(4)}</TableCell>
                       <TableCell>
                         {c.default ? (
-                          <Badge variant="outline" className="border-lime/30 bg-lime/10 text-lime">Default</Badge>
+                          <Badge variant="outline" className="border-lime/30 bg-lime/10 text-lime">{t("erp.settings.default")}</Badge>
                         ) : (
-                          <Badge variant="outline" className="border-border bg-muted text-muted-foreground">Active</Badge>
+                          <Badge variant="outline" className="border-border bg-muted text-muted-foreground">{t("common.active")}</Badge>
                         )}
                       </TableCell>
                     </TableRow>
@@ -316,7 +316,7 @@ export function SettingsView() {
                       </div>
                     </div>
                     <div className="mb-1 flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Capacity</span>
+                      <span className="text-muted-foreground">{t("erp.settings.capacity")}</span>
                       <span className={cn("font-semibold", cls.text)}>{w.capacity}%</span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -337,7 +337,7 @@ export function SettingsView() {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead>{t("erp.settings.method")}</TableHead>
-                    <TableHead>Fee</TableHead>
+                    <TableHead>{t("erp.settings.fee")}</TableHead>
                     <TableHead className="text-right">{t("erp.settings.enabled")}</TableHead>
                   </TableRow>
                 </TableHeader>

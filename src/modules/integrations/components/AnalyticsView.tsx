@@ -51,6 +51,7 @@ import {
   avgDurationByProvider,
   credentialHealthBuckets,
 } from "../data";
+import { localizeDisplayText } from "../localization";
 
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -80,18 +81,45 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function AnalyticsView({ integrations, credentials }: Props) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+
+  const localizedStatusBreakdown = statusBreakdown.map((entry) => ({
+    ...entry,
+    label: t(`integration.status.${entry.status}`),
+  }));
+  const localizedSyncSeries = syncSuccessSeries.map((entry) => ({
+    ...entry,
+    day: t(`integration.analytics.weekday.${entry.day}`),
+  }));
+  const localizedEventsByProvider = eventsByProvider.map((entry) => ({
+    ...entry,
+    provider: localizeDisplayText(entry.provider, locale),
+  }));
+  const localizedCredentialHealth = credentialHealthBuckets.map((entry) => ({
+    ...entry,
+    label:
+      entry.bucket === "Healthy"
+        ? t("integration.vault.healthy")
+        : entry.bucket === "Expiring ≤14d"
+          ? t("integration.vault.expiring")
+          : entry.bucket === "Expired"
+            ? t("integration.vault.expired")
+            : t("integration.analytics.noExpiry"),
+  }));
 
   const kpis = useMemo(() => {
     const total = integrations.length;
     const connected = integrations.filter((i) => i.status === "connected").length;
-    const events24h = 4218 + 1421 + 821 + 312 + 198 + 42;
+    const events24h = eventsByProvider.reduce((sum, item) => sum + item.events, 0);
+    const avgDurationMs = avgDurationByProvider.length > 0
+      ? Math.round(avgDurationByProvider.reduce((sum, item) => sum + item.ms, 0) / avgDurationByProvider.length)
+      : null;
     const expiring = credentials.filter((c) => {
       if (!c.expiresAt) return false;
       const days = (new Date(c.expiresAt).getTime() - Date.now()) / 86400000;
       return days <= 14;
     }).length;
-    return { total, connected, events24h, expiring };
+    return { total, connected, events24h, expiring, avgDurationMs };
   }, [integrations, credentials]);
 
   return (
@@ -127,7 +155,7 @@ export function AnalyticsView({ integrations, credentials }: Props) {
         />
         <Kpi
           label={t("integration.analytics.kpi.avgDuration")}
-          value="412ms"
+          value={kpis.avgDurationMs === null ? "—" : `${kpis.avgDurationMs}ms`}
           icon={<Clock className="h-3.5 w-3.5" />}
           tone="amber"
         />
@@ -150,14 +178,14 @@ export function AnalyticsView({ integrations, credentials }: Props) {
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
-                  data={statusBreakdown.filter((d) => d.count > 0)}
+                  data={localizedStatusBreakdown.filter((d) => d.count > 0)}
                   dataKey="count"
-                  nameKey="status"
+                  nameKey="label"
                   innerRadius={55}
                   outerRadius={85}
                   paddingAngle={2}
                 >
-                  {statusBreakdown
+                  {localizedStatusBreakdown
                     .filter((d) => d.count > 0)
                     .map((entry) => (
                       <Cell
@@ -194,7 +222,7 @@ export function AnalyticsView({ integrations, credentials }: Props) {
               {t("integration.analytics.syncSuccess")}
             </div>
             <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={syncSuccessSeries} margin={{ left: -16, right: 4, top: 4 }}>
+              <AreaChart data={localizedSyncSeries} margin={{ left: -16, right: 4, top: 4 }}>
                 <defs>
                   <linearGradient id="syncSuccess" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={COLORS.lime} stopOpacity={0.5} />
@@ -223,6 +251,7 @@ export function AnalyticsView({ integrations, credentials }: Props) {
                 <Area
                   type="monotone"
                   dataKey="success"
+                  name={t("integration.sync.status.success")}
                   stackId="1"
                   stroke={COLORS.lime}
                   fill="url(#syncSuccess)"
@@ -231,6 +260,7 @@ export function AnalyticsView({ integrations, credentials }: Props) {
                 <Area
                   type="monotone"
                   dataKey="partial"
+                  name={t("integration.sync.status.partial")}
                   stackId="1"
                   stroke={COLORS.amber}
                   fill="url(#syncPartial)"
@@ -239,6 +269,7 @@ export function AnalyticsView({ integrations, credentials }: Props) {
                 <Area
                   type="monotone"
                   dataKey="failed"
+                  name={t("integration.sync.status.failed")}
                   stackId="1"
                   stroke={COLORS.rose}
                   fill="url(#syncFailed)"
@@ -266,7 +297,7 @@ export function AnalyticsView({ integrations, credentials }: Props) {
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
-                data={eventsByProvider}
+                data={localizedEventsByProvider}
                 layout="vertical"
                 margin={{ left: 30, right: 12 }}
               >
@@ -288,7 +319,7 @@ export function AnalyticsView({ integrations, credentials }: Props) {
                   }}
                 />
                 <Bar dataKey="events" radius={[0, 4, 4, 0]}>
-                  {eventsByProvider.map((entry, idx) => {
+                  {localizedEventsByProvider.map((entry, idx) => {
                     const palette = [COLORS.violet, COLORS.lime, COLORS.cyan, COLORS.amber, COLORS.rose, COLORS.info];
                     return <Cell key={entry.provider} fill={palette[idx % palette.length]} />;
                   })}
@@ -316,7 +347,7 @@ export function AnalyticsView({ integrations, credentials }: Props) {
                     borderRadius: 8,
                     fontSize: 11,
                   }}
-                  formatter={(v: number) => [`${v}ms`, "duration"]}
+                  formatter={(v: number) => [`${v}ms`, t("integration.analytics.duration")]}
                 />
                 <Bar dataKey="ms" radius={[4, 4, 0, 0]}>
                   {avgDurationByProvider.map((entry) => (
@@ -347,9 +378,9 @@ export function AnalyticsView({ integrations, credentials }: Props) {
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
-                data={credentialHealthBuckets}
+                data={localizedCredentialHealth}
                 dataKey="count"
-                nameKey="bucket"
+                nameKey="label"
                 innerRadius={45}
                 outerRadius={75}
                 paddingAngle={2}

@@ -199,11 +199,11 @@ export function CredentialsVault({ credentials, providers, onRotate }: Props) {
                       </div>
                       {cred.active ? (
                         <Badge className="bg-lime/15 text-lime border-lime/30 px-1.5 py-0 text-[9px]">
-                          active
+                          {t("integration.vault.active")}
                         </Badge>
                       ) : (
                         <Badge className="bg-muted text-muted-foreground border-border px-1.5 py-0 text-[9px]">
-                          inactive
+                          {t("integration.vault.inactive")}
                         </Badge>
                       )}
                     </div>

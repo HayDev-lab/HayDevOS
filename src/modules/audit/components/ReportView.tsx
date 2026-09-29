@@ -271,7 +271,7 @@ export function ReportView({ report, onOpenCompare }: Props) {
             sub={t("audit.report.gapsSub")}
             count={report.gaps.length}
           />
-          <ScrollArea className="max-h-96 rounded-xl border border-border/60 bg-card/40">
+          <ScrollArea className="h-96 rounded-xl border border-border/60 bg-card/40">
             <ul className="divide-y divide-border/40">
               {report.gaps.length === 0 ? (
                 <li className="p-4 text-xs text-muted-foreground">
@@ -332,7 +332,7 @@ export function ReportView({ report, onOpenCompare }: Props) {
             sub={t("audit.report.opportunitiesSub")}
             count={report.opportunities.length}
           />
-          <ScrollArea className="max-h-96 rounded-xl border border-border/60 bg-card/40">
+          <ScrollArea className="h-96 rounded-xl border border-border/60 bg-card/40">
             <ul className="divide-y divide-border/40">
               {report.opportunities.length === 0 ? (
                 <li className="p-4 text-xs text-muted-foreground">
@@ -428,11 +428,11 @@ export function ReportView({ report, onOpenCompare }: Props) {
           count={evidence.length}
         />
         <div className="overflow-hidden rounded-xl border border-border/60">
-          <ScrollArea className="max-h-96">
+          <ScrollArea className="h-96">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow>
-                  <TableHead className="w-16 text-[11px]">Ref</TableHead>
+                  <TableHead className="w-16 text-[11px]">{t("audit.report.reference")}</TableHead>
                   <TableHead className="text-[11px]">{t("audit.report.colQuestion")}</TableHead>
                   <TableHead className="text-[11px]">{t("audit.report.colAnswer")}</TableHead>
                   <TableHead className="text-[11px]">{t("audit.report.colEvidence")}</TableHead>

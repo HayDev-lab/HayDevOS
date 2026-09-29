@@ -11,7 +11,8 @@
  *
  * The engine uses simple keyword matching to pick the most relevant tool(s)
  * for the user's question. It is intentionally rule-based — no randomness,
- * no LLM dependency — so the panel ALWAYS works for demo.
+ * no LLM dependency. Demo aggregation is explicitly disabled unless the
+ * development-only HAYDEV_ALLOW_DEMO_DATA flag is enabled.
  */
 
 import { dispatchTool, summarizeToolResult } from "./tools";
@@ -28,16 +29,30 @@ interface OfflineCtx {
   conversationId: string;
   runId: string;
   mode: OwnerAiMode;
+  allowDemoData: boolean;
+  dispatchRead?: (
+    name: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ result: unknown; durationMs: number }>;
 }
 
 /**
  * Produce an offline response for a user message.
  * The user message is the LAST message in the conversation.
  */
-export function offlineRespond(
+export async function offlineRespond(
   userMessage: string,
   ctx: OfflineCtx,
-): OfflineResult {
+): Promise<OfflineResult> {
+  if (!ctx.allowDemoData && !ctx.dispatchRead) {
+    return {
+      content:
+        "> **Tenant data unavailable** — the AI provider did not return a usable response, and no persistent tenant read adapter is configured. No demo or cross-tenant data was used.",
+      toolCalls: [],
+      proposedActions: [],
+    };
+  }
+
   const q = userMessage.toLowerCase();
   const toolCalls: ToolCallRecord[] = [];
   const proposedActions: ProposedAction[] = [];
@@ -72,8 +87,11 @@ export function offlineRespond(
     calls.push({ name: "getAutomationSummary", args: { window: "30d" } });
     if (/\bfailed\b/.test(q)) calls.push({ name: "getFailedAutomations", args: {} });
   }
-  if (/\b(finance|invoice|overdue|ar aging|payment|erp)\b/.test(q)) {
+  if (/\b(finance|invoice|overdue|ar aging)\b/.test(q)) {
     calls.push({ name: "getFinanceSummary", args: { window: "30d" } });
+  }
+  if (/\b(erp|order|inventory|stock|warehouse|payment|fulfillment)\b/.test(q)) {
+    calls.push({ name: "getErpOverview", args: {} });
   }
   if (/\b(integration|slack|hubspot|stripe|gmail|quickbooks|connect|sync)\b/.test(q)) {
     calls.push({ name: "getIntegrationHealth", args: { window: "30d" } });
@@ -98,17 +116,29 @@ export function offlineRespond(
 
   // De-duplicate by name+args-json.
   const seen = new Set<string>();
-  const uniqueCalls = calls.filter((c) => {
+  let uniqueCalls = calls.filter((c) => {
     const key = c.name + JSON.stringify(c.args);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 
+  if (!ctx.allowDemoData) {
+    const persistentTools = new Set([
+      "getSalesSummary", "getRiskLeads", "getQuoteSummary", "getExpiringQuotes", "searchGlobal",
+      "getDocumentSummary", "findDocuments", "getDocumentMetadata", "listDocumentVersions", "getQuoteDocuments",
+      "findOrders", "getOrder", "getInventory", "findProducts", "getCustomerOrders", "getPaymentStatus", "getErpOverview",
+    ]);
+    uniqueCalls = uniqueCalls.filter((call) => persistentTools.has(call.name));
+    if (uniqueCalls.length === 0) uniqueCalls.push({ name: "getSalesSummary", args: { window: "30d" } });
+  }
+
   // Execute the calls.
   for (const c of uniqueCalls) {
     try {
-      const { result, durationMs } = dispatchTool(c.name, c.args);
+      const { result, durationMs } = ctx.dispatchRead
+        ? await ctx.dispatchRead(c.name, c.args)
+        : dispatchTool(c.name, c.args);
       const { summary, count, preview } = summarizeToolResult(c.name, result);
       const rec = addToolCallRecord({
         conversationId: ctx.conversationId,
@@ -142,7 +172,9 @@ export function offlineRespond(
   }
 
   const content = [
-    `> ⚠️ **Offline mode** — the LLM provider was unavailable. This answer was generated locally using the read tools. The numbers are real (from your mock data), but the prose is templated.`,
+    ctx.allowDemoData
+      ? `> **Development demo mode** — the LLM provider was unavailable. This answer was generated from explicitly enabled synthetic data and must not be treated as tenant data.`
+      : `> **Persistent fallback mode** — the LLM provider was unavailable. This answer uses authenticated PostgreSQL data for the active tenant.`,
     ``,
     body,
   ].join("\n");
@@ -211,6 +243,16 @@ function composeOfflineAnswer(userMessage: string, toolCalls: ToolCallRecord[]):
         break;
       }
       case "getRiskLeads": {
+        const persistent = data as { breached?: { name: string; company: string | null; value: number; currency: string }[]; warning?: { name: string; company: string | null; value: number; currency: string }[] };
+        if (Array.isArray(persistent.breached) || Array.isArray(persistent.warning)) {
+          const breached = persistent.breached ?? [];
+          const warning = persistent.warning ?? [];
+          lines.push(`- **Lead SLA risk:** ${breached.length} breached, ${warning.length} warning.`);
+          for (const lead of [...breached, ...warning].slice(0, 8)) {
+            lines.push(`  - ${lead.name} (${lead.company ?? "—"}) — ${lead.currency} ${lead.value.toLocaleString()}`);
+          }
+          break;
+        }
         const leads = (data as { leads?: { name: string; company: string | null; value: number; currency: string; reason: string; owner: string; staleDays: number }[]; count?: number; totalValue?: number }).leads ?? [];
         const total = (data as { totalValue?: number }).totalValue ?? 0;
         if (leads.length === 0) {
@@ -236,6 +278,13 @@ function composeOfflineAnswer(userMessage: string, toolCalls: ToolCallRecord[]):
         break;
       }
       case "getSalesSummary": {
+        const persistent = data as { dashboard?: { totalLeads: number; activeLeads: number; wonLeads: number; pipelineValue: number; wonValue: number; conversionRate: number } };
+        if (persistent.dashboard) {
+          const dashboard = persistent.dashboard;
+          lines.push(`- **Sales summary:** ${dashboard.totalLeads} total leads, ${dashboard.activeLeads} active, ${dashboard.wonLeads} won.`);
+          lines.push(`- Pipeline value: **${dashboard.pipelineValue.toLocaleString()}**; won value: **${dashboard.wonValue.toLocaleString()}**; conversion: **${(dashboard.conversionRate * 100).toFixed(1)}%**.`);
+          break;
+        }
         const kpis = (data as { kpis?: { label: string; value: string; deltaPct: number }[] }).kpis ?? [];
         const deals = (data as { dealsAtRisk?: { name: string; value: number; currency: string; staleDays: number }[] }).dealsAtRisk ?? [];
         lines.push(`- **Sales summary** (30d):`);
@@ -297,6 +346,14 @@ function composeOfflineAnswer(userMessage: string, toolCalls: ToolCallRecord[]):
         if (overdue.length > 0) lines.push(`- Overdue invoices: ${overdue.length}`);
         break;
       }
+      case "getErpOverview": {
+        const overview = data as { orderStatus?: Record<string, number>; inventory?: { balanceCount: number; outOfStock: number; lowStock: number; reservedLines: number }; ordersByCurrency?: Array<{ currency: string; count: number; total: string }>; paymentsByCurrency?: Array<{ currency: string; net: string }> };
+        lines.push(`- **ERP order status:** ${Object.entries(overview.orderStatus ?? {}).map(([status, count]) => `${status} ${count}`).join(", ") || "no orders"}.`);
+        if (overview.inventory) lines.push(`- **Inventory:** ${overview.inventory.balanceCount} balances, ${overview.inventory.outOfStock} out of stock, ${overview.inventory.lowStock} low stock, ${overview.inventory.reservedLines} reserved lines.`);
+        for (const row of overview.ordersByCurrency ?? []) lines.push(`- Orders: ${row.currency} ${row.total} across ${row.count} orders (no FX conversion).`);
+        for (const row of overview.paymentsByCurrency ?? []) lines.push(`- Confirmed net payments: ${row.currency} ${row.net}.`);
+        break;
+      }
       case "getIntegrationHealth": {
         const kpis = (data as { kpis?: { label: string; value: string }[] }).kpis ?? [];
         const failing = (data as { failing?: { provider: string; status: string }[] }).failing ?? [];
@@ -313,6 +370,15 @@ function composeOfflineAnswer(userMessage: string, toolCalls: ToolCallRecord[]):
         break;
       }
       case "searchGlobal": {
+        const persistentLeads = (data as { leads?: { id: string; name: string; company: string | null; stage: string; value: number; currency: string }[] }).leads;
+        if (Array.isArray(persistentLeads)) {
+          if (persistentLeads.length === 0) lines.push("- No matching leads found in the active tenant.");
+          else {
+            lines.push(`- Found **${persistentLeads.length} matching leads** in the active tenant:`);
+            for (const lead of persistentLeads.slice(0, 8)) lines.push(`  - ${lead.name} (${lead.company ?? "—"}) — ${lead.stage} — ${lead.currency} ${lead.value.toLocaleString()}`);
+          }
+          break;
+        }
         const results = (data as { results?: { type: string; label: string; sub?: string }[]; count?: number; query?: string }).results ?? [];
         if (results.length === 0) {
           lines.push(`- No matches found for "${(data as { query?: string }).query ?? "?"}"`);

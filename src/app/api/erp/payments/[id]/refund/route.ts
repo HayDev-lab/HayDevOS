@@ -1,0 +1,3 @@
+import { NextResponse, type NextRequest } from "next/server"; import { withTenantApi } from "@/lib/api/handler"; import { parseJson } from "@/lib/api/request"; import { erpContext, paymentRefundSchema, refundPayment, routeId } from "@/lib/erp";
+export const runtime = "nodejs"; export const dynamic = "force-dynamic"; type Route = { params: Promise<{ id: string }> };
+export async function POST(req: NextRequest, route: Route) { return withTenantApi(req, { mutation: true }, async (auth) => NextResponse.json({ payment: await refundPayment(erpContext(auth, req), routeId((await route.params).id), await parseJson(req, paymentRefundSchema)) }, { status: 201 })); }

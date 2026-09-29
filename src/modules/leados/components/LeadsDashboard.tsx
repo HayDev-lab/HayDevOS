@@ -50,17 +50,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import {
-  allLeads,
-  allActivities,
-  getDashboardKpis,
-  getStageStats,
-  getSourceStats,
-  leadsOverTimeBuckets,
+  asLeadRecord,
   LEAD_STAGES,
   STAGE_BY_ID,
   LEAD_SOURCES,
   SOURCE_BY_ID,
 } from "../data";
+import { useLeadOSData } from "../LeadOSData";
 import { activityTone } from "./shared";
 import type { LucideIcon } from "lucide-react";
 
@@ -222,18 +218,30 @@ const CHART_TOOLTIP_STYLE = {
 
 export function LeadsDashboard() {
   const { t, locale } = useLocale();
-
-  const kpis = useMemo(() => getDashboardKpis(allLeads), []);
-  const stageStats = useMemo(() => getStageStats(allLeads), []);
-  const sourceStats = useMemo(() => getSourceStats(allLeads), []);
-  const overTime = useMemo(() => leadsOverTimeBuckets(allLeads), []);
-  const recentActivities = useMemo(
-    () =>
-      [...allActivities]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 8),
-    [],
-  );
+  const { overview } = useLeadOSData();
+  const data = overview!;
+  const allLeads = data.leads.map(asLeadRecord);
+  const stageStats = data.stageStats;
+  const sourceStats = data.sourceStats;
+  const overTime = data.leadsOverTime;
+  const recentActivities = data.recentActivities.slice(0, 8);
+  const responded = allLeads.filter((lead) => lead.firstResponseAt);
+  const avgResponseTimeMinutes = responded.length
+    ? Math.round(responded.reduce((sum, lead) => sum + (new Date(lead.firstResponseAt!).getTime() - new Date(lead.createdAt).getTime()) / 60_000, 0) / responded.length)
+    : 0;
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1);
+  const slaEligible = Math.max(data.dashboard.activeLeads, 1);
+  const kpis = {
+    ...data.dashboard,
+    newToday: allLeads.filter((lead) => new Date(lead.createdAt) >= startOfToday).length,
+    inPipeline: data.dashboard.activeLeads,
+    wonThisMonth: allLeads.filter((lead) => lead.stage === "won" && new Date(lead.updatedAt) >= startOfMonth).length,
+    avgResponseTimeMinutes,
+    slaBreaches: data.dashboard.slaBreached,
+    slaCompliancePct: Math.max(0, Math.round(((slaEligible - data.dashboard.slaBreached) / slaEligible) * 100)),
+  };
 
   // Funnel chart data — only open + won stages (skip lost)
   const funnelData = useMemo(

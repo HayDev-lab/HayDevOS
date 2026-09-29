@@ -6,10 +6,11 @@
  */
 
 import { motion } from "framer-motion";
-import { Plus, ArrowRight, Zap, Pause, Play, Edit3 } from "lucide-react";
+import { Plus, Zap, Pause, Play, Edit3 } from "lucide-react";
 import { useLocale } from "@/lib/i18n";
 import { cn, relativeTime, toneClasses, statusColor } from "@/lib/utils";
 import type { Automation } from "../types";
+import { localizeAutomationText } from "../localization";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -21,7 +22,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Props {
   automations: Automation[];
@@ -51,19 +51,37 @@ export function AutomationsListView({ automations, onNew, onEdit, onToggle }: Pr
         </Button>
       </div>
 
-      <div className="rounded-xl border border-border bg-card/40">
-        <ScrollArea className="max-h-[640px]">
-          <Table>
+      <div
+        className="h-[clamp(360px,calc(100dvh-20rem),640px)] overflow-auto overscroll-contain rounded-xl border border-border bg-card/40 [scrollbar-gutter:stable] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime/35"
+        data-automation-scroll-region
+        tabIndex={0}
+        aria-label={t("automation.tab.automations")}
+      >
+          <Table
+            className="min-w-[1180px] table-fixed"
+            containerClassName="min-w-[1180px] overflow-visible"
+          >
+            <colgroup>
+              <col className="w-[28%]" />
+              <col className="w-[15%]" />
+              <col className="w-[13%]" />
+              <col className="w-[10%]" />
+              <col className="w-[8%]" />
+              <col className="w-[10%]" />
+              <col className="w-[7%]" />
+              <col className="w-[4%]" />
+              <col className="w-[5%]" />
+            </colgroup>
             <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur">
               <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="w-[34%]">{t("automation.col.name")}</TableHead>
-                <TableHead>{t("automation.col.trigger")}</TableHead>
-                <TableHead className="text-center">{t("automation.col.actions")}</TableHead>
-                <TableHead>{t("automation.col.status")}</TableHead>
-                <TableHead className="text-right">{t("automation.col.successRate")}</TableHead>
-                <TableHead>{t("automation.col.lastRun")}</TableHead>
-                <TableHead className="text-center">{t("automation.col.version")}</TableHead>
-                <TableHead className="text-center">{t("automation.col.enabled")}</TableHead>
+                <TableHead className="whitespace-normal text-[11px] leading-tight">{t("automation.col.name")}</TableHead>
+                <TableHead className="whitespace-normal text-[11px] leading-tight">{t("automation.col.trigger")}</TableHead>
+                <TableHead className="whitespace-normal text-center text-[11px] leading-tight">{t("automation.col.actions")}</TableHead>
+                <TableHead className="whitespace-normal text-[11px] leading-tight">{t("automation.col.status")}</TableHead>
+                <TableHead className="whitespace-normal text-right text-[11px] leading-tight">{t("automation.col.successRate")}</TableHead>
+                <TableHead className="whitespace-normal text-[11px] leading-tight">{t("automation.col.lastRun")}</TableHead>
+                <TableHead className="whitespace-normal text-center text-[11px] leading-tight">{t("automation.col.version")}</TableHead>
+                <TableHead className="whitespace-normal text-center text-[11px] leading-tight">{t("automation.col.enabled")}</TableHead>
                 <TableHead className="text-right"></TableHead>
               </TableRow>
             </TableHeader>
@@ -81,29 +99,38 @@ export function AutomationsListView({ automations, onNew, onEdit, onToggle }: Pr
                     className="group cursor-pointer border-border transition-colors hover:bg-muted/30"
                     onClick={() => onEdit(a.id)}
                   >
-                    <TableCell className="py-3">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-medium text-foreground">{a.name}</span>
+                    <TableCell className="overflow-hidden whitespace-normal py-3">
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        <span className="line-clamp-2 font-medium text-foreground" title={a.name}>
+                          {a.name}
+                        </span>
                         {a.description && (
                           <span className="line-clamp-1 text-xs text-muted-foreground">
                             {a.description}
                           </span>
                         )}
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                        <span className="truncate text-[10px] uppercase tracking-wider text-muted-foreground/70">
                           {a.dedupKey}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="gap-1 border-border bg-muted/40 text-xs">
+                    <TableCell className="overflow-hidden">
+                      <Badge variant="outline" className="max-w-full gap-1 border-border bg-muted/40 text-xs">
                         <Zap className="h-3 w-3 text-cyan" />
-                        {a.trigger.type}
+                        <span
+                          className="truncate"
+                          title={localizeAutomationText(a.trigger.type, locale)}
+                        >
+                          {localizeAutomationText(a.trigger.type, locale)}
+                        </span>
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="text-sm text-foreground">{a.actions.length}</span>
+                      <span className="text-xs text-foreground">
+                        {t("automation.actionCount", { count: a.actions.length })}
+                      </span>
                       <span className="ml-1 text-xs text-muted-foreground">
-                        / {a.conditions.length}c
+                        / {t("automation.conditionCount", { count: a.conditions.length })}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -137,7 +164,7 @@ export function AutomationsListView({ automations, onNew, onEdit, onToggle }: Pr
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="whitespace-normal text-xs leading-tight text-muted-foreground">
                       {a.runs.lastRunAt ? relativeTime(a.runs.lastRunAt, locale) : t("automation.neverRun")}
                     </TableCell>
                     <TableCell className="text-center text-xs text-muted-foreground">
@@ -153,31 +180,30 @@ export function AutomationsListView({ automations, onNew, onEdit, onToggle }: Pr
                       </div>
                     </TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+                      <div className="flex items-center justify-end gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 gap-1.5 px-2 text-xs"
+                          className="h-8 w-8 p-0"
                           onClick={() => onToggle(a.id)}
+                          title={a.status === "active" ? t("automation.toggle.pause") : t("automation.toggle.activate")}
+                          aria-label={a.status === "active" ? t("automation.toggle.pause") : t("automation.toggle.activate")}
                         >
                           {a.status === "active" ? (
-                            <>
-                              <Pause className="h-3.5 w-3.5" /> {t("automation.toggle.pause")}
-                            </>
+                            <Pause className="h-3.5 w-3.5" />
                           ) : (
-                            <>
-                              <Play className="h-3.5 w-3.5" /> {t("automation.toggle.activate")}
-                            </>
+                            <Play className="h-3.5 w-3.5" />
                           )}
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 gap-1.5 px-2 text-xs"
+                          className="h-8 w-8 p-0"
                           onClick={() => onEdit(a.id)}
+                          title={t("automation.edit")}
+                          aria-label={t("automation.edit")}
                         >
-                          <Edit3 className="h-3.5 w-3.5" /> {t("automation.edit")}
-                          <ArrowRight className="h-3 w-3" />
+                          <Edit3 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </TableCell>
@@ -193,7 +219,6 @@ export function AutomationsListView({ automations, onNew, onEdit, onToggle }: Pr
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
       </div>
     </div>
   );

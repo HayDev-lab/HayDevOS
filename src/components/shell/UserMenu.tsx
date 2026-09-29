@@ -14,16 +14,13 @@ import {
   Settings as SettingsIcon,
   History,
   Languages,
-  Sun,
-  Moon,
   User as UserIcon,
   Building2,
-  Monitor,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
-import { useAppStore, MOCK_ORGS } from "@/lib/store/app-store";
+import { useAuth } from "@/components/auth/AuthContext";
+import { useAppStore } from "@/lib/store/app-store";
 import { useLocale, LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n";
 import { initials } from "@/lib/utils";
 
@@ -52,16 +49,21 @@ interface UserMenuProps {
 
 export function UserMenu({ onOpenSettings, onLogout }: UserMenuProps) {
   const { t, locale, setLocale } = useLocale();
-  const { theme, setTheme } = useTheme();
-  const { user, activeOrgId, setActiveOrg, setSearchQuery } = useAppStore();
+  const { session, switchOrganization } = useAuth();
+  const { user, organizations, activeOrganization } = session;
+  const { setSearchQuery } = useAppStore();
   const [auditOpen, setAuditOpen] = useState(false);
 
-  function handleOrgSwitch(orgId: string) {
-    const org = MOCK_ORGS.find((o) => o.id === orgId);
-    if (!org || orgId === activeOrgId) return;
-    setActiveOrg(orgId);
-    setSearchQuery("");
-    toast.success(t("shell.toast.orgSwitched", { org: org.name }));
+  async function handleOrgSwitch(orgId: string) {
+    const org = organizations.find((candidate) => candidate.id === orgId);
+    if (!org || orgId === activeOrganization.id) return;
+    try {
+      await switchOrganization(orgId);
+      setSearchQuery("");
+      toast.success(t("shell.toast.orgSwitched", { org: org.name }));
+    } catch {
+      toast.error("Could not switch organization");
+    }
   }
 
   function handleLogout() {
@@ -131,7 +133,7 @@ export function UserMenu({ onOpenSettings, onLogout }: UserMenuProps) {
           <DropdownMenuLabel className="px-3 pt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
             {t("shell.topbar.switchOrg")}
           </DropdownMenuLabel>
-          {MOCK_ORGS.map((org) => (
+          {organizations.map((org) => (
             <DropdownMenuItem
               key={org.id}
               onClick={() => handleOrgSwitch(org.id)}
@@ -142,7 +144,7 @@ export function UserMenu({ onOpenSettings, onLogout }: UserMenuProps) {
               <span className="text-[10px] uppercase text-muted-foreground">
                 {org.plan}
               </span>
-              {org.id === activeOrgId && (
+              {org.id === activeOrganization.id && (
                 <Check className="h-3.5 w-3.5 text-lime" />
               )}
             </DropdownMenuItem>
@@ -166,37 +168,6 @@ export function UserMenu({ onOpenSettings, onLogout }: UserMenuProps) {
                     {LOCALE_LABELS[l]}
                   </DropdownMenuRadioItem>
                 ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-
-          {/* Theme submenu */}
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="gap-2 px-3 py-2">
-              {theme === "light" ? (
-                <Sun className="h-3.5 w-3.5 text-amber" />
-              ) : (
-                <Moon className="h-3.5 w-3.5 text-cyan" />
-              )}
-              <span className="text-sm">{t("shell.user.theme")}</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="w-[180px]">
-              <DropdownMenuRadioGroup
-                value={theme ?? "dark"}
-                onValueChange={(v) => setTheme(v)}
-              >
-                <DropdownMenuRadioItem value="dark">
-                  <Moon className="mr-1.5 h-3.5 w-3.5" />
-                  {t("shell.user.themeDark")}
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="light">
-                  <Sun className="mr-1.5 h-3.5 w-3.5" />
-                  {t("shell.user.themeLight")}
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="system">
-                  <Monitor className="mr-1.5 h-3.5 w-3.5" />
-                  {t("shell.user.themeSystem")}
-                </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuSubContent>
           </DropdownMenuSub>

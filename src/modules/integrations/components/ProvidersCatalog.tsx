@@ -182,12 +182,13 @@ function ProviderCard({
               </div>
               <div className="mt-1 flex flex-wrap gap-1">
                 {provider.requiredScopes.slice(0, 4).map((s) => (
-                  <code
+                  <span
                     key={s}
-                    className="font-mono text-[10px] text-cyan"
+                    title={s}
+                    className="rounded bg-cyan/5 px-1 py-0.5 text-[10px] leading-tight text-cyan"
                   >
-                    {s}
-                  </code>
+                    {t(`integration.scope.${s}`)}
+                  </span>
                 ))}
                 {provider.requiredScopes.length > 4 && (
                   <span className="text-[10px] text-muted-foreground">

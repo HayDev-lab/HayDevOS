@@ -142,9 +142,9 @@ export function SettingsView({ initial }: Props) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fixed">fixed</SelectItem>
-                  <SelectItem value="linear">linear</SelectItem>
-                  <SelectItem value="exponential">exponential</SelectItem>
+                  <SelectItem value="fixed">{t("automation.settings.backoff.fixed")}</SelectItem>
+                  <SelectItem value="linear">{t("automation.settings.backoff.linear")}</SelectItem>
+                  <SelectItem value="exponential">{t("automation.settings.backoff.exponential")}</SelectItem>
                 </SelectContent>
               </Select>
             </Field>

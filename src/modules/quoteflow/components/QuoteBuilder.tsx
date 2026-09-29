@@ -735,7 +735,7 @@ export function QuoteBuilder({ seed }: { seed: BuilderSeed | null }) {
                   <span className="font-mono font-semibold text-foreground">
                     {previewNumber}
                   </span>
-                  <Badge variant="outline" className="text-[10px]">draft</Badge>
+                  <Badge variant="outline" className="text-[10px]">{t("common.draft")}</Badge>
                 </div>
                 <div className="text-muted-foreground">
                   <div><span className="text-foreground/70">{t("quoteflow.clientShare.to")}:</span> {customer?.name ?? lead?.company ?? lead?.name ?? t("quoteflow.builder.noCustomer")}</div>

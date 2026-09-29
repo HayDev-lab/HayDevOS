@@ -32,6 +32,14 @@ import type {
   AutomationTemplate,
   Approval,
 } from "./types";
+import {
+  localizeApproval,
+  localizeAutomation,
+  localizeAutomationRun,
+  localizeAutomationTemplate,
+  localizeSchedule,
+  localizeWebhook,
+} from "./localization";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -64,7 +72,7 @@ type TabId =
   | "settings";
 
 export function AutomationBuilderView() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [tab, setTab] = useState<TabId>("automations");
 
   // Shared in-memory state — the list view mutates this; the builder reads it.
@@ -74,9 +82,34 @@ export function AutomationBuilderView() {
   const [schedules, setSchedules] = useState(seedSchedules);
   const [variables, setVariables] = useState(seedVariables);
 
+  const localizedAutomations = useMemo(
+    () => automations.map((item) => localizeAutomation(item, locale)),
+    [automations, locale],
+  );
+  const localizedRuns = useMemo(
+    () => automationRuns.map((item) => localizeAutomationRun(item, locale)),
+    [locale],
+  );
+  const localizedApprovals = useMemo(
+    () => approvals.map((item) => localizeApproval(item, locale)),
+    [approvals, locale],
+  );
+  const localizedSchedules = useMemo(
+    () => schedules.map((item) => localizeSchedule(item, locale)),
+    [schedules, locale],
+  );
+  const localizedTemplates = useMemo(
+    () => automationTemplates.map((item) => localizeAutomationTemplate(item, locale)),
+    [locale],
+  );
+  const localizedWebhooks = useMemo(
+    () => webhookEndpoints.map((item) => localizeWebhook(item, locale)),
+    [locale],
+  );
+
   const editing = useMemo(
-    () => automations.find((a) => a.id === editingId) ?? null,
-    [automations, editingId],
+    () => localizedAutomations.find((a) => a.id === editingId) ?? null,
+    [localizedAutomations, editingId],
   );
 
   const pendingApprovals = approvals.filter((a) => a.status === "pending").length;
@@ -268,7 +301,7 @@ export function AutomationBuilderView() {
 
         <TabsContent value="automations" className="mt-0">
           <AutomationsListView
-            automations={automations}
+            automations={localizedAutomations}
             onNew={startNewAutomation}
             onEdit={openInBuilder}
             onToggle={toggleAutomationStatus}
@@ -277,7 +310,7 @@ export function AutomationBuilderView() {
         <TabsContent value="builder" className="mt-0">
           {editing ? (
             <VisualBuilder
-              key={editing.id}
+              key={`${editing.id}:${locale}`}
               automation={editing}
               onPatch={(patch) => patchAutomation(editing.id, patch)}
             />
@@ -288,26 +321,36 @@ export function AutomationBuilderView() {
           )}
         </TabsContent>
         <TabsContent value="templates" className="mt-0">
-          <TemplatesView templates={automationTemplates} onUse={useTemplate} />
+          <TemplatesView templates={localizedTemplates} onUse={useTemplate} />
         </TabsContent>
         <TabsContent value="executions" className="mt-0">
-          <ExecutionsView runs={automationRuns} />
+          <ExecutionsView runs={localizedRuns} />
         </TabsContent>
         <TabsContent value="failed" className="mt-0">
           <FailedJobsView
-            runs={automationRuns.filter((r) => r.status === "failed")}
+            runs={localizedRuns.filter((r) => r.status === "failed")}
             onRetry={retryRun}
             onCancel={cancelRun}
           />
         </TabsContent>
         <TabsContent value="approvals" className="mt-0">
-          <ApprovalsView approvals={approvals} onDecide={decideApproval} />
+          <ApprovalsView approvals={localizedApprovals} onDecide={decideApproval} />
         </TabsContent>
         <TabsContent value="schedules" className="mt-0">
-          <SchedulesView schedules={schedules} onUpdate={setSchedules} />
+          <SchedulesView
+            schedules={localizedSchedules}
+            onUpdate={(next) =>
+              setSchedules((current) =>
+                current.map((item) => ({
+                  ...item,
+                  status: next.find((candidate) => candidate.id === item.id)?.status ?? item.status,
+                })),
+              )
+            }
+          />
         </TabsContent>
         <TabsContent value="webhooks" className="mt-0">
-          <WebhooksView endpoints={webhookEndpoints} />
+          <WebhooksView endpoints={localizedWebhooks} />
         </TabsContent>
         <TabsContent value="variables" className="mt-0">
           <VariablesView variables={variables} onChange={setVariables} />
@@ -316,7 +359,7 @@ export function AutomationBuilderView() {
           <WorkersView workers={workers} />
         </TabsContent>
         <TabsContent value="analytics" className="mt-0">
-          <AnalyticsView runs={automationRuns} />
+          <AnalyticsView runs={localizedRuns} />
         </TabsContent>
         <TabsContent value="settings" className="mt-0">
           <SettingsView initial={engineSettings} />

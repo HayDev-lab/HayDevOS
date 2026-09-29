@@ -36,6 +36,7 @@ import {
   failureReasons,
   approvalWaitBuckets,
 } from "../data";
+import { localizeAutomationText } from "../localization";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface Props {
@@ -51,7 +52,24 @@ const COLORS = {
 };
 
 export function AnalyticsView({ runs }: Props) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+
+  const localizedTimeSeries = useMemo(
+    () => executionsTimeSeries.map((item) => ({ ...item, day: localizeAutomationText(item.day, locale) })),
+    [locale],
+  );
+  const localizedTopAutomations = useMemo(
+    () => topAutomationsByRuns.map((item) => ({ ...item, name: localizeAutomationText(item.name, locale) })),
+    [locale],
+  );
+  const localizedFailureReasons = useMemo(
+    () => failureReasons.map((item) => ({ ...item, reason: localizeAutomationText(item.reason, locale) })),
+    [locale],
+  );
+  const localizedApprovalWait = useMemo(
+    () => approvalWaitBuckets.map((item) => ({ ...item, bucket: localizeAutomationText(item.bucket, locale) })),
+    [locale],
+  );
 
   const kpis = useMemo(() => {
     const total = runs.length;
@@ -96,8 +114,8 @@ export function AnalyticsView({ runs }: Props) {
           icon={<Clock className="h-4 w-4" />}
           tone="violet"
           label={t("automation.analytics.avgDuration")}
-          value={kpis.avgDuration > 0 ? `${kpis.avgDuration}ms` : "—"}
-          sub="p50"
+          value={kpis.avgDuration > 0 ? `${kpis.avgDuration} ${t("automation.analytics.milliseconds")}` : "—"}
+          sub={t("automation.analytics.median")}
         />
         <KpiCard
           icon={<Hourglass className="h-4 w-4" />}
@@ -117,7 +135,7 @@ export function AnalyticsView({ runs }: Props) {
             </h3>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={executionsTimeSeries} margin={{ top: 4, right: 8, bottom: 4, left: -16 }}>
+                <AreaChart data={localizedTimeSeries} margin={{ top: 4, right: 8, bottom: 4, left: -16 }}>
                   <defs>
                     <linearGradient id="grad-success" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={COLORS.lime} stopOpacity={0.4} />
@@ -186,7 +204,7 @@ export function AnalyticsView({ runs }: Props) {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={failureReasons}
+                    data={localizedFailureReasons}
                     dataKey="count"
                     nameKey="reason"
                     innerRadius={48}
@@ -194,7 +212,7 @@ export function AnalyticsView({ runs }: Props) {
                     paddingAngle={2}
                     isAnimationActive={false}
                   >
-                    {failureReasons.map((_, i) => (
+                    {localizedFailureReasons.map((_, i) => (
                       <Cell
                         key={i}
                         fill={[COLORS.rose, COLORS.amber, COLORS.violet, COLORS.cyan, COLORS.lime, "var(--muted-foreground)"][i % 6]}
@@ -231,7 +249,7 @@ export function AnalyticsView({ runs }: Props) {
             <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={topAutomationsByRuns}
+                  data={localizedTopAutomations}
                   layout="vertical"
                   margin={{ top: 4, right: 16, bottom: 4, left: 8 }}
                 >
@@ -276,7 +294,7 @@ export function AnalyticsView({ runs }: Props) {
             </h3>
             <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={approvalWaitBuckets} margin={{ top: 4, right: 8, bottom: 4, left: -16 }}>
+                <BarChart data={localizedApprovalWait} margin={{ top: 4, right: 8, bottom: 4, left: -16 }}>
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="bucket" stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
                   <YAxis stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />

@@ -3,8 +3,7 @@
 /**
  * Control — ExecutiveSnapshot.
  *
- * The hero dashboard: big KPI grid (11 KPIs aggregated from real mock data) +
- * a "Needs Attention" top-5 feed + a module health grid + the ecosystem viz.
+ * The hero dashboard: KPI grid, attention feed, and module health.
  *
  * Every KPI card drilldowns into its source module via `useAppStore.setActiveModule`.
  */
@@ -25,7 +24,6 @@ import {
   Plug,
   ArrowRight,
   Activity,
-  Boxes,
   type LucideIcon,
 } from "lucide-react";
 
@@ -34,7 +32,6 @@ import { useAppStore } from "@/lib/store/app-store";
 import { cn, relativeTime, toneClasses } from "@/lib/utils";
 import type { ExecutiveSnapshot as Snapshot, ModuleHealth } from "../types";
 import { KpiCard, PriorityBadge } from "./KpiCard";
-import { EcosystemViz } from "./EcosystemViz";
 
 const KPI_ICONS: Record<string, LucideIcon> = {
   "kpi-revenue": DollarSign,
@@ -82,9 +79,9 @@ export function ExecutiveSnapshot({ snapshot }: { snapshot: Snapshot }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4">
         {/* Needs attention top 5 */}
-        <section className="surface-elevated lg:col-span-2 rounded-xl border border-border/60 p-4">
+        <section className="surface-elevated rounded-xl border border-border/60 p-4">
           <header className="mb-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber" />
@@ -142,19 +139,6 @@ export function ExecutiveSnapshot({ snapshot }: { snapshot: Snapshot }) {
           </ul>
         </section>
 
-        {/* Ecosystem viz */}
-        <section className="surface-elevated rounded-xl border border-border/60 p-4">
-          <header className="mb-3 flex items-center gap-2">
-            <Boxes className="h-4 w-4 text-cyan" />
-            <h3 className="text-sm font-semibold text-foreground">
-              {t("control.ecosystem.title")}
-            </h3>
-          </header>
-          <EcosystemViz nodes={snapshot.ecosystem.nodes} edges={snapshot.ecosystem.edges} className="aspect-square w-full" />
-          <p className="mt-2 text-[10px] text-muted-foreground/70">
-            {t("control.ecosystem.hint")}
-          </p>
-        </section>
       </div>
 
       {/* Module health grid */}
@@ -189,7 +173,7 @@ export function ExecutiveSnapshot({ snapshot }: { snapshot: Snapshot }) {
                   <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
                     <div
                       className={cn("h-full rounded-full", cls.dot)}
-                      style={{ width: `${Math.max(8, Math.round(m.score * 100))}%` }}
+                      style={{ width: `${Math.max(0, Math.round(m.score * 100))}%` }}
                     />
                   </div>
                   <span className="text-[10px] text-muted-foreground/70">

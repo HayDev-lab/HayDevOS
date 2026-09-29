@@ -179,11 +179,11 @@ function StockAdjustDialog({
 
             <div className="rounded-md border border-border bg-muted/40 p-3 text-sm">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span>Current stock</span>
+                <span>{t("erp.inventory.currentStock")}</span>
                 <span className="font-medium text-foreground">{target.stock}</span>
               </div>
               <div className="mt-1 flex items-center justify-between">
-                <span className="text-muted-foreground">After adjustment</span>
+                <span className="text-muted-foreground">{t("erp.inventory.afterAdjustment")}</span>
                 <span className={cn(
                   "font-semibold",
                   newStock > target.stock ? "text-success" : newStock < target.stock ? "text-destructive" : "text-foreground",
@@ -210,10 +210,10 @@ function StockAdjustDialog({
         actionLabel={`${t("erp.inventory.adjust")}: ${target.sku} → ${newStock}`}
         details={
           <div className="space-y-1">
-            <div>Type: <span className="font-mono">{type}</span></div>
-            <div>Quantity: <span className="font-mono">{qty}</span></div>
-            <div>Reason: <span className="font-mono">{reason || "—"}</span></div>
-            <div>Current: <span className="font-mono">{target.stock}</span> → New: <span className="font-mono">{newStock}</span></div>
+            <div>{t("erp.inventory.adjust.type")}: <span className="font-mono">{type}</span></div>
+            <div>{t("erp.inventory.adjust.qty")}: <span className="font-mono">{qty}</span></div>
+            <div>{t("erp.inventory.adjust.reason")}: <span className="font-mono">{reason || "—"}</span></div>
+            <div>{t("erp.inventory.current")}: <span className="font-mono">{target.stock}</span> → {t("erp.inventory.new")}: <span className="font-mono">{newStock}</span></div>
           </div>
         }
         tone="primary"

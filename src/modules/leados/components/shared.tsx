@@ -11,14 +11,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   STAGE_BY_ID,
   SOURCE_BY_ID,
-  TEAM_BY_ID,
   getSlaStatus,
   slaStatusTone,
   type SlaStatus,
   type LeadStage,
   type LeadSource,
-  type MockLead,
+  type LeadRecord,
 } from "../data";
+import { useLeadOSData } from "../LeadOSData";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stage badge — color-coded per LEAD_STAGES tone
@@ -87,16 +87,16 @@ export function SlaBadge({ status, label, className }: { status: SlaStatus; labe
 }
 
 /** Convenience: compute SLA badge directly from a lead. */
-export function LeadSlaBadge({ lead, label }: { lead: MockLead; label: (s: SlaStatus) => string }) {
+export function LeadSlaBadge({ lead, label }: { lead: LeadRecord; label: (s: SlaStatus) => string }) {
   const status = getSlaStatus(lead);
   return <SlaBadge status={status} label={label(status)} />;
 }
 
-export function slaStatusForLead(lead: MockLead): SlaStatus {
+export function slaStatusForLead(lead: LeadRecord): SlaStatus {
   return getSlaStatus(lead);
 }
 
-export function slaToneForLead(lead: MockLead): StatusTone {
+export function slaToneForLead(lead: LeadRecord): StatusTone {
   return slaStatusTone(getSlaStatus(lead));
 }
 
@@ -109,11 +109,12 @@ export function OwnerAvatar({
   size = "sm",
   className,
 }: {
-  ownerId: string;
+  ownerId: string | null;
   size?: "xs" | "sm" | "md";
   className?: string;
 }) {
-  const m = TEAM_BY_ID[ownerId];
+  const { overview } = useLeadOSData();
+  const m = overview?.members.find((member) => member.id === ownerId);
   const sizeCls = size === "xs" ? "size-6 text-[10px]" : size === "md" ? "size-9 text-sm" : "size-7 text-xs";
   if (!m) {
     return (
@@ -130,15 +131,11 @@ export function OwnerAvatar({
   );
 }
 
-export function ownerName(ownerId: string): string {
-  return TEAM_BY_ID[ownerId]?.name ?? ownerId;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Activity type icon helper (returns emoji-ish dot for timeline)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function activityTone(type: MockLead["stage"] | string): StatusTone {
+export function activityTone(type: LeadRecord["stage"] | string): StatusTone {
   switch (type) {
     case "call":
     case "meeting":

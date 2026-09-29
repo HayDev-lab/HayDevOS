@@ -521,7 +521,7 @@ function InventoryValuationReport() {
                   </TableRow>
                 ))}
                 <TableRow className="border-t-2 border-t-border">
-                  <TableCell colSpan={3} className="font-semibold">Total</TableCell>
+                  <TableCell colSpan={3} className="font-semibold">{t("erp.invoice.total")}</TableCell>
                   <TableCell className="text-right font-semibold text-foreground">{formatCurrency(totalValuation)}</TableCell>
                 </TableRow>
               </TableBody>

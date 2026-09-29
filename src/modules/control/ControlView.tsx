@@ -18,7 +18,7 @@
  * `useAppStore.setActiveModule`.
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Gauge,
@@ -37,7 +37,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { useLocale } from "@/lib/i18n";
+import { t as translateText, useLocale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
   Tabs,
@@ -70,6 +70,7 @@ import { ErpFinanceView } from "./components/ErpFinanceView";
 import { IntegrationsView } from "./components/IntegrationsView";
 import { SlaOperationsView } from "./components/SlaOperationsView";
 import { AiInsightsView } from "./components/AiInsightsView";
+import { OwnerCommandHero } from "./components/OwnerCommandHero";
 
 type TabId =
   | "snapshot"
@@ -102,44 +103,62 @@ const TABS: TabDef[] = [
   { id: "ai", labelKey: "control.tab.ai", icon: Sparkles },
 ];
 
-export function ControlView() {
-  const { t } = useLocale();
+export function ControlView({ ownerHome = false }: { ownerHome?: boolean }) {
+  const { locale, t } = useLocale();
+  const translate = useCallback(
+    (key: string, params?: Record<string, string | number>) =>
+      translateText(key, locale, params),
+    [locale],
+  );
   const [tab, setTab] = useState<TabId>("snapshot");
   const [window, setWindow] = useState<TimeWindow>("30d");
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Re-compute all summaries when window or refresh key changes.
-  const snapshot = useMemo(() => getExecutiveSnapshot(window), [window, refreshKey]);
-  const attention = useMemo(() => getAttentionItems(window), [window, refreshKey]);
-  const sales = useMemo(() => getSalesSummary(window), [window, refreshKey]);
-  const quotes = useMemo(() => getQuoteSummary(window), [window, refreshKey]);
-  const documents = useMemo(() => getDocumentSummary(window), [window, refreshKey]);
-  const automations = useMemo(() => getAutomationSummary(window), [window, refreshKey]);
-  const finance = useMemo(() => getFinanceSummary(window), [window, refreshKey]);
-  const integrations = useMemo(() => getIntegrationHealth(window), [window, refreshKey]);
-  const sla = useMemo(() => getSlaOperations(window), [window, refreshKey]);
-  const ai = useMemo(() => getAiInsights(window), [window, refreshKey]);
+  const snapshot = useMemo(() => getExecutiveSnapshot(window, translate), [window, refreshKey, translate]);
+  const attention = useMemo(() => getAttentionItems(window, translate), [window, refreshKey, translate]);
+  const sales = useMemo(() => getSalesSummary(window, translate), [window, refreshKey, translate]);
+  const quotes = useMemo(() => getQuoteSummary(window, translate), [window, refreshKey, translate]);
+  const documents = useMemo(() => getDocumentSummary(window, translate), [window, refreshKey, translate]);
+  const automations = useMemo(() => getAutomationSummary(window, translate), [window, refreshKey, translate]);
+  const finance = useMemo(() => getFinanceSummary(window, translate), [window, refreshKey, translate]);
+  const integrations = useMemo(() => getIntegrationHealth(window, translate), [window, refreshKey, translate]);
+  const sla = useMemo(() => getSlaOperations(window, translate), [window, refreshKey, translate]);
+  const ai = useMemo(() => getAiInsights(window, translate), [window, refreshKey, translate]);
 
   const handleRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
+      {ownerHome ? <OwnerCommandHero modules={snapshot.moduleHealth} /> : null}
+
       {/* Sticky module header */}
-      <header className="sticky top-14 z-30 -mx-4 mb-4 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      <header
+        className={cn(
+          "sticky top-14 z-30 -mx-4 mb-4 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8",
+          ownerHome && "border-y",
+        )}
+      >
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber/40 bg-amber/10">
-              <Gauge className="h-4 w-4 text-amber" />
+          {!ownerHome ? (
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber/40 bg-amber/10">
+                <Gauge className="h-4 w-4 text-amber" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
+                  {t("module.control")}
+                </h1>
+                <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
+                  {t("control.subtitle")}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
-                {t("module.control")}
-              </h1>
-              <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
-                {t("control.subtitle")}
-              </p>
-            </div>
-          </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              {t("owner.dashboard.period")}
+            </p>
+          )}
 
           <div className="ml-auto flex items-center gap-2">
             {/* Time window selector */}

@@ -5,17 +5,15 @@
  *
  * Left: branded panel with HayDevOS wordmark + cycling tri-lingual tagline +
  * subtle animated background (CSS gradient mesh + grid, no WebGL).
- * Right: graphite glass login card with email/password (prefilled),
- * org selector, language switcher, and a lime-accent "Sign in" button.
+ * Right: graphite glass login card with email/password, language switcher,
+ * and a lime-accent "Sign in" button.
  */
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Sparkles,
   Lock,
   Mail,
-  Building2,
   Globe,
   ChevronDown,
   ArrowRight,
@@ -23,20 +21,14 @@ import {
 } from "lucide-react";
 
 import { useLocale, LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n";
-import { useAppStore, MOCK_ORGS } from "@/lib/store/app-store";
-import { cn, initials } from "@/lib/utils";
+import type { ClientSession } from "@/lib/auth/types";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { HayDevLogo } from "@/components/brand/HayDevLogo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -48,7 +40,7 @@ import {
 import { LoginBackground } from "./LoginBackground";
 
 interface LoginScreenProps {
-  onSignIn: () => void;
+  onSignIn: (session: ClientSession) => void;
 }
 
 const TAGLINE_KEYS = [
@@ -59,11 +51,11 @@ const TAGLINE_KEYS = [
 
 export function LoginScreen({ onSignIn }: LoginScreenProps) {
   const { t, locale, setLocale } = useLocale();
-  const { setActiveOrg, activeOrgId } = useAppStore();
 
-  const [email, setEmail] = useState("owner@haydev.os");
-  const [password, setPassword] = useState("demo");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [taglineIdx, setTaglineIdx] = useState(0);
 
   // Cycle the tagline every 3.5s.
@@ -74,14 +66,34 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
     return () => clearInterval(id);
   }, []);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    setError(null);
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | { session: ClientSession }
+        | { error?: { message?: string } }
+        | null;
+      if (!response.ok || !payload || !("session" in payload)) {
+        throw new Error(
+          payload && "error" in payload
+            ? payload.error?.message ?? t("shell.login.failed")
+            : t("shell.login.failed"),
+        );
+      }
       toast.success(t("shell.toast.signedIn"));
-      onSignIn();
-    }, 650);
+      onSignIn(payload.session);
+    } catch (signInError) {
+      setError(signInError instanceof Error ? signInError.message : t("shell.login.failed"));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const year = new Date().getFullYear();
@@ -115,18 +127,8 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
         />
 
         {/* Brand */}
-        <div className="relative z-20 flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-lime glow-lime">
-            <Sparkles className="h-5 w-5" />
-          </span>
-          <div className="leading-tight">
-            <p className="text-lg font-semibold tracking-tight text-foreground">
-              HayDev<span className="text-lime">OS</span>
-            </p>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">
-              Enterprise Edition
-            </p>
-          </div>
+        <div className="relative z-20 w-64">
+          <HayDevLogo priority />
         </div>
 
         {/* Centerpiece tagline */}
@@ -137,9 +139,7 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
             transition={{ duration: 0.5 }}
             className="text-4xl font-semibold leading-tight tracking-tight text-foreground xl:text-5xl"
           >
-            The operating system
-            <br />
-            for <span className="text-gradient-brand">ambitious teams.</span>
+            <span className="text-gradient-brand">{t("shell.login.subtitle")}</span>
           </motion.h1>
 
           <div className="mt-6 h-7 overflow-hidden">
@@ -159,13 +159,7 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
 
           {/* Feature pills */}
           <div className="mt-8 flex flex-wrap gap-2">
-            {[
-              "Lead-to-cash",
-              "Document AI",
-              "Automations",
-              "ERP Hub",
-              "Owner AI",
-            ].map((feat, i) => (
+            {["shell.login.feature.leads", "shell.login.feature.documents", "shell.login.feature.automations", "shell.login.feature.erp", "shell.login.feature.ownerAi"].map((feat, i) => (
               <motion.span
                 key={feat}
                 initial={{ opacity: 0, y: 8 }}
@@ -173,7 +167,7 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
                 transition={{ duration: 0.3, delay: 0.2 + i * 0.06 }}
                 className="rounded-full border border-border bg-card/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur"
               >
-                {feat}
+                {t(feat)}
               </motion.span>
             ))}
           </div>
@@ -186,7 +180,9 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
       </div>
 
       {/* ───────────────── Right login card ───────────────── */}
-      <div className="relative flex flex-1 items-center justify-center p-6 sm:p-10">
+      <div
+        className="relative flex flex-1 items-center justify-center p-6 sm:p-10"
+      >
         {/* Mobile-only background glow */}
         <div
           className="pointer-events-none absolute inset-0 bg-grid opacity-30 lg:hidden"
@@ -204,21 +200,11 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
           className="relative z-10 w-full max-w-md"
         >
           {/* Mobile brand */}
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-lime glow-lime">
-              <Sparkles className="h-5 w-5" />
-            </span>
-            <div className="leading-tight">
-              <p className="text-lg font-semibold tracking-tight text-foreground">
-                HayDev<span className="text-lime">OS</span>
-              </p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">
-                Enterprise Edition
-              </p>
-            </div>
+          <div className="mb-8 w-44 lg:hidden">
+            <HayDevLogo priority />
           </div>
 
-          <div className="glass-strong rounded-2xl p-6 shadow-2xl sm:p-8">
+          <div className="glass-3d rounded-2xl p-6 shadow-2xl sm:p-8">
             <div className="mb-6 space-y-1">
               <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                 {t("shell.login.title")}
@@ -267,37 +253,8 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
                 </div>
               </div>
 
-              {/* Org selector + language */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">
-                    {t("shell.login.org")}
-                  </Label>
-                  <Select
-                    value={activeOrgId}
-                    onValueChange={(v) => setActiveOrg(v)}
-                  >
-                    <SelectTrigger className="h-10 bg-muted/40 text-sm">
-                      <span className="flex items-center gap-2">
-                        <Building2 className="h-3.5 w-3.5 text-muted-foreground/70" />
-                        <SelectValue />
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MOCK_ORGS.map((o) => (
-                        <SelectItem key={o.id} value={o.id}>
-                          <span className="flex items-center gap-2">
-                            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[9px] font-bold text-lime">
-                              {initials(o.name)}
-                            </span>
-                            {o.name}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
+              {/* Language */}
+              <div className="grid grid-cols-1 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">
                     {t("shell.user.language")}
@@ -336,6 +293,12 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
                 </div>
               </div>
 
+              {error ? (
+                <p role="alert" className="text-xs text-destructive">
+                  {error}
+                </p>
+              ) : null}
+
               <Button
                 type="submit"
                 disabled={submitting}
@@ -363,9 +326,6 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
                 </span>
               </Button>
 
-              <p className="pt-2 text-center text-[11px] text-muted-foreground/70">
-                {t("shell.login.demoHint")}
-              </p>
             </form>
           </div>
 

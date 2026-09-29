@@ -135,7 +135,7 @@ export function WebhooksView({ endpoints, events, providers, onReplay }: Props) 
                               {w.name}
                             </div>
                             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                              {prov?.name ?? "Generic"} · {w.deliveries24h}{" "}
+                              {prov?.name ?? t("integration.webhooks.generic")} · {w.deliveries24h}{" "}
                               {t("integration.webhooks.col.delivery24h")}
                             </div>
                           </div>
@@ -206,7 +206,9 @@ export function WebhooksView({ endpoints, events, providers, onReplay }: Props) 
                             <Clock className="h-3 w-3 text-amber" />
                           )}
                           <span className={lastTone}>
-                            {w.lastStatus ?? "—"}
+                            {w.lastStatus
+                              ? t(`integration.webhooks.status.${w.lastStatus}`)
+                              : "—"}
                           </span>
                           <span className="text-muted-foreground">
                             · {w.lastDeliveryAt ? relativeTime(w.lastDeliveryAt, locale) : "—"}
@@ -347,7 +349,7 @@ export function WebhooksView({ endpoints, events, providers, onReplay }: Props) 
                                 : "text-rose",
                           )}
                         >
-                          {ev.status}
+                          {t(`integration.webhooks.status.${ev.status}`)}
                         </span>
                       </TableCell>
                       <TableCell className="py-2 text-right">

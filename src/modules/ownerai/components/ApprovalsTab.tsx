@@ -15,11 +15,12 @@ import { cn, relativeTime, formatDateTime } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n";
 import { useOwnerAiStore } from "../state";
 import { ApprovalCard } from "./ApprovalCard";
-import { MOCK_USER } from "@/lib/store/app-store";
+import { useAuth } from "@/components/auth/AuthContext";
 import type { Approval } from "@/app/api/owner-ai/types";
 
 export function ApprovalsTab() {
   const { t } = useLocale();
+  const { session } = useAuth();
   const approvals = useOwnerAiStore((s) => s.approvals);
 
   const pending = approvals.filter((a) => a.status === "pending");
@@ -66,7 +67,7 @@ export function ApprovalsTab() {
               <ApprovalCard
                 key={a.id}
                 approval={a}
-                decidedBy={MOCK_USER.id}
+                decidedBy={session.user.id}
               />
             ))}
           </div>

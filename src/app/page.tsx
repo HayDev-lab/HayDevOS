@@ -1,17 +1,14 @@
-"use client";
-
 /**
- * HayDevOS — single-page application entry.
- *
- * Renders the HayDevShell client component, which manages auth state and
- * switches between the LoginScreen and the authenticated ShellLayout.
- *
- * The active module's view is rendered inside ShellLayout based on
- * useAppStore.activeModule — see src/lib/modules/registry.ts.
+ * HayDevOS single-page entry. The database-backed session is resolved on the
+ * server; the client receives only a minimal DTO.
  */
 
 import { HayDevShell } from "@/components/shell/HayDevShell";
+import { getOptionalAuthContext, toClientSession } from "@/lib/auth/session";
 
-export default function Home() {
-  return <HayDevShell />;
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const context = await getOptionalAuthContext();
+  return <HayDevShell initialSession={context ? toClientSession(context) : null} />;
 }

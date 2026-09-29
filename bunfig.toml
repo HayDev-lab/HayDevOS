@@ -1,0 +1,5 @@
+[test]
+# Bun executes tests outside Next.js' React Server Component resolver. Mock
+# only the marker package during tests; production imports keep the real
+# `server-only` boundary and Next.js still rejects client-side imports.
+preload = ["./tests/setup.ts"]

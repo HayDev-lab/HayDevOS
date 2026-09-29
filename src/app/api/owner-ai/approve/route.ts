@@ -1,79 +1,83 @@
-/**
- * Owner AI — POST /api/owner-ai/approve
- *
- * Body: { approvalId, decision: "approved" | "rejected", reason?, decidedBy, orgId }
- *
- * Looks up the pending approval, executes the underlying action (mock side
- * effects only) when approved, updates the action + approval status, logs an
- * audit event, and returns the updated approval + action + conversation.
- *
- * If the action is forbidden (somehow proposed despite the prompt), the
- * decision is recorded as rejected with a "Forbidden by policy" reason.
- */
+import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
 
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-
-import { decideApproval, getApproval } from "../audit";
-import { getConversation } from "../audit";
-import type { OwnerAiApproveRequest, OwnerAiApproveResponse } from "../types";
+import { ApiError } from "@/lib/api/errors";
+import { withTenantApi } from "@/lib/api/handler";
+import { parseJson } from "@/lib/api/request";
+import { executeTenantAction } from "@/lib/owner-ai/action-executor";
+import {
+  decideApproval,
+  getApproval,
+  getConversation,
+  markActionResult,
+  withPersistentAuditStore,
+} from "../audit";
+import type { OwnerAiApproveResponse } from "../types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const approveSchema = z
+  .object({
+    approvalId: z.string().regex(/^[A-Za-z0-9_-]+$/).max(128),
+    decision: z.enum(["approved", "rejected"]),
+    reason: z.string().trim().max(1_000).optional(),
+  })
+  .strict();
+
 export async function POST(req: NextRequest) {
-  let body: OwnerAiApproveRequest;
-  try {
-    body = (await req.json()) as OwnerAiApproveRequest;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  return withTenantApi(
+    req,
+    { mutation: true, roles: ["OWNER", "ADMIN"] },
+    async (context) => {
+      const body = await parseJson(req, approveSchema, 16 * 1024);
+      return withPersistentAuditStore(
+        {
+          orgId: context.orgId,
+          userId: context.userId,
+          scope: "tenant",
+          focusAuditId: body.approvalId,
+        },
+        async () => {
+          const existing = getApproval(body.approvalId);
+          if (!existing) {
+            throw new ApiError(404, "APPROVAL_NOT_FOUND", "Approval not found");
+          }
+          if (existing.status !== "pending") {
+            throw new ApiError(409, "APPROVAL_DECIDED", `Approval already ${existing.status}`);
+          }
 
-  if (!body?.approvalId) {
-    return NextResponse.json({ error: "approvalId is required" }, { status: 400 });
-  }
-  if (body.decision !== "approved" && body.decision !== "rejected") {
-    return NextResponse.json(
-      { error: 'decision must be "approved" or "rejected"' },
-      { status: 400 },
-    );
-  }
+          const { approval, action } = decideApproval({
+            approvalId: body.approvalId,
+            decision: body.decision,
+            decidedBy: context.userId,
+            reason: body.reason,
+          });
 
-  const existing = getApproval(body.approvalId);
-  if (!existing) {
-    return NextResponse.json({ error: "Approval not found" }, { status: 404 });
-  }
-  if (existing.status !== "pending") {
-    return NextResponse.json(
-      { error: `Approval already ${existing.status}` },
-      { status: 409 },
-    );
-  }
+          if (body.decision === "approved") {
+            try {
+              const result = await executeTenantAction(context, action.action, action.args);
+              markActionResult(action.id, result);
+            } catch (error) {
+              markActionResult(action.id, {
+                ok: false,
+                message: error instanceof Error ? error.message : "Action execution failed",
+              });
+            }
+          }
 
-  try {
-    const { approval, action } = decideApproval({
-      approvalId: body.approvalId,
-      decision: body.decision,
-      decidedBy: body.decidedBy ?? "unknown",
-      reason: body.reason,
-    });
-    const conversation = getConversation(approval.conversationId);
-    if (!conversation) {
-      return NextResponse.json(
-        { error: "Conversation not found" },
-        { status: 404 },
+          const conversation = getConversation(approval.conversationId);
+          if (!conversation) {
+            throw new ApiError(404, "CONVERSATION_NOT_FOUND", "Conversation not found");
+          }
+          const response: OwnerAiApproveResponse = {
+            approval,
+            action,
+            conversation,
+          };
+          return NextResponse.json(response);
+        },
       );
-    }
-    const response: OwnerAiApproveResponse = {
-      approval,
-      action,
-      conversation,
-    };
-    return NextResponse.json(response);
-  } catch (e) {
-    return NextResponse.json(
-      { error: (e as Error).message || String(e) },
-      { status: 500 },
-    );
-  }
+    },
+  );
 }

@@ -10,13 +10,10 @@
  * On mobile: brand collapses, search becomes a compact icon button.
  */
 
-import { useTheme } from "next-themes";
 import {
   PanelLeft,
   Menu,
   Search,
-  Sun,
-  Moon,
   HelpCircle,
   Sparkles,
   ChevronRight,
@@ -30,6 +27,7 @@ import { getModule } from "@/lib/modules/registry";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
+import { HayDevMark } from "@/components/brand/HayDevLogo";
 import {
   Tooltip,
   TooltipContent,
@@ -55,7 +53,6 @@ interface TopBarProps {
 
 export function TopBar({ onOpenSettings, onLogout, onOpenMobileSidebar }: TopBarProps) {
   const { t, locale, setLocale } = useLocale();
-  const { theme, setTheme } = useTheme();
   const {
     activeModule,
     setActiveModule,
@@ -101,12 +98,10 @@ export function TopBar({ onOpenSettings, onLogout, onOpenMobileSidebar }: TopBar
         <button
           type="button"
           onClick={() => setActiveModule("dashboard")}
-          className="group flex items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-muted/40"
+          className="group flex items-center gap-2 rounded-lg px-1 py-0.5 transition-colors hover:bg-muted/40"
           aria-label="HayDevOS — go to dashboard"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-lime transition-all group-hover:glow-lime">
-            <Sparkles className="h-4 w-4" />
-          </span>
+          <HayDevMark className="h-8 w-8 transition-transform duration-300 group-hover:scale-105" />
           <span className="hidden text-sm font-semibold tracking-tight text-foreground sm:block">
             HayDev<span className="text-lime">OS</span>
           </span>
@@ -222,25 +217,6 @@ export function TopBar({ onOpenSettings, onLogout, onOpenMobileSidebar }: TopBar
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* Theme toggle */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label={t("shell.topbar.toggleTheme")}
-            >
-              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {t("shell.topbar.toggleTheme")}
-          </TooltipContent>
-        </Tooltip>
 
         {/* Help — opens the keyboard-shortcuts dialog (Task 13) */}
         <Tooltip>

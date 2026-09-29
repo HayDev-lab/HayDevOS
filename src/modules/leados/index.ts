@@ -6,4 +6,4 @@
  */
 
 export { LeadOSView, LeadOSView as default } from "./LeadOSView";
-export type { MockLead, LeadStage, LeadSource } from "./data";
+export type { LeadRecord, LeadStage, LeadSource } from "./data";

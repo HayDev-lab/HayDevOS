@@ -32,17 +32,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import {
-  allLeads,
-  getTeamStats,
-  TEAM_MEMBERS,
-  TEAM_BY_ID,
-} from "../data";
+import { useLeadOSData } from "../LeadOSData";
 import { OwnerAvatar } from "./shared";
 
 export function TeamView() {
   const { t } = useLocale();
-  const teamStats = useMemo(() => getTeamStats(allLeads), []);
+  const { overview } = useLeadOSData();
+  const teamStats = overview!.teamStats;
+  const members = overview!.members;
 
   const totals = useMemo(() => {
     const openLeads = teamStats.reduce((s, m) => s + m.openLeads, 0);
@@ -89,13 +86,13 @@ export function TeamView() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-foreground">{m.name}</p>
                     <p className="truncate text-[11px] text-muted-foreground">
-                      {TEAM_BY_ID[m.ownerId]?.email}
+                      {members.find((member) => member.id === m.ownerId)?.email}
                     </p>
                     <Badge
                       variant="outline"
                       className="mt-1 border-border bg-muted/40 px-1.5 py-0 text-[10px] uppercase tracking-wider text-muted-foreground"
                     >
-                      {TEAM_BY_ID[m.ownerId]?.role}
+                      {members.find((member) => member.id === m.ownerId)?.role}
                     </Badge>
                   </div>
                 </div>
@@ -194,7 +191,7 @@ export function TeamView() {
       </Card>
 
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
-        {TEAM_MEMBERS.length} members · {totals.openLeads} open leads
+        {members.length} members · {totals.openLeads} open leads
       </div>
     </div>
   );

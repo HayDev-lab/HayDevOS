@@ -1,0 +1,4 @@
+import { NextResponse, type NextRequest } from "next/server"; import { withTenantApi } from "@/lib/api/handler"; import { parseJson } from "@/lib/api/request";
+import { erpContext, listPayments, paymentInputSchema, paymentListSchema, recordPayment } from "@/lib/erp"; export const runtime = "nodejs"; export const dynamic = "force-dynamic";
+export async function GET(req: NextRequest) { return withTenantApi(req, {}, async (auth) => NextResponse.json(await listPayments(erpContext(auth, req), paymentListSchema.parse(Object.fromEntries(req.nextUrl.searchParams))))); }
+export async function POST(req: NextRequest) { return withTenantApi(req, { mutation: true }, async (auth) => NextResponse.json({ payment: await recordPayment(erpContext(auth, req), await parseJson(req, paymentInputSchema)) }, { status: 201 })); }

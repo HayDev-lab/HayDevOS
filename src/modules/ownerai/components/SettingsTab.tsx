@@ -67,7 +67,7 @@ export function SettingsTab() {
     );
   }
 
-  const online = config.provider !== "offline-fallback";
+  const online = config.provider === "openai-compatible";
 
   return (
     <div className="space-y-4">

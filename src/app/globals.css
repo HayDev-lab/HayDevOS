@@ -76,11 +76,11 @@
   --radius: 0.625rem;
 
   /* Graphite surfaces */
-  --background: #0a0c10;          /* deep graphite */
+  --background: #05080a;          /* near-black canvas */
   --foreground: #e7ecf2;          /* near-white text */
-  --card: #111419;                /* panel */
+  --card: #102027;                /* cool glass panel */
   --card-foreground: #e7ecf2;
-  --popover: #151921;             /* elevated popover */
+  --popover: #14242b;             /* elevated glass popover */
   --popover-foreground: #e7ecf2;
 
   /* Lime primary accent */
@@ -118,7 +118,7 @@
   --accent-rose: #f43f5e;
   --accent-violet: #c084fc;
 
-  --sidebar: #0d1015;
+  --sidebar: #0b171d;
   --sidebar-foreground: #c2cad4;
   --sidebar-primary: #a3e635;
   --sidebar-primary-foreground: #0a0c10;
@@ -198,12 +198,20 @@
   }
 
   html {
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+    overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+    overflow-x: hidden;
     font-feature-settings: "cv11", "ss01", "ss03";
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -230,28 +238,56 @@
 
 /* ───────────────────────── GLASS ───────────────────────── */
 @utility glass {
-  background: color-mix(in oklab, var(--card) 70%, transparent);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  background: color-mix(in oklab, var(--card) 66%, transparent);
+  @apply backdrop-blur-xl;
   border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
 }
 
 @utility glass-strong {
-  background: color-mix(in oklab, var(--card) 88%, transparent);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  background: color-mix(in oklab, var(--card) 82%, transparent);
+  @apply backdrop-blur-xl;
   border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+}
+
+/* Frozen glass card — 20% opacity, no transforms, no hover tilt. */
+@utility glass-3d {
+  background:
+    linear-gradient(135deg, color-mix(in oklab, var(--accent-cyan) 14%, transparent), transparent 52%),
+    linear-gradient(180deg, color-mix(in oklab, white 14%, transparent), transparent 46%),
+    color-mix(in oklab, var(--card) 20%, transparent);
+  @apply backdrop-blur-2xl;
+  border: 1px solid color-mix(in oklab, white 22%, transparent);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklab, white 35%, transparent),
+    inset 0 -1px 0 0 color-mix(in oklab, white 8%, transparent),
+    inset 0 0 32px 0 color-mix(in oklab, var(--accent-cyan) 8%, transparent),
+    0 24px 60px -24px rgba(0, 0, 0, 0.85),
+    0 8px 24px -12px rgba(34, 211, 238, 0.22);
+  transform: none;
+}
+
+.glass-3d:hover {
+  transform: none;
 }
 
 /* Subtle elevated card surface */
 @utility surface-elevated {
   background:
-    linear-gradient(180deg, color-mix(in oklab, var(--foreground) 3%, transparent), transparent 40%),
-    var(--card);
-  border: 1px solid var(--border);
+    linear-gradient(135deg, color-mix(in oklab, var(--accent-cyan) 9%, transparent), transparent 48%),
+    linear-gradient(180deg, color-mix(in oklab, white 6%, transparent), transparent 44%),
+    color-mix(in oklab, var(--card) 72%, transparent);
+  @apply backdrop-blur-xl;
+  border: 1px solid color-mix(in oklab, var(--border) 78%, white 8%);
   box-shadow:
-    0 1px 0 0 color-mix(in oklab, var(--foreground) 4%, transparent) inset,
-    0 8px 24px -12px rgba(0, 0, 0, 0.6);
+    0 1px 0 0 color-mix(in oklab, white 9%, transparent) inset,
+    0 14px 36px -18px rgba(0, 0, 0, 0.78);
+}
+
+@utility app-backdrop {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse at 8% 4%, color-mix(in oklab, var(--accent-cyan) 11%, transparent), transparent 34%),
+    radial-gradient(ellipse at 92% 86%, color-mix(in oklab, var(--accent-lime) 8%, transparent), transparent 38%);
 }
 
 /* Lime/cyan glow utilities for active states */
@@ -332,6 +368,65 @@
     animation: haydev-pulse-dot 2s ease-in-out infinite;
   }
 
+  .owner-orbit-button {
+    --owner-orbit-x: clamp(142px, 25vw, 390px);
+    --owner-orbit-x-diagonal: clamp(104px, 18vw, 276px);
+    --owner-orbit-y: clamp(122px, 19vh, 184px);
+    --owner-orbit-y-diagonal: clamp(88px, 13.5vh, 132px);
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: var(--owner-orbit-static, translate(-50%, -50%));
+    animation: owner-orbit-travel 36s linear infinite;
+    animation-delay: var(--owner-orbit-delay, 0s);
+    will-change: transform;
+    perspective: 700px;
+    filter: drop-shadow(0 18px 24px rgb(0 0 0 / 0.28));
+  }
+
+  .owner-glass-button {
+    transform: none;
+    transform-style: flat;
+    background-blend-mode: screen, normal;
+  }
+
+  .owner-orbit-button:hover .owner-glass-button,
+  .owner-orbit-button:focus-visible .owner-glass-button {
+    transform: scale(1.045);
+  }
+
+  .text-shadow-lime {
+    text-shadow: 0 0 6px rgba(163, 230, 53, 0.78), 0 0 14px rgba(163, 230, 53, 0.42);
+  }
+
+  .text-shadow-cyan {
+    text-shadow: 0 0 5px rgba(34, 211, 238, 0.64), 0 0 10px rgba(34, 211, 238, 0.34);
+  }
+
+  .owner-orbit-connector {
+    position: absolute;
+    right: calc(100% - 2px);
+    top: 50%;
+    width: 30px;
+    height: 1px;
+    background: linear-gradient(90deg, rgb(34 211 238 / 0.08), rgb(34 211 238 / 0.72));
+    box-shadow: 0 0 8px rgb(34 211 238 / 0.42);
+  }
+
+  .owner-orbit-node {
+    position: absolute;
+    left: -7px;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    translate: 0 -50%;
+    border: 1px solid rgb(255 255 255 / 0.58);
+    box-shadow:
+      inset 0 1px 2px rgb(255 255 255 / 0.72),
+      0 0 0 5px rgb(34 211 238 / 0.08),
+      0 0 18px currentColor;
+  }
+
   @keyframes haydev-fade {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -343,6 +438,51 @@
   @keyframes haydev-pulse-dot {
     0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
     50% { opacity: 0.7; box-shadow: 0 0 0 4px transparent; }
+  }
+  @keyframes owner-orbit-travel {
+    0%, 100% {
+      transform: translate(-50%, -50%) translate(var(--owner-orbit-x), 0);
+    }
+    12.5% {
+      transform: translate(-50%, -50%) translate(var(--owner-orbit-x-diagonal), var(--owner-orbit-y-diagonal));
+    }
+    25% {
+      transform: translate(-50%, -50%) translate(0, var(--owner-orbit-y));
+    }
+    37.5% {
+      transform: translate(-50%, -50%) translate(calc(-1 * var(--owner-orbit-x-diagonal)), var(--owner-orbit-y-diagonal));
+    }
+    50% {
+      transform: translate(-50%, -50%) translate(calc(-1 * var(--owner-orbit-x)), 0);
+    }
+    62.5% {
+      transform: translate(-50%, -50%) translate(calc(-1 * var(--owner-orbit-x-diagonal)), calc(-1 * var(--owner-orbit-y-diagonal)));
+    }
+    75% {
+      transform: translate(-50%, -50%) translate(0, calc(-1 * var(--owner-orbit-y)));
+    }
+    87.5% {
+      transform: translate(-50%, -50%) translate(var(--owner-orbit-x-diagonal), calc(-1 * var(--owner-orbit-y-diagonal)));
+    }
+  }
+
+  @media (max-width: 639px) {
+    .owner-orbit-button {
+      --owner-orbit-x: 100px;
+      --owner-orbit-x-diagonal: 72px;
+      --owner-orbit-y: 140px;
+      --owner-orbit-y-diagonal: 98px;
+    }
+
+    .owner-orbit-connector {
+      width: 18px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .owner-orbit-button {
+      animation-duration: 84s;
+    }
   }
 
   .bg-grid {
@@ -368,6 +508,10 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .owner-orbit-button {
+    animation: none !important;
   }
 }
 

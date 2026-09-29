@@ -46,7 +46,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLocale } from "@/lib/i18n";
-import { useAppStore, MOCK_ORGS, MOCK_USER } from "@/lib/store/app-store";
+import { useAuth } from "@/components/auth/AuthContext";
+import { useAppStore } from "@/lib/store/app-store";
 import { useOwnerAiStore, activeConversation } from "../state";
 import { SUGGESTION_CHIPS, MODES, type OwnerAiMode } from "../types";
 import { ChatMessage } from "./ChatMessage";
@@ -69,10 +70,9 @@ const MODE_ICONS: Record<OwnerAiMode, typeof Eye> = {
 
 export function ChatPanel({ compact = false, onClose, showHeaderActions = false }: ChatPanelProps) {
   const { t } = useLocale();
-  const {
-    activeModule,
-    activeOrgId,
-  } = useAppStore();
+  const { session } = useAuth();
+  const { user, activeOrganization: org } = session;
+  const activeModule = useAppStore((state) => state.activeModule);
   const conversations = useOwnerAiStore((s) => s.conversations);
   const activeConversationId = useOwnerAiStore((s) => s.activeConversationId);
   const mode = useOwnerAiStore((s) => s.mode);
@@ -97,9 +97,6 @@ export function ChatPanel({ compact = false, onClose, showHeaderActions = false 
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const conv = useOwnerAiStore(activeConversation);
-  const org = MOCK_ORGS.find((o) => o.id === activeOrgId) ?? MOCK_ORGS[0];
-  const user = MOCK_USER;
-
   // Auto-scroll to bottom when messages change.
   useEffect(() => {
     const el = scrollRef.current;
@@ -130,7 +127,7 @@ export function ChatPanel({ compact = false, onClose, showHeaderActions = false 
     el.style.height = `${Math.min(el.scrollHeight, compact ? 120 : 200)}px`;
   }
 
-  const online = config?.provider !== "offline-fallback";
+  const online = config?.provider === "openai-compatible";
   const messages = conv?.messages ?? [];
   const isEmpty = messages.length === 0;
 

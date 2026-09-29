@@ -167,8 +167,8 @@ export function VariablesView({ variables, onChange }: Props) {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="org">org</SelectItem>
-                          <SelectItem value="automation">automation</SelectItem>
+                          <SelectItem value="org">{t("automation.variables.scope.org")}</SelectItem>
+                          <SelectItem value="automation">{t("automation.variables.scope.automation")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -204,9 +204,7 @@ export function VariablesView({ variables, onChange }: Props) {
 
       <div className="flex items-center gap-2 rounded-md border border-amber/30 bg-amber/5 px-3 py-2 text-[11px] text-amber">
         <Lock className="h-3.5 w-3.5" />
-        <span>
-          Secret variables are masked in the UI and only decrypted server-side at execution time.
-        </span>
+        <span>{t("automation.variables.secretNote")}</span>
       </div>
     </div>
   );

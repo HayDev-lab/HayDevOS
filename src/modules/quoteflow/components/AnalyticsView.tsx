@@ -298,7 +298,7 @@ export function AnalyticsView() {
               <div className="font-mono text-2xl font-bold text-lime">
                 {formatCurrency(kpis.avgDeal, "USD")}
               </div>
-              <div className="text-xs text-muted-foreground">avg / accepted quote</div>
+              <div className="text-xs text-muted-foreground">{t("quoteflow.runtime.avgAccepted")}</div>
             </div>
           </div>
         </CardContent>

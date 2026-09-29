@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useLocale } from "@/lib/i18n";
 import { cn, relativeTime, toneClasses, statusColor } from "@/lib/utils";
 import type { WebhookEndpoint } from "../types";
+import { localizeAutomationText } from "../localization";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,7 +85,7 @@ export function WebhooksView({ endpoints }: Props) {
                             ) : (
                               <Clock className="h-2.5 w-2.5" />
                             )}
-                            {w.lastStatus}
+                            {localizeAutomationText(w.lastStatus, locale)}
                           </span>
                         )}
                       </div>

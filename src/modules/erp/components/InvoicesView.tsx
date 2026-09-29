@@ -213,11 +213,11 @@ function RecordPaymentDialog({
         actionLabel={`${t("erp.invoice.recordPayment")}: ${invoice.number} · ${formatCurrency(effectiveAmount, invoice.currency)} (${method})`}
         details={
           <div className="space-y-1">
-            <div>Invoice: <span className="font-mono">{invoice.number}</span></div>
-            <div>Customer: <span className="font-mono">{customerName(invoice.customerId)}</span></div>
-            <div>Amount: <span className="font-mono">{formatCurrency(effectiveAmount, invoice.currency)}</span></div>
-            <div>Method: <span className="font-mono">{method}</span></div>
-            <div>Reference: <span className="font-mono">{reference || "—"}</span></div>
+            <div>{t("erp.payment.invoice")}: <span className="font-mono">{invoice.number}</span></div>
+            <div>{t("erp.payment.customer")}: <span className="font-mono">{customerName(invoice.customerId)}</span></div>
+            <div>{t("erp.payment.amount")}: <span className="font-mono">{formatCurrency(effectiveAmount, invoice.currency)}</span></div>
+            <div>{t("erp.payment.method")}: <span className="font-mono">{method}</span></div>
+            <div>{t("erp.payment.reference")}: <span className="font-mono">{reference || "—"}</span></div>
           </div>
         }
         tone="primary"
@@ -452,10 +452,10 @@ function InvoiceDetail({
         actionLabel={`${t("erp.invoice.cancel")}: ${invoice.number}`}
         details={
           <div className="space-y-1">
-            <div>Invoice: <span className="font-mono">{invoice.number}</span></div>
-            <div>Customer: <span className="font-mono">{customer?.name ?? "—"}</span></div>
-            <div>Total: <span className="font-mono">{formatCurrency(invoice.amount, invoice.currency)}</span></div>
-            <div>Paid: <span className="font-mono">{formatCurrency(invoice.paidAmount, invoice.currency)}</span></div>
+            <div>{t("erp.payment.invoice")}: <span className="font-mono">{invoice.number}</span></div>
+            <div>{t("erp.payment.customer")}: <span className="font-mono">{customer?.name ?? "—"}</span></div>
+            <div>{t("erp.invoice.total")}: <span className="font-mono">{formatCurrency(invoice.amount, invoice.currency)}</span></div>
+            <div>{t("erp.invoice.paid")}: <span className="font-mono">{formatCurrency(invoice.paidAmount, invoice.currency)}</span></div>
           </div>
         }
         tone="destructive"
@@ -471,8 +471,8 @@ function InvoiceDetail({
         actionLabel={`${t("erp.invoice.refund")}: ${invoice.number} · ${formatCurrency(invoice.paidAmount, invoice.currency)}`}
         details={
           <div className="space-y-1">
-            <div>Invoice: <span className="font-mono">{invoice.number}</span></div>
-            <div>Refund amount: <span className="font-mono">{formatCurrency(invoice.paidAmount, invoice.currency)}</span></div>
+            <div>{t("erp.payment.invoice")}: <span className="font-mono">{invoice.number}</span></div>
+            <div>{t("erp.invoice.refundAmount")}: <span className="font-mono">{formatCurrency(invoice.paidAmount, invoice.currency)}</span></div>
           </div>
         }
         tone="destructive"

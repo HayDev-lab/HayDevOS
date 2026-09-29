@@ -166,7 +166,7 @@ function ProductDialog({
             </div>
           </div>
           <div className="space-y-1.5 sm:col-span-2">
-            <Label>Description</Label>
+            <Label>{t("erp.product.description")}</Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -308,7 +308,7 @@ export function ProductsView() {
                         <TableCell className={cn("text-right text-sm font-medium", isLowStock && "text-amber")}>
                           {p.stock}
                           {isLowStock ? (
-                            <span className="ml-1 text-[10px] uppercase tracking-wider text-amber">low</span>
+                            <span className="ml-1 text-[10px] uppercase tracking-wider text-amber">{t("erp.inventory.lowStock")}</span>
                           ) : null}
                         </TableCell>
                         <TableCell>

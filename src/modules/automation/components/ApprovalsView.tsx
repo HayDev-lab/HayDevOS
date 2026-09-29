@@ -172,7 +172,7 @@ export function ApprovalsView({ approvals, onDecide }: Props) {
                               cls.text,
                             )}
                           >
-                            {a.status}
+                            {t(`automation.approvals.status.${a.status}`)}
                           </span>
                         </li>
                       );

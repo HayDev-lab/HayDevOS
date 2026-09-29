@@ -1,19 +1,18 @@
 /**
- * Owner AI — in-memory audit store.
+ * Owner AI audit store.
  *
- * Holds conversations, messages, agent runs, tool calls, proposed actions,
- * approvals, and granular audit events. Lives in module scope — survives
- * across requests within the same Next.js server process (in dev: the
- * long-lived dev server; in prod: until the serverless instance freezes).
- *
- * Not persisted to disk/DB. The Owner AI module view polls GET /api/owner-ai/state
- * to render the audit + history tabs.
+ * Each request receives an isolated store hydrated from Prisma. Mutations are
+ * flushed back as normalized conversations/messages plus tenant-scoped audit
+ * records. AsyncLocalStorage prevents cross-request and cross-tenant bleed.
  *
  * Every record carries a correlationId (= the run id) and promptVersion so we
  * can explain any past answer.
  */
 
 import { randomUUID } from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { ApiError } from "@/lib/api/errors";
+import { getDb } from "@/lib/db";
 import type {
   AgentRun,
   Approval,
@@ -23,6 +22,7 @@ import type {
   OwnerAiMessage,
   OwnerAiMode,
   OwnerAiSystemConfig,
+  OwnerAiSystemProvider,
   ProposedAction,
   ToolCallRecord,
   ActionSafety,
@@ -42,6 +42,7 @@ const ACTION_DESCRIPTIONS: Record<string, string> = {
   createInternalNote: "Add an internal note to an entity",
   assignTask: "Reassign an existing task",
   generateReport: "Generate a report",
+  generateQuoteDocument: "Generate a document from an immutable quote version",
   runApprovedAutomation: "Run a previously-blocked automation",
   sendExternalMessage: "Send an external email/Slack/SMS",
   setLeadStage: "Change a lead's stage",
@@ -68,7 +69,7 @@ export function classifyActionSafety(name: string): ActionSafety {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// In-memory store
+// Request-scoped persistent store
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface AuditStore {
@@ -78,13 +79,21 @@ interface AuditStore {
   actions: Map<string, ProposedAction>;
   approvals: Map<string, Approval>;
   auditEvents: AuditEvent[];
+  persistence: {
+    orgId: string;
+    userId: string;
+    scope: "user" | "tenant";
+    owners: Map<string, string | null>;
+    baseline: Map<string, string>;
+    resetRequested: boolean;
+  };
 }
 
-declare global {
-  var __HAYDEV_OWNERAI_STORE__: AuditStore | undefined;
-}
-
-function newStore(): AuditStore {
+function newStore(input: {
+  orgId: string;
+  userId: string;
+  scope: "user" | "tenant";
+}): AuditStore {
   return {
     conversations: new Map(),
     agentRuns: new Map(),
@@ -92,12 +101,362 @@ function newStore(): AuditStore {
     actions: new Map(),
     approvals: new Map(),
     auditEvents: [],
+    persistence: {
+      ...input,
+      owners: new Map(),
+      baseline: new Map(),
+      resetRequested: false,
+    },
   };
 }
 
-const store: AuditStore =
-  (globalThis as { __HAYDEV_OWNERAI_STORE__?: AuditStore }).__HAYDEV_OWNERAI_STORE__ ??
-  ((globalThis as { __HAYDEV_OWNERAI_STORE__?: AuditStore }).__HAYDEV_OWNERAI_STORE__ = newStore());
+const auditStorage = new AsyncLocalStorage<AuditStore>();
+
+function activeStore(): AuditStore {
+  const scoped = auditStorage.getStore();
+  if (!scoped) throw new Error("Owner AI audit store used outside a tenant context");
+  return scoped;
+}
+
+const store = new Proxy({} as AuditStore, {
+  get(_target, property: keyof AuditStore) {
+    return activeStore()[property];
+  },
+  set(_target, property: keyof AuditStore, value) {
+    Reflect.set(activeStore(), property, value);
+    return true;
+  },
+});
+
+const PERSISTED_TYPES = {
+  run: "owner_ai:run",
+  toolCall: "owner_ai:tool_call",
+  action: "owner_ai:action",
+  approval: "owner_ai:approval",
+  event: "owner_ai:event",
+} as const;
+
+export const OWNER_AI_HISTORY_LIMITS = {
+  conversations: 50,
+  messagesPerConversation: 100,
+  totalMessages: 5_000,
+  auditRecords: 2_000,
+} as const;
+
+type PersistedKind = keyof typeof PERSISTED_TYPES;
+
+export async function assertOwnerAiHistoryCapacity(
+  orgId: string,
+  userId: string,
+): Promise<void> {
+  const db = getDb();
+  const [conversations, messages, auditRecords] = await Promise.all([
+    db.aiConversation.count({ where: { orgId, userId } }),
+    db.aiMessage.count({ where: { conversation: { orgId, userId } } }),
+    db.auditLog.count({
+      where: {
+        orgId,
+        userId,
+        entityType: { in: Object.values(PERSISTED_TYPES) },
+      },
+    }),
+  ]);
+  if (
+    conversations >= OWNER_AI_HISTORY_LIMITS.conversations ||
+    messages >= OWNER_AI_HISTORY_LIMITS.totalMessages ||
+    auditRecords >= OWNER_AI_HISTORY_LIMITS.auditRecords
+  ) {
+    throw new ApiError(
+      429,
+      "OWNER_AI_HISTORY_LIMIT",
+      "Owner AI history limit reached; export or reset history before starting another run",
+    );
+  }
+}
+
+function recordKey(kind: PersistedKind | "conversation", id: string): string {
+  return `${kind}:${id}`;
+}
+
+function safeParse<T>(value: string | null): T | null {
+  if (!value) return null;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+}
+
+function rememberBaseline(
+  scoped: AuditStore,
+  kind: PersistedKind | "conversation",
+  id: string,
+  record: unknown,
+  ownerId: string | null,
+): void {
+  const key = recordKey(kind, id);
+  scoped.persistence.baseline.set(key, JSON.stringify(record));
+  scoped.persistence.owners.set(key, ownerId);
+}
+
+type HydrateInput = {
+  orgId: string;
+  userId: string;
+  scope: "user" | "tenant";
+  focusConversationId?: string;
+  focusAuditId?: string;
+};
+
+async function hydrateStore(input: HydrateInput): Promise<AuditStore> {
+  const scoped = newStore(input);
+  const db = getDb();
+  const userFilter = input.scope === "user" ? { userId: input.userId } : {};
+
+  const [recentConversations, recentRows, focusedRows] = await Promise.all([
+    db.aiConversation.findMany({
+      where: { orgId: input.orgId, ...userFilter },
+      include: {
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: OWNER_AI_HISTORY_LIMITS.messagesPerConversation,
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: OWNER_AI_HISTORY_LIMITS.conversations,
+    }),
+    db.auditLog.findMany({
+      where: {
+        orgId: input.orgId,
+        ...userFilter,
+        entityType: { in: Object.values(PERSISTED_TYPES) },
+      },
+      orderBy: { createdAt: "desc" },
+      take: OWNER_AI_HISTORY_LIMITS.auditRecords,
+    }),
+    input.focusAuditId
+      ? db.auditLog.findMany({
+          where: {
+            orgId: input.orgId,
+            ...userFilter,
+            entityType: { in: Object.values(PERSISTED_TYPES) },
+            OR: [
+              { id: input.focusAuditId },
+              { metadata: { contains: input.focusAuditId } },
+            ],
+          },
+          orderBy: { createdAt: "asc" },
+          take: 20,
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const rows = Array.from(
+    new Map([...recentRows, ...focusedRows].map((row) => [row.id, row])).values(),
+  );
+  const focusedConversationIds = new Set<string>();
+  if (input.focusConversationId) focusedConversationIds.add(input.focusConversationId);
+  for (const row of focusedRows) {
+    const parsed = safeParse<{ conversationId?: unknown }>(row.metadata);
+    if (typeof parsed?.conversationId === "string") focusedConversationIds.add(parsed.conversationId);
+  }
+  const recentIds = new Set(recentConversations.map((conversation) => conversation.id));
+  const missingConversationIds = [...focusedConversationIds].filter((id) => !recentIds.has(id));
+  const focusedConversations = missingConversationIds.length
+    ? await db.aiConversation.findMany({
+        where: {
+          id: { in: missingConversationIds },
+          orgId: input.orgId,
+          ...userFilter,
+        },
+        include: {
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: OWNER_AI_HISTORY_LIMITS.messagesPerConversation,
+          },
+        },
+      })
+    : [];
+  const conversations = [...recentConversations, ...focusedConversations];
+
+  for (const row of conversations) {
+    const conversation: Conversation = {
+      id: row.id,
+      orgId: row.orgId,
+      mode: row.mode as OwnerAiMode,
+      title: row.title,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+      messages: [...row.messages].reverse().map((message) => ({
+        id: message.id,
+        role: message.role as OwnerAiMessage["role"],
+        content: message.content,
+        ts: message.createdAt.toISOString(),
+        ...(safeParse<Omit<OwnerAiMessage, "id" | "role" | "content" | "ts">>(
+          message.toolCalls,
+        ) ?? {}),
+      })),
+    };
+    scoped.conversations.set(conversation.id, conversation);
+    rememberBaseline(scoped, "conversation", conversation.id, conversation, row.userId);
+  }
+
+  for (const row of rows) {
+    const parsed = safeParse<Record<string, unknown>>(row.metadata);
+    if (!parsed || typeof parsed.id !== "string") continue;
+    switch (row.entityType) {
+      case PERSISTED_TYPES.run:
+        scoped.agentRuns.set(parsed.id, parsed as unknown as AgentRun);
+        rememberBaseline(scoped, "run", parsed.id, parsed, row.userId);
+        break;
+      case PERSISTED_TYPES.toolCall:
+        scoped.toolCalls.set(parsed.id, parsed as unknown as ToolCallRecord);
+        rememberBaseline(scoped, "toolCall", parsed.id, parsed, row.userId);
+        break;
+      case PERSISTED_TYPES.action:
+        scoped.actions.set(parsed.id, parsed as unknown as ProposedAction);
+        rememberBaseline(scoped, "action", parsed.id, parsed, row.userId);
+        break;
+      case PERSISTED_TYPES.approval:
+        scoped.approvals.set(parsed.id, parsed as unknown as Approval);
+        rememberBaseline(scoped, "approval", parsed.id, parsed, row.userId);
+        break;
+      case PERSISTED_TYPES.event:
+        scoped.auditEvents.push(parsed as unknown as AuditEvent);
+        rememberBaseline(scoped, "event", parsed.id, parsed, row.userId);
+        break;
+    }
+  }
+
+  return scoped;
+}
+
+function messageMetadata(message: OwnerAiMessage): string | null {
+  const { id: _id, role: _role, content: _content, ts: _ts, ...metadata } = message;
+  return Object.keys(metadata).length ? JSON.stringify(metadata) : null;
+}
+
+async function persistStore(scoped: AuditStore): Promise<void> {
+  const db = getDb();
+  const { orgId, userId, scope } = scoped.persistence;
+  const ownerWhere = scope === "user" ? { userId } : {};
+
+  if (scoped.persistence.resetRequested) {
+    await db.$transaction([
+      db.aiConversation.deleteMany({ where: { orgId, ...ownerWhere } }),
+      db.auditLog.deleteMany({
+        where: {
+          orgId,
+          ...ownerWhere,
+          entityType: { in: Object.values(PERSISTED_TYPES) },
+        },
+      }),
+    ]);
+    return;
+  }
+
+  const auditOperations: ReturnType<typeof db.auditLog.upsert>[] = [];
+
+  for (const conversation of scoped.conversations.values()) {
+    const key = recordKey("conversation", conversation.id);
+    const serialized = JSON.stringify(conversation);
+    if (scoped.persistence.baseline.get(key) === serialized) continue;
+    const ownerId = scoped.persistence.owners.get(key) ?? userId;
+    await db.aiConversation.upsert({
+      where: { id: conversation.id },
+      create: {
+        id: conversation.id,
+        orgId,
+        userId: ownerId ?? userId,
+        mode: conversation.mode,
+        title: conversation.title,
+        createdAt: new Date(conversation.createdAt),
+        updatedAt: new Date(conversation.updatedAt),
+      },
+      update: {
+        mode: conversation.mode,
+        title: conversation.title,
+        updatedAt: new Date(conversation.updatedAt),
+      },
+    });
+    for (const message of conversation.messages) {
+      await db.aiMessage.upsert({
+        where: { id: message.id },
+        create: {
+          id: message.id,
+          conversationId: conversation.id,
+          role: message.role,
+          content: message.content,
+          toolCalls: messageMetadata(message),
+          createdAt: new Date(message.ts),
+        },
+        update: {
+          content: message.content,
+          toolCalls: messageMetadata(message),
+        },
+      });
+    }
+  }
+
+  const appendRecords = <T extends { id: string }>(
+    kind: PersistedKind,
+    records: Iterable<T>,
+  ) => {
+    for (const record of records) {
+      const key = recordKey(kind, record.id);
+      const metadata = JSON.stringify(record);
+      if (scoped.persistence.baseline.get(key) === metadata) continue;
+      const ownerId = scoped.persistence.owners.get(key) ?? userId;
+      auditOperations.push(
+        db.auditLog.upsert({
+          where: { id: record.id },
+          create: {
+            id: record.id,
+            orgId,
+            userId: ownerId,
+            action: `owner_ai.${kind}`,
+            entityType: PERSISTED_TYPES[kind],
+            entityId:
+              "conversationId" in record && typeof record.conversationId === "string"
+                ? record.conversationId
+                : null,
+            metadata,
+          },
+          update: { metadata },
+        }),
+      );
+    }
+  };
+
+  appendRecords("run", scoped.agentRuns.values());
+  appendRecords("toolCall", scoped.toolCalls.values());
+  appendRecords("action", scoped.actions.values());
+  appendRecords("approval", scoped.approvals.values());
+  appendRecords("event", scoped.auditEvents);
+  if (auditOperations.length) await db.$transaction(auditOperations);
+}
+
+export async function withPersistentAuditStore<T>(
+  input: {
+    orgId: string;
+    userId: string;
+    scope?: "user" | "tenant";
+    focusConversationId?: string;
+    focusAuditId?: string;
+  },
+  callback: () => Promise<T>,
+): Promise<T> {
+  const scoped = await hydrateStore({ ...input, scope: input.scope ?? "user" });
+  try {
+    const result = await auditStorage.run(scoped, callback);
+    await persistStore(scoped);
+    return result;
+  } catch (error) {
+    await persistStore(scoped).catch((persistError) =>
+      console.error("Failed to persist Owner AI audit state", persistError),
+    );
+    throw error;
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -306,7 +665,7 @@ export function proposeAction(args: ProposeActionArgs): ProposedAction {
     safety === "forbidden"
       ? "failed"
       : safety === "safe"
-        ? "executed"
+        ? "proposed"
         : "pending_approval";
   const act: ProposedAction = {
     id,
@@ -425,15 +784,6 @@ export function decideApproval(args: DecideApprovalArgs): {
     action.decidedAt = ts;
     action.decidedBy = args.decidedBy;
     action.reason = args.reason;
-    // Execute the action (mock side effects only).
-    try {
-      const result = executeActionMock(action.action, action.args);
-      action.status = "executed";
-      action.result = result;
-    } catch (e) {
-      action.status = "failed";
-      action.result = (e as Error).message;
-    }
   } else {
     action.status = "rejected";
     action.decidedAt = ts;
@@ -461,94 +811,42 @@ export function decideApproval(args: DecideApprovalArgs): {
   return { approval, action };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Action execution (mock — no real side effects)
-// ─────────────────────────────────────────────────────────────────────────────
+export function markActionResult(
+  actionId: string,
+  result: { ok: boolean; message: string },
+): ProposedAction {
+  const action = store.actions.get(actionId);
+  if (!action) throw new Error(`Action not found: ${actionId}`);
+  action.status = result.ok ? "executed" : "failed";
+  action.result = result.message;
 
-/** Execute a safe action immediately (mock side effects). Returns a result string. */
-export function executeSafeAction(
-  name: string,
-  args: Record<string, unknown>,
-): string {
-  return executeActionMock(name, args);
+  const run = store.agentRuns.get(action.runId);
+  addAuditEvent({
+    runId: action.runId,
+    conversationId: action.conversationId,
+    type: result.ok ? "action_executed" : "error",
+    message: `${result.ok ? "Action executed" : "Action failed"}: ${action.action}`,
+    payload: { actionId: action.id, result: result.message },
+    correlationId: run?.correlationId ?? action.runId,
+    promptVersion: PROMPT_VERSION,
+    provider: run?.provider,
+    model: run?.model,
+  });
+  return action;
 }
 
-function executeActionMock(name: string, args: Record<string, unknown>): string {
-  switch (name) {
-    case "createTask": {
-      const title = String(args.title ?? "Untitled task");
-      const assignee = String(args.assignee ?? "unassigned");
-      const dueAt = String(args.dueAt ?? "");
-      return `Task created: "${title}" → ${assignee}${dueAt ? `, due ${dueAt}` : ""} (mock — no DB write)`;
-    }
-    case "createInternalNote": {
-      const entityType = String(args.entityType ?? "lead");
-      const entityId = String(args.entityId ?? "—");
-      const body = String(args.body ?? "").slice(0, 120);
-      return `Internal note added to ${entityType} ${entityId}: "${body}" (mock — no DB write)`;
-    }
-    case "assignTask": {
-      const taskId = String(args.taskId ?? "—");
-      const assigneeId = String(args.assigneeId ?? "—");
-      return `Task ${taskId} reassigned to ${assigneeId} (mock — no DB write)`;
-    }
-    case "generateReport": {
-      const type = String(args.type ?? "weekly");
-      const window = String(args.window ?? "7d");
-      return `Report generated: ${type} (${window}) — saved to Reports (mock — no DB write)`;
-    }
-    case "runApprovedAutomation": {
-      const automationId = String(args.automationId ?? "—");
-      return `Automation ${automationId} executed (mock — no real run)`;
-    }
-    case "sendExternalMessage": {
-      const to = String(args.to ?? "—");
-      const channel = String(args.channel ?? "email");
-      return `External ${channel} to ${to} sent (mock — no real send)`;
-    }
-    case "setLeadStage": {
-      const leadId = String(args.leadId ?? "—");
-      const stage = String(args.stage ?? "—");
-      return `Lead ${leadId} stage → ${stage} (mock — no DB write)`;
-    }
-    case "markQuoteWon": {
-      const quoteId = String(args.quoteId ?? "—");
-      return `Quote ${quoteId} marked WON (mock — no DB write)`;
-    }
-    case "markQuoteLost": {
-      const quoteId = String(args.quoteId ?? "—");
-      return `Quote ${quoteId} marked LOST (mock — no DB write)`;
-    }
-    case "archiveRecord": {
-      const entityType = String(args.entityType ?? "record");
-      const entityId = String(args.entityId ?? "—");
-      return `${entityType} ${entityId} archived (mock — no DB write)`;
-    }
-    case "deleteRecord": {
-      const entityType = String(args.entityType ?? "record");
-      const entityId = String(args.entityId ?? "—");
-      return `${entityType} ${entityId} soft-deleted (mock — no DB write)`;
-    }
-    case "mutateFinancialRecord": {
-      const recordType = String(args.recordType ?? "invoice");
-      const recordId = String(args.recordId ?? "—");
-      return `${recordType} ${recordId} mutated (mock — no DB write)`;
-    }
-    case "sendWebhook": {
-      const webhookId = String(args.webhookId ?? "—");
-      return `Webhook ${webhookId} fired (mock — no real HTTP)`;
-    }
-    case "changeIntegrationConfig": {
-      const integrationId = String(args.integrationId ?? "—");
-      return `Integration ${integrationId} config updated (mock — no real update)`;
-    }
-    case "highImpactAutomation": {
-      const automationId = String(args.automationId ?? "—");
-      return `High-impact automation ${automationId} executed (mock — no real run)`;
-    }
-    default:
-      return `Action ${name} executed (mock)`;
-  }
+// ─────────────────────────────────────────────────────────────────────────────
+// Legacy execution entry point retained only to fail closed.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** All actions must be executed through the authenticated tenant executor. */
+export function executeSafeAction(
+  name: string,
+  _args: Record<string, unknown>,
+): never {
+  throw new Error(
+    `Action ${name} must be executed through the authenticated tenant action executor`,
+  );
 }
 
 function describeAction(name: string, args: Record<string, unknown>): string {
@@ -609,7 +907,7 @@ export function listAuditEvents(): AuditEvent[] {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function getSystemConfig(
-  detectedProvider: Provider,
+  detectedProvider: OwnerAiSystemProvider,
   detectedModel: string | null,
 ): OwnerAiSystemConfig {
   return {
@@ -659,6 +957,7 @@ export function resetAudit(): void {
   store.actions.clear();
   store.approvals.clear();
   store.auditEvents.length = 0;
+  store.persistence.resetRequested = true;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

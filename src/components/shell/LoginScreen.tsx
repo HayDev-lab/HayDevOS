@@ -42,6 +42,7 @@ import { LoginBackground } from "./LoginBackground";
 interface LoginScreenProps {
   onSignIn: (session: ClientSession) => void;
   onGoToRegister?: () => void;
+  sessionExpired?: boolean;
 }
 
 const TAGLINE_KEYS = [
@@ -50,7 +51,7 @@ const TAGLINE_KEYS = [
   "shell.login.tagline3",
 ] as const;
 
-export function LoginScreen({ onSignIn, onGoToRegister }: LoginScreenProps) {
+export function LoginScreen({ onSignIn, onGoToRegister, sessionExpired = false }: LoginScreenProps) {
   const { t, locale, setLocale } = useLocale();
 
   const [email, setEmail] = useState("");
@@ -219,6 +220,12 @@ export function LoginScreen({ onSignIn, onGoToRegister }: LoginScreenProps) {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {sessionExpired ? (
+                <p role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  {t("shell.login.sessionExpired")}
+                </p>
+              ) : null}
+
               {/* Email */}
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-xs text-muted-foreground">

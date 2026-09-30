@@ -9,6 +9,11 @@ import {
 } from "react";
 
 import { AuthContextProvider } from "@/components/auth/AuthContext";
+import {
+  CLIENT_SESSION_INVALIDATED_EVENT,
+  fetchWithSession,
+  millisecondsUntilSessionExpiry,
+} from "@/lib/auth/client-session";
 import type { ClientSession } from "@/lib/auth/types";
 import { useAppStore } from "@/lib/store/app-store";
 import { resetOwnerAiClientState } from "@/modules/ownerai/state";
@@ -26,6 +31,7 @@ const getServerMountSnapshot = () => false;
 
 export function HayDevShell({ initialSession }: HayDevShellProps) {
   const [session, setSession] = useState<ClientSession | null>(initialSession);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [authView, setAuthView] = useState<"login" | "register">("login");
   const locale = useAppStore((state) => state.locale);
   const hasMounted = useSyncExternalStore(
@@ -42,9 +48,40 @@ export function HayDevShell({ initialSession }: HayDevShellProps) {
     document.documentElement.lang = locale;
   }, [locale]);
 
+  const invalidateSession = useCallback(() => {
+    resetOwnerAiClientState();
+    setSession(null);
+    setSessionExpired(true);
+  }, []);
+
+  useEffect(() => {
+    if (!session) return;
+
+    const checkExpiry = () => {
+      if (millisecondsUntilSessionExpiry(session.expiresAt) === 0) {
+        invalidateSession();
+      }
+    };
+    const timeoutId = window.setTimeout(
+      invalidateSession,
+      millisecondsUntilSessionExpiry(session.expiresAt),
+    );
+
+    window.addEventListener(CLIENT_SESSION_INVALIDATED_EVENT, invalidateSession);
+    window.addEventListener("focus", checkExpiry);
+    document.addEventListener("visibilitychange", checkExpiry);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener(CLIENT_SESSION_INVALIDATED_EVENT, invalidateSession);
+      window.removeEventListener("focus", checkExpiry);
+      document.removeEventListener("visibilitychange", checkExpiry);
+    };
+  }, [invalidateSession, session]);
+
   const handleSignIn = useCallback(
     (nextSession: ClientSession) => {
       resetOwnerAiClientState();
+      setSessionExpired(false);
       setSession(nextSession);
     },
     [],
@@ -56,12 +93,13 @@ export function HayDevShell({ initialSession }: HayDevShellProps) {
       throw new Error("Could not sign out");
     }
     resetOwnerAiClientState();
+    setSessionExpired(false);
     setSession(null);
   }, []);
 
   const switchOrganization = useCallback(
     async (orgId: string) => {
-      const response = await fetch("/api/auth/organization", {
+      const response = await fetchWithSession("/api/auth/organization", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orgId }),
@@ -104,7 +142,13 @@ export function HayDevShell({ initialSession }: HayDevShellProps) {
         />
       );
     }
-    return <LoginScreen onSignIn={handleSignIn} onGoToRegister={() => setAuthView("register")} />;
+    return (
+      <LoginScreen
+        onSignIn={handleSignIn}
+        onGoToRegister={() => setAuthView("register")}
+        sessionExpired={sessionExpired}
+      />
+    );
   }
 
   return (

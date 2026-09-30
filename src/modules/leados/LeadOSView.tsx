@@ -33,6 +33,7 @@ import {
 import { toast } from "sonner";
 
 import { useLocale } from "@/lib/i18n";
+import { fetchWithSession } from "@/lib/auth/client-session";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth/AuthContext";
 
@@ -164,7 +165,7 @@ function LeadOSContent() {
 
   async function exportLeads() {
     try {
-      const response = await fetch("/api/leados/export", { cache: "no-store" });
+      const response = await fetchWithSession("/api/leados/export", { cache: "no-store" });
       if (!response.ok) throw new Error(t("leados.runtime.exportFailedStatus", { status: response.status }));
       const url = URL.createObjectURL(await response.blob());
       const anchor = document.createElement("a");

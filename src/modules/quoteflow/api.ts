@@ -1,6 +1,7 @@
 import type { CreateQuoteInput, ProductInput, UpdateQuoteSettingsInput } from "@/lib/quotes/schemas";
 import type { QuoteDto } from "@/lib/quotes/types";
 import type { DocumentFormat, DocumentLocale, GeneratedDocumentDto } from "@/lib/documents/types";
+import { fetchWithSession } from "@/lib/auth/client-session";
 
 export interface QuoteFlowOverview {
   quotes: QuoteDto[];
@@ -16,7 +17,7 @@ export interface QuoteFlowOverview {
 type ApiFailure = { error?: { message?: string; code?: string; details?: unknown } };
 
 export async function quoteRequest<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
+  const response = await fetchWithSession(url, {
     ...init,
     headers: { ...(init?.body ? { "Content-Type": "application/json" } : {}), ...init?.headers },
     cache: "no-store",

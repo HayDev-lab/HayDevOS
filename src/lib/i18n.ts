@@ -208,6 +208,7 @@ const en: Dict = {
   "shell.login.footer": "© {year} HayDevOS · Enterprise edition",
   "shell.login.edition": "Enterprise edition",
   "shell.login.failed": "Sign in failed",
+  "shell.login.sessionExpired": "Your session expired. Sign in again to continue.",
   "shell.login.feature.leads": "Lead to payment",
 
   // shell — register (OWNER + company)
@@ -3027,6 +3028,7 @@ const hy: Dict = {
   "shell.login.footer": "© {year} HayDevOS · Բիզնես տարբերակ",
   "shell.login.edition": "Բիզնես տարբերակ",
   "shell.login.failed": "Մուտքը չհաջողվեց",
+  "shell.login.sessionExpired": "Ձեր աշխատաշրջանն ավարտվել է։ Շարունակելու համար կրկին մուտք գործեք։",
   "shell.login.feature.leads": "Հայտից մինչև վճարում",
 
   // shell — register (OWNER + company)
@@ -5820,6 +5822,7 @@ const ru: Dict = {
   "shell.login.footer": "© {year} HayDevOS · Enterprise-редакция",
   "shell.login.edition": "Корпоративная версия",
   "shell.login.failed": "Не удалось войти",
+  "shell.login.sessionExpired": "Сессия истекла. Войдите снова, чтобы продолжить.",
   "shell.login.feature.leads": "От лида до оплаты",
   "shell.login.feature.documents": "AI для документов",
   "shell.login.feature.automations": "Автоматизации",

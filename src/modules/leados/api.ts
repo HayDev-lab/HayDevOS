@@ -12,11 +12,12 @@ import type {
   LeadOverviewDto,
   LeadTaskDto,
 } from "@/lib/leads/types";
+import { fetchWithSession } from "@/lib/auth/client-session";
 
 type ApiFailure = { error?: { message?: string; code?: string } };
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
+  const response = await fetchWithSession(url, {
     ...init,
     headers: {
       ...(init?.body ? { "Content-Type": "application/json" } : {}),

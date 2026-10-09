@@ -635,12 +635,14 @@
     max-width: none;
   }
   .haydev-core .core-topbar .brand-wordmark {
-    width: 105px;
+    width: 76px;
+    height: 76px;
+    overflow: visible;
   }
   .haydev-core .core-topbar .brand-logo {
-    width: 112px;
-    height: 112px;
-    top: -61px;
+    position: static;
+    width: 76px;
+    height: 76px;
   }
   .haydev-core .language-control select {
     width: 100px;

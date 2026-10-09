@@ -55,7 +55,7 @@ const MODULE_HOTKEYS: Record<string, string> = {
   o: "docsmart",
   a: "autopilot",
   e: "erphub",
-  c: "control",
+  c: "dashboard",
   i: "connect",
   b: "audit",
   u: "ownerAi",
@@ -98,13 +98,12 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
   const ActiveComponent = mod?.component;
   const activeOrg = session.activeOrganization;
 
-  // The owner home already contains the complete Control command center.
-  // Redirect old persisted links/hotkeys so OWNER never sees a duplicate view.
+  // Normalize old persisted links so they cannot reopen the retired Control view.
   useEffect(() => {
-    if (session.user.role === "OWNER" && activeModule === "control") {
+    if (activeModule === "control") {
       setActiveModule("dashboard");
     }
-  }, [activeModule, session.user.role, setActiveModule]);
+  }, [activeModule, setActiveModule]);
 
   // ─── Global keyboard shortcuts ─────────────────────────────────────────
   const anyOverlayOpen = commandOpen || ownerAiOpen || activityOpen || shortcutsOpen || settingsOpen;
@@ -183,7 +182,7 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
           jumpTimeoutRef.current = null;
         }
         const requestedModuleId = MODULE_HOTKEYS[k];
-        const moduleId = session.user.role === "OWNER" && requestedModuleId === "control" ? "dashboard" : requestedModuleId;
+        const moduleId = requestedModuleId;
         if (moduleId) {
           e.preventDefault();
           setActiveModule(moduleId);

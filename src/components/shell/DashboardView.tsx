@@ -3,15 +3,14 @@
 /**
  * Dashboard route binding.
  *
- * There is one dashboard experience: the connected orbital command workspace.
- * Keeping this binding thin prevents the former KPI dashboard from being
- * accidentally reintroduced for non-owner sessions.
+ * The dashboard is the new Core workspace. Keep this compatibility entry point
+ * pointed directly at it so stale imports cannot bring back the retired shell.
  */
 
-import { ControlView } from "@/modules/control";
+import { CoreHome } from "@/components/core/CoreHome";
 
 export function DashboardView() {
-  return <ControlView />;
+  return <CoreHome />;
 }
 
 export default DashboardView;

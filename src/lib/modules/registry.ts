@@ -17,7 +17,6 @@ import {
   Workflow,
   Boxes,
   Plug,
-  Gauge,
   Sparkles,
   ClipboardCheck,
   Settings,
@@ -28,14 +27,13 @@ import type { ComponentType } from "react";
 import { ModulesView } from "@/components/core/ModulesView";
 import { MarketingView } from "@/components/core/MarketingView";
 import { SettingsWorkspace } from "@/components/core/SettingsWorkspace";
-import { DashboardView } from "@/components/shell/DashboardView";
+import { CoreHome } from "@/components/core/CoreHome";
 import { ErpCrmView } from "@/modules/erp";
 import { DocumentFlowView } from "@/modules/documentflow";
 import { AutomationBuilderView } from "@/modules/automation";
 import { QuoteFlowView } from "@/modules/quoteflow";
 import { LeadOSView } from "@/modules/leados";
 import { IntegrationHubView } from "@/modules/integrations";
-import { ControlView } from "@/modules/control";
 import { BusinessAuditView } from "@/modules/audit";
 import { OwnerAiView } from "@/modules/ownerai";
 
@@ -98,7 +96,7 @@ export const ModuleRegistry: ModuleManifest[] = [
     route: "dashboard",
     description: "Operational overview across every module.",
     accent: "lime",
-    component: DashboardView,
+    component: CoreHome,
   },
   {
     id: "leados",
@@ -159,16 +157,6 @@ export const ModuleRegistry: ModuleManifest[] = [
     description: "Integrations & webhooks across providers.",
     accent: "cyan",
     component: IntegrationHubView,
-  },
-  {
-    id: "control",
-    nameKey: "module.control",
-    icon: Gauge,
-    category: "intelligence",
-    route: "control",
-    description: "KPIs, SLAs and operational dashboards.",
-    accent: "amber",
-    component: ControlView,
   },
   {
     id: "ownerAi",

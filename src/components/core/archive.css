@@ -58,14 +58,14 @@
 .haydev-core .module strong{color:#fff}.haydev-core .module>span{color:#edf4ff}
 .haydev-core .content{--accent-turn:-32deg}.haydev-core .owner{--accent-turn:18deg}.haydev-core .crm{--accent-turn:-12deg}.haydev-core .documents{--accent-turn:30deg}.haydev-core .finance{--accent-turn:-40deg}
 /* Original supplied brand artwork stays transparent over the globe and sky. */
-.haydev-core .topbar .brand.has-logo{min-width:150px;flex-shrink:0;display:flex;align-items:center;justify-content:flex-start}
-.haydev-core .brand-wordmark{position:relative;display:block;width:150px;height:46px;overflow:hidden;flex-shrink:0}
-.haydev-core .brand-logo{position:absolute;left:0;top:-84px;display:block;width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 2px 5px #0009)}
+.haydev-core .topbar .brand.has-logo{min-width:90px;flex-shrink:0;display:flex;align-items:center;justify-content:flex-start}
+.haydev-core .brand-wordmark{position:relative;display:flex;width:86px;height:86px;overflow:visible;align-items:center;justify-content:flex-start;flex-shrink:0}
+.haydev-core .brand-logo{position:static;display:block;width:86px;height:86px;object-fit:contain;filter:drop-shadow(0 2px 5px #0009)}
 .haydev-core .topbar:has(.brand-logo){height:100px}
 .haydev-core .core-system .core-title.has-logo{top:50%;left:50%;width:65%;padding:0;transform:translate(-50%,-50%);line-height:0;border-radius:14px}
 .haydev-core .core-logo{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain;filter:drop-shadow(0 3px 5px #000b)}
 .haydev-core .core-title.has-logo:focus-visible,.haydev-core .brand.has-logo:focus-visible{outline:2px solid #9fe1ff;outline-offset:5px}
-@media(max-width:820px){.haydev-core .topbar:has(.brand-logo){height:auto;min-height:120px;padding-top:8px}.haydev-core .topbar .brand.has-logo{min-width:132px}.haydev-core .brand-wordmark{width:132px;height:41px}.haydev-core .brand-logo{top:-74px;width:132px;height:132px}}
+@media(max-width:820px){.haydev-core .topbar:has(.brand-logo){height:auto;min-height:120px;padding-top:8px}.haydev-core .topbar .brand.has-logo{min-width:78px}.haydev-core .brand-wordmark{width:76px;height:76px}.haydev-core .brand-logo{width:76px;height:76px}}
 .haydev-core .module{width:20%}.haydev-core .module.utility{width:18%}.haydev-core .module.utility strong{font-size:clamp(11px,.95vw,17px);white-space:normal;line-height:1.15;max-width:92%}.haydev-core .module.utility svg{width:29%;height:29%;margin-bottom:6px}
 .haydev-core .language-control{flex-shrink:0}.haydev-core .language-control select{font:inherit;font-size:14px;color:#e8f4ff;border:1px solid #39729b;border-radius:20px;background:#06152bd9;padding:9px 8px;max-width:128px;cursor:pointer}.haydev-core .language-control select option{background:#07172e;color:#edf5ff}
 .haydev-core .module>span,.haydev-core .core-title>span,.haydev-core .ai-invitation{white-space:pre-line}
@@ -142,9 +142,9 @@ html[lang="hy"] .haydev-core .core-title>span{font-size:clamp(13px,1.12vw,21px)}
  .haydev-core .suggestions button{font-size:10px;padding:5px 2px}
 }
 @media(max-width:380px){
- .haydev-core .topbar .brand.has-logo{min-width:108px}
- .haydev-core .brand-wordmark{width:108px}
- .haydev-core .brand-logo{top:-63px;width:108px;height:108px}
+ .haydev-core .topbar .brand.has-logo{min-width:64px}
+ .haydev-core .brand-wordmark{width:62px;height:62px}
+ .haydev-core .brand-logo{width:62px;height:62px}
  .haydev-core .language-control select{width:92px;font-size:12px;padding-inline:6px}
  .haydev-core .auth-actions{gap:2px}
  .haydev-core .auth-actions button{font-size:9px;padding-inline:5px}

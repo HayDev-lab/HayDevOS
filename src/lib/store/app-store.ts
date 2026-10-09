@@ -18,6 +18,11 @@ import type { Locale } from "@/lib/i18n";
 const APP_DEFAULT_LOCALE: Locale = "hy";
 export type ModuleEntryTab = "approvals" | "schedules";
 
+/** IDs from the retired shell are normalized before they reach the registry. */
+function normalizeModuleId(moduleId: string) {
+  return moduleId === "control" ? "dashboard" : moduleId;
+}
+
 interface AppState {
   // module
   activeModule: string;
@@ -60,9 +65,9 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       activeModule: "dashboard",
-      setActiveModule: (moduleId) => set({ activeModule: moduleId, moduleEntryTab: null }),
+      setActiveModule: (moduleId) => set({ activeModule: normalizeModuleId(moduleId), moduleEntryTab: null }),
       moduleEntryTab: null,
-      openModule: (moduleId, tab) => set({ activeModule: moduleId, moduleEntryTab: tab ?? null }),
+      openModule: (moduleId, tab) => set({ activeModule: normalizeModuleId(moduleId), moduleEntryTab: tab ?? null }),
 
       locale: APP_DEFAULT_LOCALE,
       setLocale: (locale) => set({ locale }),
@@ -101,6 +106,14 @@ export const useAppStore = create<AppState>()(
         locale: s.locale,
         sidebarCollapsed: s.sidebarCollapsed,
       }),
+      version: 2,
+      migrate: (persisted) => {
+        const state = persisted as Partial<AppState>;
+        return {
+          ...state,
+          activeModule: normalizeModuleId(state.activeModule ?? "dashboard"),
+        } as AppState;
+      },
     },
   ),
 );

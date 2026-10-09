@@ -12,7 +12,7 @@
  * parent applies them to the shared state.
  *
  * Security emphasis (KEY — surfaced in UI):
- *  - OAuth state + PKCE for OAuth providers (ConnectDialog).
+ *  - Provider onboarding is delegated to the server-managed connection flow.
  *  - HMAC-SHA256 signed webhooks (WebhooksView).
  *  - Server-only decryption; UI never holds plaintext (CredentialsVault,
  *    IntegrationDetail reveal note).
@@ -22,60 +22,56 @@
  *  - "No plaintext exposure" badge in header + every credential surface.
  */
 
-import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Plug,
-  ShieldCheck,
-  Activity,
-  AlertTriangle,
-  Webhook,
-  KeyRound,
-  RefreshCw,
+Activity,
+AlertTriangle,
+Plug,
+Webhook
 } from "lucide-react";
+import { useMemo,useState } from "react";
 import { toast } from "sonner";
 
 import { useLocale } from "@/lib/i18n";
 import {
-  providers as seedProviders,
-  integrations as seedIntegrations,
-  webhookEndpoints,
-  webhookEvents as seedWebhookEvents,
-  syncRuns as seedSyncRuns,
-  credentials as seedCredentials,
-  integrationAudit as seedAudit,
-  integrationSettings as seedSettings,
+integrationAudit as seedAudit,
+credentials as seedCredentials,
+integrations as seedIntegrations,
+providers as seedProviders,
+integrationSettings as seedSettings,
+syncRuns as seedSyncRuns,
+webhookEvents as seedWebhookEvents,
+webhookEndpoints,
 } from "./data";
 import type {
-  Integration,
-  Provider,
-  Credential,
-  WebhookEvent,
-  SyncRun,
-  IntegrationAuditEntry,
-  IntegrationSettings,
-  IntegrationAuditAction,
+Credential,
+Integration,
+IntegrationAuditAction,
+IntegrationAuditEntry,
+IntegrationSettings,
+Provider,
+SyncRun,
+WebhookEvent,
 } from "./types";
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Tabs,TabsContent,TabsList,TabsTrigger } from "@/components/ui/tabs";
 
-import { ProvidersCatalog } from "./components/ProvidersCatalog";
-import { ConnectDialog } from "./components/ConnectDialog";
-import { ConnectedView } from "./components/ConnectedView";
-import { IntegrationDetail } from "./components/IntegrationDetail";
-import { CredentialsVault } from "./components/CredentialsVault";
-import { WebhooksView } from "./components/WebhooksView";
-import { SyncView } from "./components/SyncView";
-import { AuditView } from "./components/AuditView";
 import { AnalyticsView } from "./components/AnalyticsView";
+import { AuditView } from "./components/AuditView";
+import { ConnectedView } from "./components/ConnectedView";
+import { CredentialsVault } from "./components/CredentialsVault";
+import { IntegrationDetail } from "./components/IntegrationDetail";
+import { ProvidersCatalog } from "./components/ProvidersCatalog";
 import { SettingsView } from "./components/SettingsView";
-import { NoPlaintextBadge } from "./shared";
+import { SyncView } from "./components/SyncView";
+import { WebhooksView } from "./components/WebhooksView";
 import {
-  localizeCapability,
-  localizeDisplayText,
-  localizeProvider,
+localizeCapability,
+localizeDisplayText,
+localizeProvider,
 } from "./localization";
+import { NoPlaintextBadge } from "./shared";
 
 type TabId =
   | "providers"
@@ -132,8 +128,6 @@ export function IntegrationHubView() {
   );
 
   // Dialog / drawer state.
-  const [connectProvider, setConnectProvider] = useState<Provider | null>(null);
-  const [connectOpen, setConnectOpen] = useState(false);
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
 
   const connectedProviderIds = useMemo(
@@ -208,70 +202,6 @@ export function IntegrationHubView() {
 
   function openConnect(provider: Provider) {
     toast.info(t("integration.connect.serverRequired", { name: provider.name }));
-  }
-
-  function handleConnect(provider: Provider, scopes: string[]) {
-    // Add a new connected integration with status "connected".
-    const newId = `int_new_${Date.now()}`;
-    const credId = `cr_new_${Date.now()}`;
-    const newIntegration: Integration = {
-      id: newId,
-      orgId: "org_haydev",
-      providerId: provider.id,
-      label: `${provider.name} — Connected`,
-      status: "connected",
-      healthScore: 100,
-      authType: provider.authType,
-      scopesGranted: scopes,
-      capabilitiesInUse: provider.capabilities.slice(0, 2),
-      credentialRefMasked: maskRef(provider.authType),
-      credentialId: credId,
-      lastSyncAt: new Date().toISOString(),
-      eventsProcessed: 0,
-      config: {},
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setIntegrations((prev) => [newIntegration, ...prev]);
-
-    // Add a credential stub.
-    const newCred: Credential = {
-      id: credId,
-      orgId: "org_haydev",
-      providerId: provider.id,
-      label: `${provider.name} — ${
-        provider.authType === "oauth"
-          ? "OAuth Token"
-          : provider.authType === "api_key"
-            ? "API Key"
-            : provider.authType === "webhook"
-              ? "Signing Secret"
-              : "Service Token"
-      }`,
-      type:
-        provider.authType === "oauth"
-          ? "oauth_token"
-          : provider.authType === "api_key"
-            ? "api_key"
-            : provider.authType === "webhook"
-              ? "signing_secret"
-              : "none",
-      maskedValue: maskRef(provider.authType),
-      createdAt: new Date().toISOString(),
-      lastRotatedAt: new Date().toISOString(),
-      expiresAt: provider.authType === "oauth" ? newFutureISO(30) : null,
-      integrationId: newId,
-      encrypted: true,
-      active: true,
-    };
-    setCredentials((prev) => [newCred, ...prev]);
-
-    addAudit({
-      action: "connect",
-      providerId: provider.id,
-      integrationId: newId,
-      message: `Connected ${provider.name}. Auth type: ${provider.authType}.`,
-    });
   }
 
   function handleTest(integration: Integration) {
@@ -578,12 +508,6 @@ export function IntegrationHubView() {
       </Tabs>
 
       {/* Dialogs / drawers */}
-      <ConnectDialog
-        provider={connectProvider}
-        open={connectOpen}
-        onOpenChange={setConnectOpen}
-        onConnect={handleConnect}
-      />
       <IntegrationDetail
         integration={selectedIntegration}
         provider={selectedProvider}

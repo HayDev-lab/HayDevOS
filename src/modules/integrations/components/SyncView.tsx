@@ -10,47 +10,46 @@
  * Schedule config card: default cron, idempotency window, auto-disable threshold.
  */
 
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import {
-  RefreshCw,
-  Play,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Calendar,
-  Settings2,
+AlertTriangle,
+Calendar,
+CheckCircle2,
+Clock,
+Play,
+RefreshCw,
+Settings2,
+XCircle,
 } from "lucide-react";
+import { useMemo,useState } from "react";
 import { toast } from "sonner";
 
 import { useLocale } from "@/lib/i18n";
-import { cn, formatDateTime, relativeTime } from "@/lib/utils";
-import type { SyncRun, Integration, Provider, IntegrationSettings } from "../types";
-import { SectionHeader, EmptyState, ProviderIcon } from "../shared";
+import { cn,formatDateTime,relativeTime } from "@/lib/utils";
 import { localizeSyncError } from "../localization";
+import { EmptyState,ProviderIcon,SectionHeader } from "../shared";
+import type { Integration,IntegrationSettings,Provider,SyncRun } from "../types";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card,CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+Select,
+SelectContent,
+SelectItem,
+SelectTrigger,
+SelectValue,
 } from "@/components/ui/select";
+import {
+Table,
+TableBody,
+TableCell,
+TableHead,
+TableHeader,
+TableRow,
+} from "@/components/ui/table";
 
 interface Props {
   runs: SyncRun[];

@@ -36,7 +36,7 @@ Gate #7 is not PASS. `haydevos.com` is healthy on Vercel and the safe authentica
 - `.env` removed from Git tracking and remains ignored; `.env.example` is explicitly allowed and contains placeholders.
 - Working-tree scan found no GitHub PAT or GitHub fine-grained token. Placeholder URLs remain in examples/tests. Git-history `-S` checks found no PAT, `sb_secret_`, `service_role`, or PostgreSQL URI additions.
 - The GitHub PAT previously disclosed in chat is compromised and must be revoked; revocation is not verified.
-- Database, modern Storage, scanner and Owner AI credentials are installed in Vercel and passed live readiness. None has been installed on the pending VPS; external alerting remains unconfigured.
+- Database, modern Storage, temporary server-only Storage compatibility, scanner and Owner AI credentials are installed in Vercel. None has been installed on the pending VPS; external alerting remains unconfigured.
 
 ## Authentication and origin
 
@@ -49,9 +49,9 @@ Gate #7 is not PASS. `haydevos.com` is healthy on Vercel and the safe authentica
 ## Supabase Storage
 
 - Bucket: `haydev-documents`, previously verified private with 25 MB and MIME policy.
-- Modern key: **PASS locally**. The current opaque `sb_secret_` key completed bucket access, private upload, SHA-256 round trip, signed download, cleanup and anonymous-denial checks.
-- Legacy dependency: absent from the validated local environment; production validation continues to reject `SUPABASE_STORAGE_AUTH_JWT`.
-- Public denial/signed URL/hash smoke: PASS locally with the modern key; it must be repeated from the deployed VPS.
+- Modern key alone: **FAIL on 2026-09-30** for object operations (`Authorization` required / `Invalid Compact JWS`).
+- Temporary compatibility: explicitly approved; the modern key remains `apikey` and the legacy service-role JWT is used only as the server-side Storage `Authorization` header.
+- Public denial/signed URL/hash smoke: PASS with the compatibility header and cleanup verified; it must be repeated after every deployment and from the final VPS.
 
 ## Malware scanning
 
@@ -142,7 +142,7 @@ No high-severity advisor finding exists, but the informational set is not a stri
 
 1. Wait for OVH order `259166081` validation, record the assigned VPS address, and establish verified SSH-key access.
 2. Replace Namecheap parking records, deploy Caddy/Node, obtain TLS, and verify `haydevos.com` externally.
-3. Install the verified `haydev_runtime` URL, separate migration credential, modern Storage key, scanner key and Owner AI key in the VPS secret store.
+3. Install the verified `haydev_runtime` URL, separate migration credential, modern Storage key, explicitly approved temporary Storage compatibility JWT, scanner key and Owner AI key in the VPS secret store.
 4. Transfer and install the SHA-256 verified standalone artifact, then repeat five-role authentication on OVH.
 5. Configure external error monitoring credentials; copy the verified Owner AI configuration into the VPS secret store during cutover.
 6. Execute encrypted backup and isolated DB/Storage restore drill.

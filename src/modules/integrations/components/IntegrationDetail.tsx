@@ -16,59 +16,58 @@
  *  - Footer actions: Rotate credential + Revoke.
  */
 
-import { motion } from "framer-motion";
 import {
-  Activity,
-  Lock,
-  ShieldCheck,
-  RefreshCw,
-  RotateCw,
-  Trash2,
-  CheckCircle2,
-  XCircle,
-  Webhook,
-  Zap,
-  History,
-  KeyRound,
+Activity,
+CheckCircle2,
+History,
+KeyRound,
+Lock,
+RefreshCw,
+RotateCw,
+ShieldCheck,
+Trash2,
+Webhook,
+XCircle,
+Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useLocale } from "@/lib/i18n";
-import { cn, formatDateTime, relativeTime, toneClasses, statusColor } from "@/lib/utils";
-import type {
-  Integration,
-  Provider,
-  Credential,
-  SyncRun,
-  WebhookEndpoint,
-  WebhookEvent,
-  IntegrationAuditEntry,
-} from "../types";
+import { cn,formatDateTime,relativeTime,statusColor,toneClasses } from "@/lib/utils";
 import {
-  StatusBadge,
-  AuthTypeBadge,
-  CategoryBadge,
-  ProviderIcon,
-  MaskedField,
-  HealthDot,
-} from "../shared";
-import {
-  localizeAuditActor,
-  localizeAuditMessage,
-  localizeSyncError,
+localizeAuditActor,
+localizeAuditMessage,
+localizeSyncError,
 } from "../localization";
-
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+AuthTypeBadge,
+CategoryBadge,
+HealthDot,
+MaskedField,
+ProviderIcon,
+StatusBadge,
+} from "../shared";
+import type {
+Credential,
+Integration,
+IntegrationAuditEntry,
+Provider,
+SyncRun,
+WebhookEndpoint,
+WebhookEvent,
+} from "../types";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+Sheet,
+SheetContent,
+SheetDescription,
+SheetFooter,
+SheetHeader,
+SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Props {
   integration: Integration | null;

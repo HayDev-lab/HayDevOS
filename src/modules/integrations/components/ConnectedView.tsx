@@ -8,57 +8,57 @@
  * Row actions: Test, Sync, Refresh Auth, Disconnect.
  */
 
-import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Search,
-  Zap,
-  RefreshCw,
-  RotateCw,
-  Unplug,
-  ChevronRight,
-  Activity,
+Activity,
+ChevronRight,
+RefreshCw,
+RotateCw,
+Search,
+Unplug,
+Zap,
 } from "lucide-react";
+import { useMemo,useState } from "react";
 import { toast } from "sonner";
 
 import { useLocale } from "@/lib/i18n";
-import { cn, relativeTime } from "@/lib/utils";
-import type { Integration, Provider } from "../types";
+import { relativeTime } from "@/lib/utils";
 import {
-  StatusBadge,
-  AuthTypeBadge,
-  ProviderIcon,
-  HealthDot,
-  EmptyState,
+AuthTypeBadge,
+EmptyState,
+HealthDot,
+ProviderIcon,
+StatusBadge,
 } from "../shared";
+import type { Integration,Provider } from "../types";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+DropdownMenu,
+DropdownMenuContent,
+DropdownMenuItem,
+DropdownMenuSeparator,
+DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+Select,
+SelectContent,
+SelectItem,
+SelectTrigger,
+SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
+Table,
+TableBody,
+TableCell,
+TableHead,
+TableHeader,
+TableRow,
+} from "@/components/ui/table";
 
 interface Props {
   integrations: Integration[];

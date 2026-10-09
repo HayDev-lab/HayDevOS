@@ -12,39 +12,39 @@
  * pipeline, active leads, integration health) reflect current state.
  */
 
-import {
-  mockLeads,
-  mockQuotes,
-  mockDocuments,
-  mockAutomations,
-  mockInvoices,
-  mockPayments,
-  mockIntegrations,
-  mockCustomers,
-  mockProducts,
-} from "@/lib/mock";
-import { formatCurrency, formatCompact } from "@/lib/utils";
-import type {
-  TimeWindow,
-  WindowRange,
-  ExecutiveSnapshot,
-  SalesSummary,
-  QuoteSummary,
-  DocumentSummary,
-  AutomationSummary,
-  FinanceSummary,
-  IntegrationHealthSummary,
-  SlaOperationsSummary,
-  KpiCardData,
-  KpiTone,
-  ModuleHealthEntry,
-  ModuleHealth,
-  AttentionItem,
-  AiInsight,
-  ControlTranslator,
-} from "./types";
-import { buildAttentionFeed, buildAiInsights, OWNER_NAMES, ownerName, WORKER_SNAPSHOT } from "./data";
 import { t as translateText } from "@/lib/i18n";
+import {
+mockAutomations,
+mockCustomers,
+mockDocuments,
+mockIntegrations,
+mockInvoices,
+mockLeads,
+mockPayments,
+mockProducts,
+mockQuotes,
+} from "@/lib/mock";
+import { formatCompact } from "@/lib/utils";
+import { buildAiInsights,buildAttentionFeed,OWNER_NAMES,ownerName,WORKER_SNAPSHOT } from "./data";
+import type {
+AiInsight,
+AttentionItem,
+AutomationSummary,
+ControlTranslator,
+DocumentSummary,
+ExecutiveSnapshot,
+FinanceSummary,
+IntegrationHealthSummary,
+KpiCardData,
+KpiTone,
+ModuleHealth,
+ModuleHealthEntry,
+QuoteSummary,
+SalesSummary,
+SlaOperationsSummary,
+TimeWindow,
+WindowRange,
+} from "./types";
 
 const getTranslator = (translator?: ControlTranslator): ControlTranslator =>
   translator ?? ((key, params) => translateText(key, "en", params));
@@ -1275,7 +1275,7 @@ export function getIntegrationHealth(window: TimeWindow, translator?: ControlTra
   const failing = mockIntegrations
     .filter((i) => i.status !== "connected")
     .map((i) => ({ id: i.id, provider: i.provider, status: i.status, lastSyncAt: i.lastSyncAt, eventsProcessed: i.eventsProcessed }))
-    .sort((a, b) => (a.status === "error" || a.status === "disconnected" ? -1 : 1));
+    .sort((a) => (a.status === "error" || a.status === "disconnected" ? -1 : 1));
 
   const recentFailures = mockIntegrations
     .filter((i) => i.status === "error" || i.status === "reauth_required" || i.status === "disconnected")
@@ -1512,6 +1512,6 @@ export function getAiInsights(window: TimeWindow, translator?: ControlTranslator
 // Re-exports for views (so consumers can `import { ... } from "./adapters"`)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export { buildAttentionFeed, buildAiInsights, ownerName, OWNER_NAMES, WORKER_SNAPSHOT };
 export type { WorkerSnapshot } from "./data";
 export { WINDOW_OPTIONS } from "./types";
+export { buildAiInsights,buildAttentionFeed,OWNER_NAMES,ownerName,WORKER_SNAPSHOT };

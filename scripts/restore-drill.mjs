@@ -65,9 +65,14 @@ if (validated.status !== 0) throw new Error(`Restore validation failed with exit
 const supabaseUrl = required("SUPABASE_URL").replace(/\/$/, "");
 const secret = required("SUPABASE_SECRET_KEY");
 if (!secret.startsWith("sb_secret_")) throw new Error("Storage restore drill requires the modern sb_secret key");
+const compatibilityJwt = process.env.SUPABASE_STORAGE_AUTH_JWT?.trim();
 const restoreBucket = required("HAYDEV_RESTORE_BUCKET");
 if (!/restore|drill/i.test(restoreBucket)) throw new Error("HAYDEV_RESTORE_BUCKET must be an isolated restore/drill bucket");
-const storage = new StorageClient(`${supabaseUrl}/storage/v1`, { apikey: secret, "X-Client-Info": "haydevos-restore-drill/1.0" });
+const storage = new StorageClient(`${supabaseUrl}/storage/v1`, {
+  apikey: secret,
+  ...(compatibilityJwt ? { Authorization: `Bearer ${compatibilityJwt}` } : {}),
+  "X-Client-Info": "haydevos-restore-drill/1.0",
+});
 const prefix = `restore-drill/${Date.now()}`;
 const uploaded = [];
 try {

@@ -19,7 +19,7 @@ The Vercel project `haydevos` is deployed to the production target on `https://h
 | Local runtime credential | `.env` uses the `eu-central-1` transaction pooler on port `6543` with `pgbouncer=true`, `connection_limit=5` and `sslmode=require`; `DIRECT_URL` remains a session-pooler URL on port `5432` and should include `sslmode=require` | Runtime URL verified; direct migration URL needs final SSL parameter |
 | Environment | Zod validation for required core variables and exact HTTPS origins; production startup fails closed | Ready in code |
 | Secrets | `.env` removed from Git tracking and ignored; `.env.example` contains placeholders only | Ready in working tree |
-| Storage | `haydev-documents` is private, 25 MB, MIME-restricted; modern `sb_secret_` smoke passed upload, hash round-trip, signed access, anonymous denial and cleanup | Verified remotely |
+| Storage | `haydev-documents` is private, 25 MB, MIME-restricted; on 2026-09-30 the modern key alone failed object operations, while the explicitly approved server-only compatibility JWT passed upload, hash round-trip, signed access, anonymous denial and cleanup | Verified remotely with temporary compatibility |
 | Data API | 0/55 tables and 0/15 functions exposed; automatic exposure of new tables is disabled | Hardened remotely |
 | Supabase service status | Dashboard displayed an investigation banner; the public status page currently reports API Gateway degraded performance and an unresolved JWT-rejection incident | External platform incident; defer live cutover |
 | Malware | MetaDefender Cloud adapter, private sample mode, bounded timeout/retry, hash matching, clean/infected/error semantics | Production Secret installed and provider health verified; live EICAR smoke still pending |
@@ -49,7 +49,7 @@ The Vercel project `haydevos` is deployed to the production target on `https://h
 
 - Custom opaque sessions, tenant resolution, RBAC, Prisma, and RLS remain the only authorization model.
 - Privileged Storage access remains server-only and is reached only after session, tenant, role and object ownership checks.
-- Legacy `service_role` is not accepted as a production-final normal-operation dependency.
+- Legacy `service_role` is accepted only as the explicitly approved temporary Storage authorization compatibility header; it remains server-only, monitored, and scheduled for removal after a modern-key smoke passes.
 - Owner AI is optional for core server startup; its absence is reported by readiness but does not take down LeadOS/QuoteFlow/DocumentFlow/ERP.
 - User uploads fail closed before persistence when malware scanning is unavailable, without taking down the authenticated UI. Server-generated PDF/DOCX artifacts use the documented `NOT_REQUIRED` trusted-renderer policy.
 - Vercel is now the selected deployment target for the current preview/production artifact. The 25 MB upload route still requires a deployment-specific request-size smoke test and should be revisited if the platform rejects large uploads.

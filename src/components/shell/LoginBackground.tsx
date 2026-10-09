@@ -2,7 +2,7 @@
 
 /**
  * LoginBackground — animated constellation canvas behind the LoginScreen
- * left panel (Task 13 styling polish).
+ * left panel.
  *
  * Renders an HTML5 <canvas> absolutely positioned behind the existing
  * gradient-mesh + grid (z-0, pointer-events-none). ~50 nodes drift slowly,

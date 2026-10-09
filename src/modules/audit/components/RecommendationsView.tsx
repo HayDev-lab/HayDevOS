@@ -17,22 +17,22 @@
 
 import { motion } from "framer-motion";
 import {
-  Lightbulb,
-  ArrowRight,
-  Clock,
-  Target,
-  Sparkles,
-  type LucideIcon,
+ArrowRight,
+Clock,
+Lightbulb,
+Sparkles,
+Target,
+type LucideIcon,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { useLocale } from "@/lib/i18n";
 import { useAppStore } from "@/lib/store/app-store";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
-import { pickL10n, type AuditReport, type Impact } from "../types";
 import { prioritize } from "../data";
-import { ImpactBadge, TONE_BG, TONE_TEXT } from "./shared";
+import { pickL10n,type AuditReport } from "../types";
+import { ImpactBadge,TONE_BG,TONE_TEXT } from "./shared";
 
 interface Props {
   report: AuditReport;

@@ -9,23 +9,23 @@
  * Filter by category + free-text search.
  */
 
-import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Plug, CheckCircle2, ExternalLink } from "lucide-react";
+import { CheckCircle2,ExternalLink,Plug,Search } from "lucide-react";
+import { useMemo,useState } from "react";
 
 import { useLocale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import type { Provider, ProviderCategory, AuthType } from "../types";
 import {
-  ProviderIcon,
-  CategoryBadge,
-  AuthTypeBadge,
-  EmptyState,
+AuthTypeBadge,
+CategoryBadge,
+EmptyState,
+ProviderIcon,
 } from "../shared";
+import type { Provider,ProviderCategory } from "../types";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card,CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 

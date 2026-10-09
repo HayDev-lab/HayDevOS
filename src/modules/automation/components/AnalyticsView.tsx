@@ -9,35 +9,35 @@
  *  - KPI row: total runs, success rate, avg duration, pending approvals
  */
 
+import { CheckCircle2,Clock,Hourglass,TrendingUp } from "lucide-react";
 import { useMemo } from "react";
 import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  BarChart,
-  Bar,
-  Cell,
-  PieChart,
-  Pie,
-  Legend,
+Area,
+AreaChart,
+Bar,
+BarChart,
+CartesianGrid,
+Cell,
+Legend,
+Pie,
+PieChart,
+ResponsiveContainer,
+Tooltip,
+XAxis,
+YAxis,
 } from "recharts";
-import { TrendingUp, Clock, CheckCircle2, AlertTriangle, Hourglass } from "lucide-react";
 
+import { Card,CardContent } from "@/components/ui/card";
 import { useLocale } from "@/lib/i18n";
-import { cn, formatCompact } from "@/lib/utils";
-import type { AutomationRun } from "../types";
+import { cn,formatCompact } from "@/lib/utils";
 import {
-  executionsTimeSeries,
-  topAutomationsByRuns,
-  failureReasons,
-  approvalWaitBuckets,
+approvalWaitBuckets,
+executionsTimeSeries,
+failureReasons,
+topAutomationsByRuns,
 } from "../data";
 import { localizeAutomationText } from "../localization";
-import { Card, CardContent } from "@/components/ui/card";
+import type { AutomationRun } from "../types";
 
 interface Props {
   runs: AutomationRun[];

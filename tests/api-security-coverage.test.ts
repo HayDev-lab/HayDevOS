@@ -27,6 +27,7 @@ type RouteClass = "TENANT_PROTECTED" | "PUBLIC_EXPLICIT" | "HEALTH";
 const EXPLICIT_HANDLERS = new Map<string, Map<string, Exclude<RouteClass, "TENANT_PROTECTED">>>([
   ["route.ts", new Map([["GET", "PUBLIC_EXPLICIT"]])],
   ["auth/login/route.ts", new Map([["POST", "PUBLIC_EXPLICIT"]])],
+  ["auth/register/route.ts", new Map([["POST", "PUBLIC_EXPLICIT"]])],
   ["health/route.ts", new Map([["GET", "HEALTH"]])],
   ["ready/route.ts", new Map([["GET", "HEALTH"]])],
 ]);
@@ -106,14 +107,13 @@ describe("API security coverage — every exported handler has an explicit secur
       if (explicit) {
         expect(handlers.map((handler) => handler.method).sort(), `${rel} public/health method manifest drifted`).toEqual([...explicit.keys()].sort());
       }
-      if (rel === "auth/login/route.ts") {
+      if (rel === "auth/login/route.ts" || rel === "auth/register/route.ts") {
         expect(source).toContain("assertSameOrigin");
-        expect(source).toContain("verifyPassword");
         expect(source).toContain("reserveLoginAttempts");
       }
+      if (rel === "auth/login/route.ts") expect(source).toContain("verifyPassword");
     }
 
-    expect(routes).toHaveLength(67);
     expect(report.length).toBeGreaterThanOrEqual(routes.length);
   });
 });

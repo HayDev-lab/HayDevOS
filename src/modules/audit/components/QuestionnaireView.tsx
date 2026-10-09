@@ -23,47 +23,45 @@
  * over the `answers` prop and `onAnswer` callback.
  */
 
-import { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence,motion } from "framer-motion";
 import {
-  Target,
-  TrendingUp,
-  Settings2,
-  Database,
-  Workflow,
-  BrainCircuit,
-  CheckCircle2,
-  ChevronRight,
-  ChevronLeft,
-  Play,
-  Save,
-  FileCheck2,
-  type LucideIcon,
+BrainCircuit,
+CheckCircle2,
+ChevronLeft,
+ChevronRight,
+Database,
+FileCheck2,
+Save,
+Settings2,
+Target,
+TrendingUp,
+Workflow,
+type LucideIcon
 } from "lucide-react";
+import { useMemo,useState } from "react";
 import { toast } from "sonner";
 
-import { useLocale } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLocale } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 import {
-  CATEGORY_LIST,
-  pickL10n,
-  type Answer,
-  type AnswerMap,
-  type CategoryId,
-  type Question,
-  type QuestionOption,
-} from "../types";
-import {
-  QUESTIONS_BY_CATEGORY,
-  QUESTION_BY_ID,
-  QUESTIONNAIRE_VERSION,
+QUESTION_BY_ID,
+QUESTIONNAIRE_VERSION,
+QUESTIONS_BY_CATEGORY,
 } from "../questionnaire";
-import { categoryProgress, totalProgress } from "../scoring";
+import { categoryProgress,totalProgress } from "../scoring";
+import {
+CATEGORY_LIST,
+pickL10n,
+type Answer,
+type AnswerMap,
+type CategoryId,
+type Question,
+type QuestionOption,
+} from "../types";
 
 const CATEGORY_ICONS: Record<CategoryId, LucideIcon> = {
   acquisition: Target,
@@ -99,7 +97,7 @@ export function QuestionnaireView({
   onSubmit,
   canSubmit,
 }: Props) {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const [activeCategory, setActiveCategory] = useState<CategoryId>("acquisition");
 
   const progress = useMemo(() => totalProgress(answers), [answers]);

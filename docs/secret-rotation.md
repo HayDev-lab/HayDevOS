@@ -17,7 +17,7 @@ Rotate the `haydev_runtime` password independently from the migration owner. Upd
 
 ## Supabase
 
-Create and verify a modern `sb_secret_` key, update the server store, pass the complete Storage secret suite, then retire the old modern key. A legacy service-role JWT may not remain a normal runtime dependency. Do not disable a project-wide legacy key until all external consumers have been inventoried.
+Create and verify a modern `sb_secret_` key, update the server store, pass the complete Storage secret suite, then retire the old modern key. The explicitly approved legacy service-role compatibility JWT must remain server-only, produce a startup warning, and be removed as soon as a modern-key-only smoke passes. Do not disable a project-wide legacy key until all external consumers have been inventoried.
 
 ## Scanner, Owner AI and monitoring
 

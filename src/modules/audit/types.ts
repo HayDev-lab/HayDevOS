@@ -4,7 +4,7 @@
  * A deterministic, multilingual readiness assessment of the business across
  * six categories: Acquisition, Sales, Operations, Data, Automation, AI Readiness.
  *
- * The score is immutable once computed. The Owner AI (Task 10) may explain a
+ * The score is immutable once computed. Owner AI may explain a
  * historical score but cannot alter it — see `scoreVersion` in `scoring.ts`.
  */
 

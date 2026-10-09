@@ -8,8 +8,7 @@
  * shared types from the backend's `types.ts` so consumers can import the
  * Owner AI surface from a single module.
  *
- * Task 10b wires this `OwnerAiView` into the module registry's `ownerAi`
- * slot (see `src/lib/modules/registry.ts`).
+ * `OwnerAiView` is the component registered for the `ownerAi` module.
  */
 
 export { OwnerAiView, OwnerAiView as default } from "./OwnerAiView";

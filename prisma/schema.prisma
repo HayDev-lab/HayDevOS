@@ -60,6 +60,7 @@ model User {
   paymentsConfirmed        Payment[]                @relation("PaymentConfirmer")
   financeEvents            FinanceEvent[]           @relation("FinanceEventActor")
   erpEvents                ERPEvent[]               @relation("ERPEventActor")
+  exportJobs               ExportJob[]              @relation("ExportJobRequester")
 }
 
 model Organization {
@@ -95,6 +96,7 @@ model Organization {
   leadStages            LeadPipelineStage[]
   leadSlaPolicy         LeadSlaPolicy?
   automationRuns        AutomationRun[]
+  exportJobs             ExportJob[]
   quoteVersions         QuoteVersion[]
   quoteApprovals        QuoteApproval[]
   quoteEvents           QuoteEvent[]
@@ -1332,6 +1334,35 @@ model WebhookEvent {
 
   @@unique([orgId, provider, eventId])
   @@index([orgId, provider, processed])
+}
+
+// Asynchronous exports are claimed by a Supabase Edge worker through a
+// one-time token. The browser never receives database credentials; the
+// authenticated Next route creates the job and the status route signs the
+// completed private Storage object.
+model ExportJob {
+  id            String    @id @default(cuid())
+  orgId         String
+  requestedById String
+  kind          String    @default("LEADS_CSV")
+  status        String    @default("QUEUED") // QUEUED | RUNNING | SUCCEEDED | FAILED | EXPIRED
+  tokenHash     String    @unique
+  storageBucket String?
+  storageKey    String?
+  rowCount      Int?
+  errorCode     String?
+  errorMessage  String?
+  expiresAt     DateTime  @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  startedAt     DateTime? @db.Timestamptz(3)
+  completedAt   DateTime? @db.Timestamptz(3)
+
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  requestedBy User         @relation("ExportJobRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+
+  @@index([orgId, status, createdAt])
+  @@index([requestedById, createdAt])
+  @@index([expiresAt, status])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

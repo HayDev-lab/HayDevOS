@@ -24,10 +24,11 @@ Install values only in the hosting provider's encrypted secret/configuration sto
 | --- | --- | --- |
 | `SUPABASE_URL` | yes | `https://<project-ref>.supabase.co`. |
 | `SUPABASE_SECRET_KEY` | yes | Modern opaque `sb_secret_...`; server-only. |
+| `SUPABASE_STORAGE_AUTH_JWT` | temporary compatibility only | Legacy compact service-role JWT used only as the Storage `Authorization` header when the hosted Storage path rejects the opaque key. |
 | `HAYDEV_DOCUMENT_BUCKET` | yes | Private document bucket, normally `haydev-documents`. |
 | `HAYDEV_DOCUMENT_SIGNED_URL_TTL_SECONDS` | recommended | Short signed-download TTL; default/target 60 seconds. |
 
-`SUPABASE_STORAGE_AUTH_JWT` is diagnostic only. If present, production startup/readiness fails. Do not expose any Storage key as `NEXT_PUBLIC_*` and do not manually treat `sb_secret_` as a JWT.
+`SUPABASE_STORAGE_AUTH_JWT` requires explicit risk acceptance, must remain server-only, is validated as a compact JWT, and emits a structured startup warning. Keep `SUPABASE_SECRET_KEY` as the modern `apikey`; never treat `sb_secret_` itself as a JWT. Readiness performs an authenticated bucket listing so a metadata-only health check cannot hide a broken object path. Retest the modern key regularly and remove the compatibility JWT as soon as the provider path accepts it.
 
 ## Malware scanner
 

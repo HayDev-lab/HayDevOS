@@ -1,11 +1,68 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { createHash, randomBytes } from "node:crypto";
+
+import { ApiError } from "@/lib/api/errors";
+import { getDb } from "@/lib/db";
+
 import { withTenantApi } from "@/lib/api/handler";
 import { toDomainContext } from "@/lib/leads/context";
+import { requireLeadPermission } from "@/lib/leads/permissions";
 import { listLeadRecords } from "@/lib/leads/service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const EXPORT_TTL_MS = 15 * 60_000;
+
+function edgeExportUrl(): string {
+  const configured = process.env.SUPABASE_EDGE_EXPORT_URL?.trim();
+  if (!configured) throw new ApiError(503, "EDGE_EXPORT_NOT_CONFIGURED", "Supabase Edge export is not configured");
+  return configured;
+}
+
+export async function POST(req: NextRequest) {
+  return withTenantApi(req, {
+    mutation: true,
+    rateLimit: { scope: "lead-export-job", limit: 10, windowMs: 10 * 60_000 },
+  }, async (auth) => {
+    requireLeadPermission(toDomainContext(auth), "lead.read");
+    // Keep the existing GET export available until the Edge function has been
+    // deployed and the explicit dispatch URL is configured. This lets the
+    // application roll out the schema and UI contract without a broken export
+    // button during the deployment window.
+    if (!process.env.SUPABASE_EDGE_EXPORT_URL?.trim()) {
+      return NextResponse.json({ mode: "legacy" });
+    }
+    const token = randomBytes(32).toString("base64url");
+    const tokenHash = createHash("sha256").update(token, "utf8").digest("hex");
+    const expiresAt = new Date(Date.now() + EXPORT_TTL_MS);
+    const job = await getDb().exportJob.create({
+      data: {
+        orgId: auth.orgId,
+        requestedById: auth.userId,
+        kind: "LEADS_CSV",
+        status: "QUEUED",
+        tokenHash,
+        expiresAt,
+      },
+      select: { id: true, status: true, expiresAt: true, createdAt: true },
+    });
+
+    return NextResponse.json({
+      job: {
+        id: job.id,
+        status: job.status,
+        expiresAt: job.expiresAt.toISOString(),
+        createdAt: job.createdAt.toISOString(),
+      },
+      dispatch: {
+        url: edgeExportUrl(),
+        token,
+      },
+    }, { status: 202 });
+  });
+}
 
 function csvCell(value: string | number | null): string {
   let text = value === null ? "" : String(value);

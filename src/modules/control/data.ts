@@ -12,22 +12,22 @@
  * identity lookups used by those services and the views.
  */
 
+import { t as translateText } from "@/lib/i18n";
 import {
-  mockLeads,
-  mockQuotes,
-  mockDocuments,
-  mockAutomations,
-  mockInvoices,
-  mockIntegrations,
-  mockProducts,
+mockAutomations,
+mockDocuments,
+mockIntegrations,
+mockInvoices,
+mockLeads,
+mockProducts,
+mockQuotes,
 } from "@/lib/mock";
 import type {
-  AttentionItem,
-  AiInsight,
-  ControlTranslator,
-  Priority,
+AiInsight,
+AttentionItem,
+ControlTranslator,
+Priority,
 } from "./types";
-import { t as translateText } from "@/lib/i18n";
 
 const getTranslator = (translator?: ControlTranslator): ControlTranslator =>
   translator ?? ((key, params) => translateText(key, "en", params));
@@ -65,7 +65,6 @@ export const WORKER_SNAPSHOT: WorkerSnapshot[] = [];
 const now = Date.now();
 const hoursAgo = (h: number) => new Date(now - h * 3_600_000).toISOString();
 const daysAgo = (d: number) => new Date(now - d * 86_400_000).toISOString();
-const daysAhead = (d: number) => new Date(now + d * 86_400_000).toISOString();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Attention items feed — derived from foundation mock data

@@ -10,29 +10,27 @@
 
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard,
-  Settings as SettingsIcon,
-  ChevronsLeft,
-  type LucideIcon,
+ChevronsLeft,
+LayoutDashboard,
+Settings as SettingsIcon
 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthContext";
-import { useAppStore } from "@/lib/store/app-store";
 import { useLocale } from "@/lib/i18n";
 import {
-  ModuleRegistry,
-  type ModuleCategory,
-  type ModuleManifest,
+ModuleRegistry,
+type ModuleCategory,
+type ModuleManifest,
 } from "@/lib/modules/registry";
-import { initials, cn } from "@/lib/utils";
+import { useAppStore } from "@/lib/store/app-store";
+import { cn,initials } from "@/lib/utils";
 
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar,AvatarFallback,AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
+Tooltip,
+TooltipContent,
+TooltipTrigger,
 } from "@/components/ui/tooltip";
 
 const CATEGORY_ORDER: ModuleCategory[] = [

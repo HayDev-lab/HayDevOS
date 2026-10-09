@@ -7,54 +7,53 @@
  * SLA compliance over time.
  */
 
-import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  ComposedChart,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Cell,
-} from "recharts";
-import {
-  TrendingUp,
-  Gauge,
-  Rocket,
-  Users,
-  ShieldCheck,
+Gauge,
+Rocket,
+ShieldCheck,
+TrendingUp,
+Users,
 } from "lucide-react";
+import { useMemo } from "react";
+import {
+Area,
+AreaChart,
+Bar,
+BarChart,
+CartesianGrid,
+Cell,
+ComposedChart,
+Line,
+ResponsiveContainer,
+Tooltip,
+XAxis,
+YAxis
+} from "recharts";
 
 import { useLocale } from "@/lib/i18n";
-import { cn, formatCurrency, formatCompact } from "@/lib/utils";
+import { cn,formatCompact,formatCurrency } from "@/lib/utils";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card,CardContent } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+Table,
+TableBody,
+TableCell,
+TableHead,
+TableHeader,
+TableRow,
 } from "@/components/ui/table";
 
+import type { LucideIcon } from "lucide-react";
 import {
-  conversionFunnel,
-  sourceRoiSeries,
-  LEAD_STAGES,
-  STAGE_BY_ID,
-  SOURCE_BY_ID,
+conversionFunnel,
+LEAD_STAGES,
+SOURCE_BY_ID,
+sourceRoiSeries,
+STAGE_BY_ID,
 } from "../data";
 import { useLeadOSData } from "../LeadOSData";
 import { OwnerAvatar } from "./shared";
-import type { LucideIcon } from "lucide-react";
 
 const CHART_TOOLTIP_STYLE = {
   contentStyle: {

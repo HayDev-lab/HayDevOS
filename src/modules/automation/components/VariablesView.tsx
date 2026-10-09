@@ -5,34 +5,33 @@
  * Local CRUD on top of an injected list. Secrets render masked.
  */
 
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Key, Lock, Eye, EyeOff, Variable } from "lucide-react";
+import { Eye,EyeOff,Key,Lock,Plus,Trash2,Variable } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
-import { useLocale } from "@/lib/i18n";
-import { cn, relativeTime } from "@/lib/utils";
-import type { AutomationVariable } from "../types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+Select,
+SelectContent,
+SelectItem,
+SelectTrigger,
+SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+Table,
+TableBody,
+TableCell,
+TableHead,
+TableHeader,
+TableRow,
+} from "@/components/ui/table";
+import { useLocale } from "@/lib/i18n";
+import { relativeTime } from "@/lib/utils";
+import type { AutomationVariable } from "../types";
 
 interface Props {
   variables: AutomationVariable[];

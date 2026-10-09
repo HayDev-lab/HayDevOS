@@ -23,33 +23,33 @@
  * Reduced-motion safe (typing dots respect prefers-reduced-motion via globals).
  */
 
-import { useEffect, useRef, useState } from "react";
-import {
-  Send,
-  Sparkles,
-  X,
-  Eye,
-  Hand,
-  Bot,
-  Wifi,
-  WifiOff,
-  Plus,
-  RotateCw,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+Tooltip,
+TooltipContent,
+TooltipProvider,
+TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLocale } from "@/lib/i18n";
-import { useAuth } from "@/components/auth/AuthContext";
 import { useAppStore } from "@/lib/store/app-store";
-import { useOwnerAiStore, activeConversation } from "../state";
-import { SUGGESTION_CHIPS, MODES, type OwnerAiMode } from "../types";
+import { cn } from "@/lib/utils";
+import {
+Bot,
+Eye,
+Hand,
+Plus,
+RotateCw,
+Send,
+Sparkles,
+Wifi,
+WifiOff,
+X,
+} from "lucide-react";
+import { useEffect,useRef,useState } from "react";
+import { activeConversation,useOwnerAiStore } from "../state";
+import { MODES,SUGGESTION_CHIPS,type OwnerAiMode } from "../types";
 import { ChatMessage } from "./ChatMessage";
 import { TypingDots } from "./TypingDots";
 
@@ -71,10 +71,8 @@ const MODE_ICONS: Record<OwnerAiMode, typeof Eye> = {
 export function ChatPanel({ compact = false, onClose, showHeaderActions = false }: ChatPanelProps) {
   const { t } = useLocale();
   const { session } = useAuth();
-  const { user, activeOrganization: org } = session;
+  const { activeOrganization: org } = session;
   const activeModule = useAppStore((state) => state.activeModule);
-  const conversations = useOwnerAiStore((s) => s.conversations);
-  const activeConversationId = useOwnerAiStore((s) => s.activeConversationId);
   const mode = useOwnerAiStore((s) => s.mode);
   const setMode = useOwnerAiStore((s) => s.setMode);
   const newConversation = useOwnerAiStore((s) => s.newConversation);
@@ -325,7 +323,6 @@ export function ChatPanel({ compact = false, onClose, showHeaderActions = false 
                   actions={actions}
                   approvals={approvals}
                   isPending={isPending}
-                  decidedBy={user.id}
                   compact={compact}
                 />
               );

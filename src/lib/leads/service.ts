@@ -4,41 +4,40 @@ import { Prisma } from "@prisma/client";
 
 import { ApiError } from "@/lib/api/errors";
 import { getDb } from "@/lib/db";
-import { appendLeadActivity, appendLeadAudit } from "./activity";
+import { appendLeadActivity,appendLeadAudit } from "./activity";
 import { queueLeadAutomationEvent } from "./automation";
 import {
-  toActivityDto,
-  toLeadDetailDto,
-  toLeadDto,
-  toNoteDto,
-  toOwnerDto,
-  toTaskDto,
+toActivityDto,
+toLeadDetailDto,
+toLeadDto,
+toNoteDto,
+toOwnerDto,
+toTaskDto,
 } from "./dto";
-import { cleanNullable, normalizeEmail, normalizePhone, safeJson } from "./normalization";
+import { cleanNullable,normalizeEmail,normalizePhone,safeJson } from "./normalization";
 import { requireLeadPermission } from "./permissions";
 import * as repository from "./repository";
 import type {
-  ChangeLeadStageInput,
-  CreateLeadInput,
-  CreateLeadTaskInput,
-  IngestLeadInput,
-  LeadActivityListQuery,
-  LeadListQuery,
-  LeadTaskListQuery,
-  SlaPolicyInput,
-  UpdateLeadInput,
+ChangeLeadStageInput,
+CreateLeadInput,
+CreateLeadTaskInput,
+IngestLeadInput,
+LeadActivityListQuery,
+LeadListQuery,
+LeadTaskListQuery,
+SlaPolicyInput,
+UpdateLeadInput,
 } from "./schemas";
 import { firstResponseDueAt } from "./sla";
 import type {
-  DomainContext,
-  LeadDashboardDto,
-  LeadActivityListDto,
-  LeadDetailDto,
-  LeadListDto,
-  LeadOverviewDto,
-  LeadPipelineDto,
-  LeadSlaPolicyDto,
-  LeadTaskListDto,
+DomainContext,
+LeadActivityListDto,
+LeadDashboardDto,
+LeadDetailDto,
+LeadListDto,
+LeadOverviewDto,
+LeadPipelineDto,
+LeadTaskListDto
 } from "./types";
 
 function isPrismaCode(error: unknown, code: string): boolean {
@@ -656,7 +655,6 @@ export async function getLeadOverview(context: DomainContext): Promise<LeadOverv
     role: membership.role as DomainContext["role"],
   }));
   const memberNames = new Map(memberDtos.map((member) => [member.id, member.name]));
-  const stageById = new Map(pipelines.flatMap((pipeline) => pipeline.stages).map((stage) => [stage.id, stage]));
   const stageGroups = new Map(aggregate.stageGroups.map((group) => [group.stageId, group]));
   const stageStats = pipelines.flatMap((pipeline) => pipeline.stages).map((stage) => {
     const group = stageGroups.get(stage.id);

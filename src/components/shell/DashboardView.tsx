@@ -7,7 +7,7 @@
  * a quick-actions row, and a module-status grid.
  *
  * This component is wired into the module registry for the `dashboard` module.
- * Downstream module authors (Tasks 3–11) replace the other placeholders.
+ * Module views are resolved through the central registry.
  */
 
 import { useMemo } from "react";

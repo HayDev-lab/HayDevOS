@@ -29,6 +29,7 @@ import {
   Users,
   Settings,
   X,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -113,6 +114,7 @@ function LeadOSContent() {
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // New lead form state
   const [formName, setFormName] = useState("");
@@ -164,18 +166,72 @@ function LeadOSContent() {
   }
 
   async function exportLeads() {
+    if (exporting) return;
+    setExporting(true);
     try {
-      const response = await fetchWithSession("/api/leados/export", { cache: "no-store" });
-      if (!response.ok) throw new Error(t("leados.runtime.exportFailedStatus", { status: response.status }));
-      const url = URL.createObjectURL(await response.blob());
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `leados-${new Date().toISOString().slice(0, 10)}.csv`;
-      anchor.click();
-      URL.revokeObjectURL(url);
-      toast.success(t("leados.toast.exported", { n: overview?.dashboard.totalLeads ?? 0 }));
+      const createJob = await fetchWithSession("/api/leados/export", {
+        method: "POST",
+        cache: "no-store",
+      });
+      if (!createJob.ok) throw new Error(t("leados.runtime.exportFailedStatus", { status: createJob.status }));
+      const created = await createJob.json() as {
+        mode?: "legacy";
+        job?: { id: string };
+        dispatch?: { url: string; token: string };
+      };
+
+      // Compatibility path stays available until the Edge function is
+      // deployed and SUPABASE_EDGE_EXPORT_URL is configured server-side.
+      if (created.mode === "legacy" || !created.job || !created.dispatch) {
+        const response = await fetchWithSession("/api/leados/export", { cache: "no-store" });
+        if (!response.ok) throw new Error(t("leados.runtime.exportFailedStatus", { status: response.status }));
+        const url = URL.createObjectURL(await response.blob());
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `leados-${new Date().toISOString().slice(0, 10)}.csv`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        toast.success(t("leados.toast.exported", { n: overview?.dashboard.totalLeads ?? 0 }));
+        return;
+      }
+
+      toast.success(t("leados.toast.exportQueued", { n: overview?.dashboard.totalLeads ?? 0 }));
+      const dispatch = await fetch(created.dispatch.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: created.job.id, token: created.dispatch.token }),
+      });
+      if (!dispatch.ok) throw new Error(t("leados.runtime.exportFailedStatus", { status: dispatch.status }));
+
+      for (let attempt = 0; attempt < 80; attempt += 1) {
+        if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 750));
+        const statusResponse = await fetchWithSession(`/api/leados/export/${encodeURIComponent(created.job.id)}`, { cache: "no-store" });
+        if (!statusResponse.ok) throw new Error(t("leados.runtime.exportFailedStatus", { status: statusResponse.status }));
+        const statusPayload = await statusResponse.json() as {
+          job: { status: string; rowCount?: number | null; errorCode?: string | null };
+          download?: { url: string };
+        };
+        if (statusPayload.job.status === "SUCCEEDED" && statusPayload.download?.url) {
+          const fileResponse = await fetch(statusPayload.download.url);
+          if (!fileResponse.ok) throw new Error(t("leados.runtime.exportFailedStatus", { status: fileResponse.status }));
+          const url = URL.createObjectURL(await fileResponse.blob());
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = `leados-${new Date().toISOString().slice(0, 10)}.csv`;
+          anchor.click();
+          URL.revokeObjectURL(url);
+          toast.success(t("leados.toast.exported", { n: statusPayload.job.rowCount ?? overview?.dashboard.totalLeads ?? 0 }));
+          return;
+        }
+        if (["FAILED", "EXPIRED"].includes(statusPayload.job.status)) {
+          throw new Error(t("leados.runtime.exportFailed"));
+        }
+      }
+      throw new Error(t("leados.runtime.exportFailed"));
     } catch (cause) {
       toast.error(cause instanceof Error ? cause.message : t("leados.runtime.exportFailed"));
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -265,8 +321,8 @@ function LeadOSContent() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => void exportLeads()}>
-            <Download className="h-3.5 w-3.5" />
+          <Button variant="outline" size="sm" disabled={exporting} onClick={() => void exportLeads()}>
+            {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">{t("leados.actions.export")}</span>
           </Button>
           <Button size="sm" onClick={() => setNewLeadOpen(true)}>

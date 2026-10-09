@@ -1,245 +1,193 @@
 "use client";
 
-/**
- * TopBar — fixed top navigation bar.
- *
- * Left:   sidebar collapse toggle + HayDevOS wordmark + breadcrumb
- * Center: global search trigger (button styled as input)
- * Right:  language switcher, theme toggle, notifications bell, help, user menu
- *
- * On mobile: brand collapses, search becomes a compact icon button.
- */
-
+import Image from "next/image";
 import {
-  PanelLeft,
-  Menu,
-  Search,
-  HelpCircle,
-  Sparkles,
-  ChevronRight,
+  Bot,
+  FileText,
   Globe,
-  History,
+  Grid3X3,
+  Home,
+  Search,
 } from "lucide-react";
 
-import { useAppStore } from "@/lib/store/app-store";
-import { useLocale, LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n";
-import { getModule } from "@/lib/modules/registry";
-import { cn } from "@/lib/utils";
-
 import { Button } from "@/components/ui/button";
-import { HayDevMark } from "@/components/brand/HayDevLogo";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LOCALES, LOCALE_LABELS, useLocale, type Locale } from "@/lib/i18n";
+import { ModuleRegistry } from "@/lib/modules/registry";
+import { useAppStore } from "@/lib/store/app-store";
+import { cn } from "@/lib/utils";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { UserMenu } from "./UserMenu";
 
 interface TopBarProps {
   onOpenSettings: () => void;
   onLogout: () => void;
-  onOpenMobileSidebar: () => void;
 }
 
-export function TopBar({ onOpenSettings, onLogout, onOpenMobileSidebar }: TopBarProps) {
-  const { t, locale, setLocale } = useLocale();
-  const {
-    activeModule,
-    setActiveModule,
-    toggleSidebar,
-    setCommandOpen,
-    setOwnerAiOpen,
-    setActivityOpen,
-    setShortcutsOpen,
-  } = useAppStore();
+const MODULE_MENU = ModuleRegistry.filter(
+  (module) => !["dashboard", "ownerAi", "docsmart", "control", "settings"].includes(module.id),
+);
 
-  const mod = getModule(activeModule);
-  const BreadcrumbIcon = mod?.icon ?? Sparkles;
+export function TopBar({ onOpenSettings, onLogout }: TopBarProps) {
+  const { t, locale, setLocale } = useLocale();
+  const { activeModule, setActiveModule, setCommandOpen } = useAppStore();
+  const modulesActive = !["dashboard", "ownerAi", "docsmart"].includes(activeModule);
+
+  const navButton =
+    "haydev-nav-item inline-flex items-center justify-center gap-2 rounded-full border border-transparent px-4 py-2.5 text-xs font-semibold text-slate-200/82 transition-all hover:border-sky-400/30 hover:bg-sky-400/10 hover:text-white";
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border px-3",
-        "glass",
-      )}
-    >
-      {/* Left: mobile sidebar toggle + collapse + brand + breadcrumb */}
-      <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onOpenMobileSidebar}
-          className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
-          aria-label="Open menu"
-        >
-          <Menu className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleSidebar}
-          className="hidden h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground lg:inline-flex"
-          aria-label={t("shell.sidebar.collapse")}
-        >
-          <PanelLeft className="h-4 w-4" />
-        </Button>
+    <header className="haydev-topbar relative z-40 flex shrink-0 items-center gap-3 border-b border-sky-300/15 px-4 backdrop-blur-2xl sm:px-6">
+      <button
+        type="button"
+        onClick={() => setActiveModule("dashboard")}
+        className="haydev-brand group flex shrink-0 items-center justify-center rounded-xl focus-visible:outline-none"
+        aria-label="HayDevOS — go to dashboard"
+      >
+        <Image
+          src="/branding/haydevos-core-logo.png"
+          alt="HayDevOS"
+          width={1254}
+          height={1254}
+          priority
+          className="haydev-brand-logo object-contain transition-transform duration-500 group-hover:scale-[1.04]"
+        />
+      </button>
 
-        {/* Brand */}
+      <nav className="haydev-primary-nav flex min-w-0 items-center gap-1" aria-label={t("shell.navigation")}>
         <button
           type="button"
           onClick={() => setActiveModule("dashboard")}
-          className="group flex items-center gap-2 rounded-lg px-1 py-0.5 transition-colors hover:bg-muted/40"
-          aria-label="HayDevOS — go to dashboard"
+          className={cn(navButton, activeModule === "dashboard" && "is-active")}
+          aria-current={activeModule === "dashboard" ? "page" : undefined}
         >
-          <HayDevMark className="h-8 w-8 transition-transform duration-300 group-hover:scale-105" />
-          <span className="hidden text-sm font-semibold tracking-tight text-foreground sm:block">
-            HayDev<span className="text-lime">OS</span>
-          </span>
+          <Home className="h-4 w-4" strokeWidth={1.8} />
+          <span>{t("nav.dashboard")}</span>
         </button>
 
-        {/* Breadcrumb */}
-        <nav
-          aria-label="Breadcrumb"
-          className="hidden items-center gap-1.5 pl-2 text-xs text-muted-foreground md:flex"
-        >
-          <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
-          <BreadcrumbIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
-          <span className="font-medium text-foreground">
-            {mod ? t(mod.nameKey) : activeModule}
-          </span>
-        </nav>
-      </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" className={cn(navButton, modulesActive && "is-active")}>
+              <Grid3X3 className="h-4 w-4" strokeWidth={1.8} />
+              <span>{t("shell.settings.modules")}</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            sideOffset={14}
+            className="w-[310px] border-sky-300/20 bg-[#05152a]/95 p-2 shadow-[0_28px_80px_-34px_rgba(21,145,255,0.75)] backdrop-blur-2xl"
+          >
+            <DropdownMenuLabel className="px-3 py-2 text-[10px] uppercase tracking-[0.22em] text-amber-200/80">
+              HayDevOS ecosystem
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-sky-300/15" />
+            {MODULE_MENU.map((module) => {
+              const Icon = module.icon;
+              return (
+                <DropdownMenuItem
+                  key={module.id}
+                  onSelect={() => setActiveModule(module.id)}
+                  className="group my-1 gap-3 rounded-xl px-3 py-2.5 focus:bg-sky-400/10 focus:text-white"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-sky-300/25 bg-sky-400/10 text-amber-200">
+                    <Icon className="h-4 w-4" strokeWidth={1.7} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-slate-100">{t(module.nameKey)}</span>
+                    <span className="block truncate text-[10px] text-slate-400">{module.description}</span>
+                  </span>
+                </DropdownMenuItem>
+              );
+            })}
+            <DropdownMenuSeparator className="bg-sky-300/15" />
+            <DropdownMenuItem
+              onSelect={onOpenSettings}
+              className="rounded-xl px-3 py-2.5 text-xs text-slate-300 focus:bg-amber-300/10 focus:text-amber-100"
+            >
+              {t("module.settings")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      {/* Center: search trigger */}
-      <div className="mx-auto hidden w-full max-w-md flex-1 sm:block">
         <button
           type="button"
-          onClick={() => setCommandOpen(true)}
-          className={cn(
-            "group flex h-9 w-full items-center gap-2.5 rounded-lg border border-border bg-muted/40 px-3 text-sm text-muted-foreground transition-all",
-            "hover:border-primary/40 hover:bg-muted/60",
-          )}
+          onClick={() => setActiveModule("ownerAi")}
+          className={cn(navButton, activeModule === "ownerAi" && "is-active")}
+          aria-current={activeModule === "ownerAi" ? "page" : undefined}
         >
-          <Search className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-lime" />
-          <span className="flex-1 text-left text-xs">
-            {t("shell.search.placeholder")}
-          </span>
-          <kbd className="hidden items-center gap-0.5 rounded border border-border bg-card px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:flex">
-            {t("shell.search.hint")}
-          </kbd>
+          <Bot className="h-4 w-4" strokeWidth={1.8} />
+          <span>Owner AI</span>
         </button>
-      </div>
 
-      {/* Right cluster */}
-      <div className="ml-auto flex items-center gap-1">
-        {/* Mobile search icon */}
+        <button
+          type="button"
+          onClick={() => setActiveModule("docsmart")}
+          className={cn(navButton, activeModule === "docsmart" && "is-active")}
+          aria-current={activeModule === "docsmart" ? "page" : undefined}
+        >
+          <FileText className="h-4 w-4" strokeWidth={1.8} />
+          <span>{t("module.docsmart")}</span>
+        </button>
+      </nav>
+
+      <button
+        type="button"
+        onClick={() => setCommandOpen(true)}
+        className="haydev-search ml-auto hidden min-w-0 max-w-[280px] flex-1 items-center gap-2 rounded-full border border-sky-300/25 bg-[#031126]/72 px-4 py-2.5 text-left text-xs text-slate-400 shadow-[inset_0_1px_rgba(255,255,255,0.05)] transition hover:border-amber-300/45 hover:text-slate-200 lg:flex"
+      >
+        <Search className="h-4 w-4 shrink-0 text-sky-300" />
+        <span className="truncate">{t("shell.search.placeholder")}</span>
+        <kbd className="ml-auto rounded-md border border-sky-300/15 bg-white/5 px-1.5 py-0.5 text-[9px] text-slate-500">
+          {t("shell.search.hint")}
+        </kbd>
+      </button>
+
+      <div className="haydev-topbar-actions flex shrink-0 items-center gap-1">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setCommandOpen(true)}
-          className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground sm:hidden"
+          className="h-9 w-9 rounded-full border border-sky-300/15 text-sky-100 hover:bg-sky-400/10 lg:hidden"
           aria-label={t("common.search")}
         >
           <Search className="h-4 w-4" />
         </Button>
 
-        {/* Activity timeline (Task 13) */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setActivityOpen(true)}
-              className="hidden h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground md:inline-flex"
-              aria-label={t("activity.title")}
-            >
-              <History className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {t("activity.title")} · ⌘H
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Owner AI quick toggle */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setOwnerAiOpen(true)}
-              className="hidden h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground md:inline-flex"
-              aria-label={t("shell.ownerAi.title")}
-            >
-              <Sparkles className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {t("shell.ownerAi.title")} · ⌘J
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Language switcher */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="h-9 gap-2 rounded-full border border-sky-300/20 bg-[#06172b]/70 px-3 text-xs text-slate-200 hover:bg-sky-400/10"
               aria-label={t("shell.user.language")}
             >
-              <Globe className="h-4 w-4" />
+              <Globe className="h-4 w-4 text-sky-300" />
+              <span className="hidden xl:inline">{LOCALE_LABELS[locale]}</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" sideOffset={8} className="w-[160px]">
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <DropdownMenuContent align="end" sideOffset={12} className="w-[170px] border-sky-300/20 bg-[#05152a]/95">
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-400">
               {t("shell.user.language")}
             </DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={locale}
-              onValueChange={(v) => setLocale(v as Locale)}
-            >
-              {LOCALES.map((l) => (
-                <DropdownMenuRadioItem key={l} value={l}>
-                  {LOCALE_LABELS[l]}
+            <DropdownMenuRadioGroup value={locale} onValueChange={(value) => setLocale(value as Locale)}>
+              {LOCALES.map((language) => (
+                <DropdownMenuRadioItem key={language} value={language}>
+                  {LOCALE_LABELS[language]}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Help — opens the keyboard-shortcuts dialog (Task 13) */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShortcutsOpen(true)}
-              className="hidden h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground sm:inline-flex"
-              aria-label={t("shell.topbar.help")}
-            >
-              <HelpCircle className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {t("shell.topbar.help")} · ?
-          </TooltipContent>
-        </Tooltip>
-
-        <span className="mx-1 hidden h-5 w-px bg-border sm:block" />
-
         <NotificationsPopover />
-
         <UserMenu onOpenSettings={onOpenSettings} onLogout={onLogout} />
       </div>
     </header>

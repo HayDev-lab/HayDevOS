@@ -1,0 +1,5 @@
+[functions.leados-export]
+# The function authenticates a short-lived, one-time HayDevOS export token in
+# the request body. Supabase JWT verification is intentionally disabled here;
+# no browser Supabase session is trusted by this worker.
+verify_jwt = false

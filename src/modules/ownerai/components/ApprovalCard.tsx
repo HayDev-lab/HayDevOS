@@ -22,12 +22,10 @@ import { useOwnerAiStore } from "../state";
 
 interface ApprovalCardProps {
   approval: Approval;
-  /** Decided-by user id (passed from the panel/view). */
-  decidedBy: string;
   compact?: boolean;
 }
 
-export function ApprovalCard({ approval, decidedBy, compact = false }: ApprovalCardProps) {
+export function ApprovalCard({ approval, compact = false }: ApprovalCardProps) {
   const { t } = useLocale();
   const decideApproval = useOwnerAiStore((s) => s.decideApproval);
   const [showReason, setShowReason] = useState(false);
@@ -39,7 +37,7 @@ export function ApprovalCard({ approval, decidedBy, compact = false }: ApprovalC
   async function handleApprove() {
     setBusy(true);
     try {
-      await decideApproval(approval.id, "approved", decidedBy);
+      await decideApproval(approval.id, "approved");
     } finally {
       setBusy(false);
     }
@@ -47,7 +45,7 @@ export function ApprovalCard({ approval, decidedBy, compact = false }: ApprovalC
   async function handleReject() {
     setBusy(true);
     try {
-      await decideApproval(approval.id, "rejected", decidedBy, reason || undefined);
+      await decideApproval(approval.id, "rejected", reason || undefined);
       setShowReason(false);
       setReason("");
     } finally {

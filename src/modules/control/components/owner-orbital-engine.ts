@@ -110,7 +110,7 @@ export function createOwnerOrbitalEngine(
 ): OwnerOrbitalEngine {
   const gl = canvas.getContext("webgl", {
     alpha: true,
-    antialias: false,
+    antialias: true,
     depth: true,
     stencil: false,
     powerPreference: "low-power",
@@ -244,10 +244,14 @@ export function createOwnerOrbitalEngine(
   const shell = makeMesh(false, 0.18);
 
   const palette = [
-    [0.77, 0.96, 0.35],
-    [0.35, 0.8, 1],
-    [1, 0.65, 0.32],
-    [0.75, 0.52, 1],
+    [0.22, 0.85, 1],
+    [0.64, 0.95, 0.36],
+    [0.34, 0.79, 1],
+    [0.64, 0.9, 0.28],
+    [0.47, 0.77, 1],
+    [0.36, 0.86, 1],
+    [0.44, 0.93, 0.68],
+    [0.64, 0.95, 0.36],
   ];
   let quality = 1;
   let slowFrames = 0;
@@ -257,7 +261,6 @@ export function createOwnerOrbitalEngine(
   let targetY = 0;
   let active = 0;
   let angle = 0.4;
-  let tilt = 0.35;
   let clock = 0;
   let inView = true;
   let disposed = false;
@@ -270,11 +273,11 @@ export function createOwnerOrbitalEngine(
 
   const resize = () => {
     const bounds = canvas.getBoundingClientRect();
-    const ratio = Math.min(window.devicePixelRatio, mobile || constrained ? 1 : 1.25) * quality;
+    const ratio = Math.min(window.devicePixelRatio, mobile || constrained ? 1 : 1.5) * quality;
     const scale = Math.min(
       ratio,
-      900 / Math.max(bounds.width, 1),
-      720 / Math.max(bounds.height, 1),
+      1400 / Math.max(bounds.width, 1),
+      900 / Math.max(bounds.height, 1),
     );
     canvas.width = Math.max(1, Math.round(bounds.width * scale));
     canvas.height = Math.max(1, Math.round(bounds.height * scale));
@@ -307,12 +310,12 @@ export function createOwnerOrbitalEngine(
     }
 
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.031, 0.039, 0.035, 1);
+    gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.uniformMatrix4fv(
       vp,
       false,
-      multiply(perspective(canvas.width / canvas.height), transform(1, 0, 0, -5.1)),
+      multiply(perspective(canvas.width / canvas.height), transform(1, 0, 0, -4.85)),
     );
     const base = rotate(0, angle + hoverX, 0);
     const tint = palette[active % palette.length];
@@ -336,16 +339,16 @@ export function createOwnerOrbitalEngine(
       gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
     };
 
-    paint(ball, multiply(base, transform(0.72)), [0.22, 0.84, 1], 0.1, 1);
+    paint(ball, multiply(base, transform(0.82)), [0.18, 0.88, 1], 0.12, 1);
     const reactor = multiply(base, rotate(1.12, 0, 0.14));
-    paint(shell, multiply(reactor, transform(1.03)), tint, 0.04, 3);
-    paint(ring, multiply(reactor, transform(0.84)), tint, 0.8, 2);
-    paint(ring, multiply(reactor, transform(1.25)), [0.25, 0.82, 1], 0.5, 2);
-    paint(ring, multiply(reactor, transform(1.31)), tint, 0.6, 2);
+    paint(shell, multiply(reactor, transform(1.12)), tint, 0.04, 3);
+    paint(ring, multiply(reactor, transform(0.94)), tint, 0.86, 2);
+    paint(ring, multiply(reactor, transform(1.34)), [0.25, 0.82, 1], 0.54, 2);
+    paint(ring, multiply(reactor, transform(1.42)), tint, 0.66, 2);
 
     for (let orbitIndex = 0; orbitIndex < 2; orbitIndex += 1) {
       const orbit = multiply(base, rotate(orbitIndex * 0.48 + 0.8, 0.2, orbitIndex * 0.7 - 0.6));
-      const radius = 1.48 + orbitIndex * 0.15;
+      const radius = 1.58 + orbitIndex * 0.17;
       paint(ring, multiply(orbit, transform(radius)), orbitIndex === active % 2 ? tint : [0.2, 0.57, 0.72], 0.3, 2);
     }
 
@@ -440,7 +443,7 @@ export function createOwnerOrbitalEngine(
 
   return {
     setActive: (value) => {
-      active = Math.max(0, Math.min(5, value));
+      active = Math.max(0, Math.min(7, value));
       requestFrame();
     },
     dispose: () => {

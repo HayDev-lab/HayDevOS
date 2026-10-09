@@ -8,11 +8,11 @@
  */
 
 import { motion } from "framer-motion";
-import { AlertTriangle, Receipt, Boxes, TrendingUp } from "lucide-react";
+import { AlertTriangle,Boxes,Receipt,TrendingUp } from "lucide-react";
 
 import { useLocale } from "@/lib/i18n";
 import { useAppStore } from "@/lib/store/app-store";
-import { cn, formatCurrency, formatDate, relativeTime, toneClasses } from "@/lib/utils";
+import { cn,formatCurrency,formatDate,toneClasses } from "@/lib/utils";
 import type { FinanceSummary } from "../types";
 import { KpiCard } from "./KpiCard";
 

@@ -18,59 +18,59 @@
  * `useAppStore.setActiveModule`.
  */
 
-import { useCallback, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence,motion } from "framer-motion";
 import {
-  Gauge,
-  LayoutDashboard,
-  AlertTriangle,
-  TrendingUp,
-  FileText,
-  ScanLine,
-  Workflow,
-  Boxes,
-  Plug,
-  Activity,
-  Sparkles,
-  RefreshCw,
-  Calendar,
-  type LucideIcon,
+Activity,
+AlertTriangle,
+Boxes,
+Calendar,
+FileText,
+Gauge,
+LayoutDashboard,
+Plug,
+RefreshCw,
+ScanLine,
+Sparkles,
+TrendingUp,
+Workflow,
+type LucideIcon,
 } from "lucide-react";
+import { useCallback,useMemo,useState } from "react";
 
-import { t as translateText, useLocale } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
+Tabs,
+TabsContent,
+TabsList,
+TabsTrigger,
 } from "@/components/ui/tabs";
+import { t as translateText,useLocale } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
-import { WINDOW_OPTIONS, type TimeWindow } from "./types";
 import {
-  getExecutiveSnapshot,
-  getAttentionItems,
-  getSalesSummary,
-  getQuoteSummary,
-  getDocumentSummary,
-  getAutomationSummary,
-  getFinanceSummary,
-  getIntegrationHealth,
-  getSlaOperations,
-  getAiInsights,
+getAiInsights,
+getAttentionItems,
+getAutomationSummary,
+getDocumentSummary,
+getExecutiveSnapshot,
+getFinanceSummary,
+getIntegrationHealth,
+getQuoteSummary,
+getSalesSummary,
+getSlaOperations,
 } from "./adapters";
+import { WINDOW_OPTIONS,type TimeWindow } from "./types";
 
-import { ExecutiveSnapshot } from "./components/ExecutiveSnapshot";
-import { NeedsAttentionView } from "./components/NeedsAttentionView";
-import { SalesView } from "./components/SalesView";
-import { QuotesView } from "./components/QuotesView";
-import { DocumentsView } from "./components/DocumentsView";
-import { AutomationsView } from "./components/AutomationsView";
-import { ErpFinanceView } from "./components/ErpFinanceView";
-import { IntegrationsView } from "./components/IntegrationsView";
-import { SlaOperationsView } from "./components/SlaOperationsView";
 import { AiInsightsView } from "./components/AiInsightsView";
+import { AutomationsView } from "./components/AutomationsView";
+import { DocumentsView } from "./components/DocumentsView";
+import { ErpFinanceView } from "./components/ErpFinanceView";
+import { ExecutiveSnapshot } from "./components/ExecutiveSnapshot";
+import { IntegrationsView } from "./components/IntegrationsView";
+import { NeedsAttentionView } from "./components/NeedsAttentionView";
 import { OwnerCommandHero } from "./components/OwnerCommandHero";
+import { QuotesView } from "./components/QuotesView";
+import { SalesView } from "./components/SalesView";
+import { SlaOperationsView } from "./components/SlaOperationsView";
 
 type TabId =
   | "snapshot"
@@ -129,13 +129,18 @@ export function ControlView({ ownerHome = false }: { ownerHome?: boolean }) {
   const handleRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
+    <div
+      className={cn(
+        "mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8",
+        ownerHome && "owner-home-control",
+      )}
+    >
       {ownerHome ? <OwnerCommandHero modules={snapshot.moduleHealth} /> : null}
 
       {/* Sticky module header */}
       <header
         className={cn(
-          "sticky top-14 z-30 -mx-4 mb-4 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8",
+          "sticky top-0 z-30 -mx-4 mb-4 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8",
           ownerHome && "border-y",
         )}
       >
@@ -211,7 +216,6 @@ export function ControlView({ ownerHome = false }: { ownerHome?: boolean }) {
         <TabsList className="flex h-auto w-full flex-wrap gap-1 rounded-xl border border-border/60 bg-card/40 p-1">
           {TABS.map((tabDef) => {
             const Icon = tabDef.icon;
-            const isActive = tab === tabDef.id;
             const count =
               tabDef.id === "attention" ? attention.items.length :
               tabDef.id === "ai" ? ai.insights.length :

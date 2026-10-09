@@ -6,6 +6,11 @@ const httpsUrl = z.string().url().refine((value) => new URL(value).protocol === 
   message: "must use HTTPS",
 });
 
+const legacySupabaseJwt = z.string().regex(
+  /^eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/,
+  "must be a compact JWT",
+);
+
 const publicDomain = z.string().trim().max(253).regex(
   /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/i,
   "HAYDEV_DOMAIN must be one canonical public DNS hostname",
@@ -16,6 +21,7 @@ const runtimeSchema = z.object({
   APP_ORIGINS: z.string().min(1),
   SUPABASE_URL: httpsUrl,
   SUPABASE_SECRET_KEY: z.string().startsWith("sb_secret_").min(24),
+  SUPABASE_STORAGE_AUTH_JWT: legacySupabaseJwt.optional(),
   HAYDEV_DOCUMENT_BUCKET: z.string().regex(/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/),
   MALWARE_SCANNER_PROVIDER: z.literal("metadefender"),
   // The scanner key is capability-specific: the application can serve the
@@ -55,9 +61,6 @@ export function runtimeEnvironmentIssues(
   } catch (error) {
     issues.push(error instanceof Error ? error.message : "APP_ORIGINS is invalid");
   }
-  if (source.SUPABASE_STORAGE_AUTH_JWT) {
-    issues.push("SUPABASE_STORAGE_AUTH_JWT: legacy Storage compatibility key is not production-final");
-  }
   return issues;
 }
 
@@ -69,9 +72,6 @@ export function validateRuntimeEnvironment(
     throw new Error(`Invalid production environment: ${parsed.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
   }
   validateOrigins(parsed.data.APP_ORIGINS);
-  if (source.SUPABASE_STORAGE_AUTH_JWT) {
-    throw new Error("Invalid production environment: legacy Supabase Storage auth JWT is configured");
-  }
   return parsed.data;
 }
 

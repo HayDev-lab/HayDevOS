@@ -1,11 +1,4 @@
-/**
- * QuoteFlow module — barrel.
- *
- * Default export: QuoteFlowView (the main module view wired into the registry).
- *
- * Task 4 wires this into the module registry by replacing
- * `placeholderFor("quoteflow")` with `QuoteFlowView` from this module.
- */
+/** Current persistent QuoteFlow UI and its authoritative pricing engine. */
 
 export { QuoteFlowView } from "./QuoteFlowView";
 export type { QuoteFlowViewProps } from "./QuoteFlowView";
@@ -27,11 +20,3 @@ export {
   type PriceCalculation,
   type QuoteDiscount,
 } from "./pricing";
-
-// Consolidated view-level types (re-exported from ./types)
-export type {
-  QuoteFlowTab,
-  CatalogSubTab,
-  BuilderSeed,
-  QuoteFlowStatus,
-} from "./types";

@@ -50,7 +50,7 @@ npm run storage:smoke
 npm run storage:reconcile -- --hash
 ```
 
-The smoke must use the modern `sb_secret_` key with no `SUPABASE_STORAGE_AUTH_JWT`. Require private bucket metadata, upload, list, signed download, anonymous denial, SHA-256 round trip and cleanup. If the hosted Storage service returns `Invalid Compact JWS` or demands a legacy JWT, stop the release and escalate to Supabase; do not mark the gate PASS.
+Prefer the modern `sb_secret_` key without `SUPABASE_STORAGE_AUTH_JWT`. Require private bucket metadata, authenticated list, upload, signed download, anonymous denial, SHA-256 round trip and cleanup. If the hosted Storage service returns `Invalid Compact JWS`, stop and escalate unless the owner explicitly accepts the documented temporary compatibility mode. That mode keeps the modern key in `apikey`, supplies the legacy compact JWT only as the server-side Storage `Authorization` header, emits a startup warning, and remains a tracked rotation item.
 
 Validate MetaDefender account health, data-retention/sample-sharing settings and bounded timeout. A scanner outage is a release blocker for user uploads.
 
@@ -96,4 +96,4 @@ Complete the remaining binary checklist, enable traffic gradually, and watch rea
 
 ## 8. Abort conditions
 
-Abort or roll back for migration failure, readiness 503, origin/cookie failure, secret leakage, cross-tenant access, anonymous Storage access, legacy Storage dependency, scanner false-clean/unavailable behavior, reconciliation errors, or sustained error/latency regression. Follow `docs/production-rollback.md`.
+Abort or roll back for migration failure, readiness 503, origin/cookie failure, secret leakage, cross-tenant access, anonymous Storage access, an unapproved legacy Storage dependency, scanner false-clean/unavailable behavior, reconciliation errors, or sustained error/latency regression. Follow `docs/production-rollback.md`.

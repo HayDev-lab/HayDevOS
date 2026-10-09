@@ -8,26 +8,26 @@
  * Each KPI card clickable → LeadOS.
  */
 
-import { useMemo } from "react";
 import { motion } from "framer-motion";
+import { AlertTriangle,Trophy,Users } from "lucide-react";
+import { useMemo } from "react";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  Bar as RBar,
+Bar,
+BarChart,
+CartesianGrid,
+Cell,
+ComposedChart,
+Line,
+Bar as RBar,
+ResponsiveContainer,
+Tooltip,
+XAxis,
+YAxis,
 } from "recharts";
-import { Trophy, AlertTriangle, Users } from "lucide-react";
 
 import { useLocale } from "@/lib/i18n";
 import { useAppStore } from "@/lib/store/app-store";
-import { cn, formatCurrency, formatCompact, toneClasses } from "@/lib/utils";
+import { cn,formatCompact,formatCurrency,toneClasses } from "@/lib/utils";
 import type { SalesSummary } from "../types";
 import { KpiCard } from "./KpiCard";
 
@@ -41,10 +41,8 @@ const STAGE_TONE: Record<string, "lime" | "cyan" | "amber" | "rose" | "violet"> 
   lost: "rose",
 };
 
-const CHART_COLORS = ["var(--accent-lime)", "var(--accent-cyan)", "var(--accent-amber)", "var(--accent-rose)", "var(--accent-violet)"];
-
 export function SalesView({ summary }: { summary: SalesSummary }) {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const setActiveModule = useAppStore((s) => s.setActiveModule);
 
   const overTimeData = useMemo(

@@ -961,10 +961,10 @@ export function resetAudit(): void {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Task 10a spec aliases + stats
+// Compatibility aliases + stats
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// The Task 10a spec asks for these function names. They are thin aliases over
+// These public function names are thin aliases over
 // the richer functions above so both naming schemes work without breaking the
 // existing route.ts / state.ts consumers.
 

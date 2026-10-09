@@ -48,9 +48,11 @@ if (dump.status !== 0) throw new Error(`pg_dump failed with exit code ${dump.sta
 const supabaseUrl = required("SUPABASE_URL").replace(/\/$/, "");
 const secret = required("SUPABASE_SECRET_KEY");
 if (!secret.startsWith("sb_secret_")) throw new Error("Storage backup requires the modern sb_secret key");
+const compatibilityJwt = process.env.SUPABASE_STORAGE_AUTH_JWT?.trim();
 const bucket = process.env.HAYDEV_DOCUMENT_BUCKET?.trim() || "haydev-documents";
 const storage = new StorageClient(`${supabaseUrl}/storage/v1`, {
   apikey: secret,
+  ...(compatibilityJwt ? { Authorization: `Bearer ${compatibilityJwt}` } : {}),
   "X-Client-Info": "haydevos-backup/1.0",
 });
 

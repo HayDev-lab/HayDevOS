@@ -8,30 +8,29 @@
  * Every KPI card drilldowns into its source module via `useAppStore.setActiveModule`.
  */
 
-import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
-  DollarSign,
-  TrendingUp,
-  Users,
-  Trophy,
-  FileText,
-  Percent,
-  ScanLine,
-  Workflow,
-  AlertTriangle,
-  Receipt,
-  Plug,
-  ArrowRight,
-  Activity,
-  type LucideIcon,
+Activity,
+AlertTriangle,
+ArrowRight,
+DollarSign,
+FileText,
+Percent,
+Plug,
+Receipt,
+ScanLine,
+TrendingUp,
+Trophy,
+Users,
+Workflow,
+type LucideIcon,
 } from "lucide-react";
 
 import { useLocale } from "@/lib/i18n";
 import { useAppStore } from "@/lib/store/app-store";
-import { cn, relativeTime, toneClasses } from "@/lib/utils";
-import type { ExecutiveSnapshot as Snapshot, ModuleHealth } from "../types";
-import { KpiCard, PriorityBadge } from "./KpiCard";
+import { cn,relativeTime,toneClasses } from "@/lib/utils";
+import type { ModuleHealth,ExecutiveSnapshot as Snapshot } from "../types";
+import { KpiCard,PriorityBadge } from "./KpiCard";
 
 const KPI_ICONS: Record<string, LucideIcon> = {
   "kpi-revenue": DollarSign,

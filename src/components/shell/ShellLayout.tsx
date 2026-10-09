@@ -6,14 +6,11 @@
  * Structure:
  *   <div min-h-screen flex flex-col bg-background>
  *     <TopBar/>
- *     <div flex flex-1>
- *       <Sidebar/>
- *       <main flex-1> active module component (framer-motion fade on switch)
- *       <OwnerAiPanel/>   (overlay, slides in from right)
- *     </div>
+ *     <main flex-1> active module component (framer-motion fade on switch)
+ *     <OwnerAiPanel/>   (overlay, slides in from right)
  *     <Footer mt-auto/>
  *
- * Global keyboard listeners (Task 13):
+ * Global keyboard listeners:
  *   - ⌘/Ctrl+K → toggle command palette (also re-bound here for resilience)
  *   - ⌘/Ctrl+J → toggle Owner AI panel
  *   - ⌘/Ctrl+H → toggle Activity timeline sheet
@@ -36,21 +33,14 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { useAppStore } from "@/lib/store/app-store";
 import { useLocale } from "@/lib/i18n";
 import { getModule } from "@/lib/modules/registry";
+import { cn } from "@/lib/utils";
 
 import { TopBar } from "./TopBar";
-import { Sidebar, MobileSidebarContent } from "./Sidebar";
 import { CommandPalette } from "./CommandPalette";
 import { OwnerAiPanel } from "./OwnerAiPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { ActivityTimelineSheet } from "./ActivityTimelineSheet";
 import { ShortcutsHelpDialog } from "./ShortcutsHelpDialog";
-
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 
 interface ShellLayoutProps {
   onLogout: () => void;
@@ -99,8 +89,6 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
   } = useAppStore();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
   // Pending `g` jump state — true for up to 1.2s after the user presses `g`.
   const pendingJumpRef = useRef(false);
   const jumpTimeoutRef = useRef<number | null>(null);
@@ -117,8 +105,8 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
     }
   }, [activeModule, session.user.role, setActiveModule]);
 
-  // ─── Global keyboard shortcuts (Task 13) ───────────────────────────────
-  const anyOverlayOpen = commandOpen || ownerAiOpen || activityOpen || shortcutsOpen || settingsOpen || mobileSidebarOpen;
+  // ─── Global keyboard shortcuts ─────────────────────────────────────────
+  const anyOverlayOpen = commandOpen || ownerAiOpen || activityOpen || shortcutsOpen || settingsOpen;
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
@@ -216,7 +204,6 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
     activityOpen,
     shortcutsOpen,
     settingsOpen,
-    mobileSidebarOpen,
     anyOverlayOpen,
     setCommandOpen,
     setOwnerAiOpen,
@@ -243,16 +230,18 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
   const handleOpenSettings = useCallback(() => setSettingsOpen(true), []);
 
   return (
-    <div className="app-backdrop flex h-dvh min-h-0 w-full min-w-0 max-w-full flex-col overflow-hidden text-foreground">
+    <div
+      className={cn(
+        "app-backdrop haydev-shell flex h-dvh min-h-0 w-full min-w-0 max-w-full flex-col overflow-hidden text-foreground",
+        activeModule === "dashboard" && "haydev-shell--home",
+      )}
+    >
       <TopBar
         onOpenSettings={handleOpenSettings}
         onLogout={onLogout}
-        onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
       />
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <Sidebar onOpenSettings={handleOpenSettings} />
-
         {/* Main content area */}
         <main
           className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto"
@@ -273,7 +262,12 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
             </AnimatePresence>
 
             {/* Footer pinned at the bottom of the viewport */}
-            <footer className="flex h-8 shrink-0 items-center justify-between gap-3 border-t border-border bg-sidebar/60 px-4 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+            <footer
+              className={cn(
+                "flex h-8 shrink-0 items-center justify-between gap-3 border-t border-border bg-sidebar/60 px-4 text-[10px] uppercase tracking-wider text-muted-foreground/70",
+                activeModule === "dashboard" && "hidden",
+              )}
+            >
               <div className="flex items-center gap-3">
                 <span>{t("shell.footer.copyright", { year })}</span>
                 <span className="hidden h-3 w-px bg-border sm:block" />
@@ -302,26 +296,12 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
       {/* Settings */}
       <SettingsPanel open={settingsOpen} onOpenChange={setSettingsOpen} />
 
-      {/* Activity timeline (Task 13) */}
+      {/* Activity timeline */}
       <ActivityTimelineSheet />
 
-      {/* Shortcuts help (Task 13) */}
+      {/* Shortcuts help */}
       <ShortcutsHelpDialog />
 
-      {/* Mobile sidebar */}
-      <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
-        <SheetContent side="left" className="w-[280px] border-border bg-sidebar p-0">
-          <SheetHeader className="sr-only">
-            <SheetTitle>{t("shell.navigation")}</SheetTitle>
-          </SheetHeader>
-          <MobileSidebarContent
-            onOpenSettings={() => {
-              setMobileSidebarOpen(false);
-              setSettingsOpen(true);
-            }}
-          />
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

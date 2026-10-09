@@ -14,20 +14,20 @@
 
 "use client";
 
-import { create } from "zustand";
 import type {
-  AgentRun,
-  Approval,
-  AuditEvent,
-  Conversation,
-  OwnerAiMessage,
-  OwnerAiMode,
-  OwnerAiResponse,
-  OwnerAiStateResponse,
-  OwnerAiSystemConfig,
-  ProposedAction,
-  ToolCallRecord,
+AgentRun,
+Approval,
+AuditEvent,
+Conversation,
+OwnerAiMessage,
+OwnerAiMode,
+OwnerAiResponse,
+OwnerAiStateResponse,
+OwnerAiSystemConfig,
+ProposedAction,
+ToolCallRecord,
 } from "@/app/api/owner-ai/types";
+import { create } from "zustand";
 import { DEFAULT_MODE } from "./types";
 
 interface OwnerAiState {
@@ -63,7 +63,6 @@ interface OwnerAiState {
   decideApproval: (
     approvalId: string,
     decision: "approved" | "rejected",
-    decidedBy: string,
     reason?: string,
   ) => Promise<void>;
   resetAudit: () => Promise<void>;
@@ -326,7 +325,7 @@ export const useOwnerAiStore = create<OwnerAiState>((set, get) => ({
     }
   },
 
-  decideApproval: async (approvalId, decision, decidedBy, reason) => {
+  decideApproval: async (approvalId, decision, reason) => {
     try {
       const res = await fetch("/api/owner-ai/approve", {
         method: "POST",
@@ -378,4 +377,4 @@ export function activeConversation(state: OwnerAiState): Conversation | undefine
 }
 
 // Type-only re-exports for the request types used in the store.
-import type { OwnerAiRequest, OwnerAiApproveRequest } from "@/app/api/owner-ai/types";
+import type { OwnerAiApproveRequest,OwnerAiRequest } from "@/app/api/owner-ai/types";

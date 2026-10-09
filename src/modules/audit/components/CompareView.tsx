@@ -17,32 +17,31 @@
  * questionnaire was upgraded.
  */
 
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { GitCompare,Minus,TrendingDown,TrendingUp } from "lucide-react";
+import { useMemo,useState } from "react";
 import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Legend,
+CartesianGrid,
+Legend,
+Line,
+LineChart,
+PolarAngleAxis,
+PolarGrid,
+PolarRadiusAxis,
+Radar,
+RadarChart,
+ResponsiveContainer,
+Tooltip,
+XAxis,
+YAxis,
 } from "recharts";
-import { TrendingUp, TrendingDown, Minus, GitCompare } from "lucide-react";
 
-import { useLocale } from "@/lib/i18n";
-import { cn, formatDate } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLocale } from "@/lib/i18n";
+import { cn,formatDate } from "@/lib/utils";
 
-import { CATEGORY_LIST, type AuditRunSummary, type CategoryId } from "../types";
 import { listRunSummaries } from "../data";
-import { ScoreBadge, TONE_COLOR } from "./shared";
+import { CATEGORY_LIST,type AuditRunSummary } from "../types";
+import { TONE_COLOR } from "./shared";
 
 interface Props {
   runs?: AuditRunSummary[];

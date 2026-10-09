@@ -247,6 +247,7 @@ export async function uploadDocument(
   metadata: { documentId?: string; title?: string },
 ): Promise<DocumentDto> {
   requireDocumentPermission(context, "document.upload");
+  const validated = await validateUploadedFile(file);
   let malwareScanner: ReturnType<typeof getMalwareScanner>;
   try {
     // Resolve the scanner before creating database rows or writing an object.
@@ -256,7 +257,6 @@ export async function uploadDocument(
   } catch {
     throw new ApiError(503, "MALWARE_SCANNER_UNAVAILABLE", "Document uploads are unavailable until malware scanning is configured");
   }
-  const validated = await validateUploadedFile(file);
   const hash = sha256(validated.bytes);
   const bucket = documentBucket();
   const prepared = await serializable(getDb(), async (tx) => {

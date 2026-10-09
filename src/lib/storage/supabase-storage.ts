@@ -82,8 +82,14 @@ async function listFolder(
 export class SupabaseStorageAdapter implements StorageAdapter {
   async health(bucket: string): Promise<boolean> {
     try {
-      const { data, error } = await storageClient().getBucket(bucket);
-      return !error && Boolean(data) && data.public === false;
+      const storage = storageClient();
+      const { data, error } = await storage.getBucket(bucket);
+      if (error || !data || data.public !== false) return false;
+      const { error: listError } = await storage.from(bucket).list("system/storage-health", {
+        limit: 1,
+        offset: 0,
+      });
+      return !listError;
     } catch {
       return false;
     }

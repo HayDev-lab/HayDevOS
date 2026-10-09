@@ -2,7 +2,7 @@
 
 /**
  * HayDevOS Module Registry — the contract every module implements.
- * Other agents fill in the `component` for each module (Tasks 3-11).
+ * Each manifest binds a stable navigation id to its current React component.
  *
  * This module is client-side because it holds React component references
  * (including client components) and is consumed by the client app shell.
@@ -70,12 +70,11 @@ export interface ModuleManifest {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Placeholder binding — used until each module's real view lands (Tasks 3-11).
-// Other agents should overwrite the `component` field for their module by
-// importing their view and replacing `placeholderFor(id)` with it.
+// Placeholder binding is retained only for the settings route, whose full UI
+// is exposed through the shell settings panel.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// (placeholderFor is imported from ./placeholder to keep this file JSX-free.)
+// placeholderFor keeps this registry JSX-free.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Registry — 10 modules + dashboard

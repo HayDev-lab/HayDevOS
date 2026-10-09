@@ -9,7 +9,7 @@
  * layer (`HISTORY_RUNS`, `DEMO_ANSWERS`, `RECOMMENDATIONS`), and the
  * `prioritize` helper for the Recommendations view.
  *
- * The Owner AI (Task 10) and the Control module (Task 9) can import these to
+ * Owner AI and the Control module can import these to
  * explain a historical score or surface audit trends without re-running the
  * engine.
  */

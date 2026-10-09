@@ -9,26 +9,26 @@
  * /api/team/members routes, which are scoped to the OWNER role server-side.
  */
 
-import { useEffect, useState } from "react";
+import { Loader2,Trash2,UserPlus } from "lucide-react";
+import { useEffect,useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Trash2, UserPlus } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthContext";
-import { useLocale } from "@/lib/i18n";
 import type { TenantRole } from "@/lib/auth/types";
-import { initials, cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n";
+import { cn,initials } from "@/lib/utils";
 
+import { Avatar,AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+Select,
+SelectContent,
+SelectItem,
+SelectTrigger,
+SelectValue,
 } from "@/components/ui/select";
 
 interface TeamMember {

@@ -39,11 +39,11 @@ interface AppState {
   ownerAiOpen: boolean;
   setOwnerAiOpen: (open: boolean) => void;
 
-  // activity timeline sheet (Task 13)
+  // activity timeline sheet
   activityOpen: boolean;
   setActivityOpen: (open: boolean) => void;
 
-  // shortcuts help dialog (Task 13)
+  // shortcuts help dialog
   shortcutsOpen: boolean;
   setShortcutsOpen: (open: boolean) => void;
 
@@ -72,7 +72,7 @@ export const useAppStore = create<AppState>()(
       ownerAiOpen: false,
       setOwnerAiOpen: (open) => set({ ownerAiOpen: open }),
 
-      // Task 13 — Activity timeline sheet + Shortcuts help dialog
+      // Activity timeline sheet + Shortcuts help dialog
       activityOpen: false,
       setActivityOpen: (open) => set({ activityOpen: open }),
 

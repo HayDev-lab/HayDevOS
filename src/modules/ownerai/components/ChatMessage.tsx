@@ -35,7 +35,6 @@ interface ChatMessageProps {
   actions: ProposedAction[];
   approvals: Approval[];
   isPending?: boolean;
-  decidedBy: string;
   compact?: boolean;
 }
 
@@ -45,7 +44,6 @@ export function ChatMessage({
   actions,
   approvals,
   isPending,
-  decidedBy,
   compact = false,
 }: ChatMessageProps) {
   const { t } = useLocale();
@@ -133,7 +131,7 @@ export function ChatMessage({
         {msgApprovals.length > 0 && (
           <div className="space-y-1.5">
             {msgApprovals.map((ap) => (
-              <ApprovalCard key={ap.id} approval={ap} decidedBy={decidedBy} compact={compact} />
+              <ApprovalCard key={ap.id} approval={ap} compact={compact} />
             ))}
           </div>
         )}

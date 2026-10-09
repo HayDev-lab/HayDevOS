@@ -19,6 +19,18 @@ function productionEnvironment(overrides: Partial<NodeJS.ProcessEnv> = {}): Node
 }
 
 describe("Production environment fail-fast validation", () => {
+  test("accepts the explicitly configured Storage compatibility JWT", () => {
+    expect(runtimeEnvironmentIssues(productionEnvironment({
+      SUPABASE_STORAGE_AUTH_JWT: `${"eyJ"}${"a".repeat(40)}.${"b".repeat(40)}.${"c".repeat(40)}`,
+    }))).toEqual([]);
+  });
+
+  test("rejects a malformed Storage compatibility credential", () => {
+    expect(runtimeEnvironmentIssues(productionEnvironment({
+      SUPABASE_STORAGE_AUTH_JWT: "legacy-service-role-key",
+    }))).toContain("SUPABASE_STORAGE_AUTH_JWT: must be a compact JWT");
+  });
+
   test("requires HAYDEV_DOMAIN for the Caddy production site", () => {
     const source = productionEnvironment();
     delete source.HAYDEV_DOMAIN;
@@ -42,13 +54,11 @@ describe("Production environment fail-fast validation", () => {
     },
   );
 
-  test("the packaged Caddy launcher fails fast and keeps Node on loopback", () => {
-    const launcher = readFileSync(resolve(import.meta.dir, "../.zscripts/start.sh"), "utf8");
+  test("the canonical VPS service keeps Node on loopback behind Caddy", () => {
+    const service = readFileSync(resolve(import.meta.dir, "../deploy/systemd/haydevos.service"), "utf8");
     const caddy = readFileSync(resolve(import.meta.dir, "../Caddyfile"), "utf8");
-    expect(launcher).toContain('export HOSTNAME="127.0.0.1"');
-    expect(launcher).toContain('case "${HAYDEV_DOMAIN:-}" in');
-    expect(launcher).toContain("HAYDEV_DOMAIN must be a real public domain for Caddy");
-    expect(launcher).toContain("HAYDEV_DOMAIN must be one canonical public DNS hostname");
+    expect(service).toContain("Environment=HOSTNAME=127.0.0.1");
+    expect(service).toContain("ExecStart=/usr/local/bin/node server.js");
     expect(caddy).toContain("request_body @documentUpload");
     expect(caddy).toContain("max_size 26MB");
     expect(caddy).toContain("max_size 512KB");

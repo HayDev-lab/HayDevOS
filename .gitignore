@@ -22,6 +22,7 @@ node_modules
 
 # production
 /build
+/.artifacts/
 
 # misc
 .DS_Store
@@ -29,7 +30,7 @@ node_modules
 
 # local runtime state - never commit
 db/custom.db
-upload/
+/upload/
 tool-results/
 
 # debug
@@ -53,7 +54,6 @@ local-*
 .claude
 .z-ai-config
 *.log
-dev.log
 dev.out.log
 test
 prompt

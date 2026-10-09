@@ -6,14 +6,13 @@
  * region, jobs processed, CPU%.
  */
 
-import { motion } from "framer-motion";
-import { Cpu, Server, Activity, HeartPulse, MapPin } from "lucide-react";
-import { useLocale } from "@/lib/i18n";
-import { cn, relativeTime, toneClasses, statusColor } from "@/lib/utils";
-import type { Worker } from "../types";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card,CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useLocale } from "@/lib/i18n";
+import { cn,relativeTime,statusColor,toneClasses } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { Activity,Cpu,HeartPulse,MapPin,Server } from "lucide-react";
+import type { Worker } from "../types";
 
 interface Props {
   workers: Worker[];

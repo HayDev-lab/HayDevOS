@@ -9,14 +9,14 @@
  * Wraps a search input + table. Empty state mirrors the panel's friendly copy.
  */
 
-import { useState } from "react";
-import { MessageSquare, Plus, Search } from "lucide-react";
-import { cn, relativeTime, formatDateTime } from "@/lib/utils";
+import type { Conversation } from "@/app/api/owner-ai/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocale } from "@/lib/i18n";
+import { cn,formatDateTime,relativeTime } from "@/lib/utils";
+import { MessageSquare,Plus,Search } from "lucide-react";
+import { useState } from "react";
 import { useOwnerAiStore } from "../state";
-import type { Conversation } from "@/app/api/owner-ai/types";
 
 interface ConversationsTabProps {
   onOpenChat?: () => void;
@@ -106,7 +106,6 @@ export function ConversationsTab({ onOpenChat }: ConversationsTabProps) {
 }
 
 function ConversationRow({ conv, onPick }: { conv: Conversation; onPick: () => void }) {
-  const { t } = useLocale();
   return (
     <tr
       onClick={onPick}

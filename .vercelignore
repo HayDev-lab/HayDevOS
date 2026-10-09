@@ -25,7 +25,6 @@ dev.log
 # Tests, local tooling and operator documentation are not needed in the deployment bundle.
 tests/
 docs/
-.zscripts/
 prisma/sqlite-migrations-archive/
 
 # Never send local secrets or environment files to Vercel.

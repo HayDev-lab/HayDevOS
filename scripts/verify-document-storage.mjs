@@ -1,19 +1,28 @@
 import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { StorageClient } from "@supabase/storage-js";
 
 const hashObjects = process.argv.includes("--hash");
 const url = process.env.SUPABASE_URL?.trim();
 const secret = process.env.SUPABASE_SECRET_KEY?.trim();
+const compatibilityJwt = process.env.SUPABASE_STORAGE_AUTH_JWT?.trim();
 const bucket = process.env.HAYDEV_DOCUMENT_BUCKET?.trim() || "haydev-documents";
 if (!url || !secret) {
   throw new Error("SUPABASE_URL and SUPABASE_SECRET_KEY are required");
 }
 
-const supabase = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+// The compatibility JWT also remains a valid service-role API key for
+// PostgREST while this project's hosted gateway rejects its opaque secret.
+const supabase = createClient(url, compatibilityJwt || secret, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+const storage = new StorageClient(`${url.replace(/\/$/, "")}/storage/v1`, {
+  apikey: secret,
+  ...(compatibilityJwt ? { Authorization: `Bearer ${compatibilityJwt}` } : {}),
+  "X-Client-Info": "haydevos-storage-reconciliation/1.0",
+});
 
 async function list(prefix = "", output = []) {
   for (let offset = 0; ; offset += 1_000) {
-    const { data, error } = await supabase.storage.from(bucket).list(prefix, { limit: 1_000, offset, sortBy: { column: "name", order: "asc" } });
+    const { data, error } = await storage.from(bucket).list(prefix, { limit: 1_000, offset, sortBy: { column: "name", order: "asc" } });
     if (error) throw error;
     for (const entry of data ?? []) {
       const key = prefix ? `${prefix}/${entry.name}` : entry.name;
@@ -48,7 +57,7 @@ for (const version of versions.filter((row) => row.status !== "FAILED" && row.st
   if (!object) { missing.push({ versionId: version.id, key: version.storageKey }); continue; }
   if (object.size !== null && object.size !== version.sizeBytes) sizeMismatch.push({ versionId: version.id, expected: version.sizeBytes, actual: object.size });
   if (hashObjects) {
-    const { data, error } = await supabase.storage.from(bucket).download(version.storageKey);
+    const { data, error } = await storage.from(bucket).download(version.storageKey);
     if (error) throw error;
     const actual = createHash("sha256").update(Buffer.from(await data.arrayBuffer())).digest("hex");
     if (actual !== version.sha256) hashMismatch.push({ versionId: version.id, expected: version.sha256, actual });

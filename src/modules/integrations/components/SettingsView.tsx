@@ -15,32 +15,31 @@
  * redirect validation allowlist, idempotency window, HMAC required.
  */
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Globe,
-  ShieldCheck,
-  ShieldAlert,
-  Clock,
-  Webhook,
-  Save,
-  Plus,
-  X,
-  Link2,
+Clock,
+Globe,
+Link2,
+Plus,
+Save,
+ShieldAlert,
+ShieldCheck,
+Webhook,
+X,
 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { useLocale } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
+import { NoPlaintextBadge,SectionHeader } from "../shared";
 import type { IntegrationSettings } from "../types";
-import { SectionHeader, NoPlaintextBadge } from "../shared";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card,CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 
 interface Props {
   initial: IntegrationSettings;

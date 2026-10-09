@@ -10,6 +10,11 @@ export async function register() {
   ) {
     const { validateRuntimeEnvironment } = await import("@/lib/env");
     validateRuntimeEnvironment();
+    if (process.env.SUPABASE_STORAGE_AUTH_JWT) {
+      logEvent("warn", "storage_legacy_auth_compatibility_enabled", {
+        remediation: "retest_sb_secret_and_remove_compatibility_jwt",
+      });
+    }
   }
 
   logEvent("info", "application_instance_started", {

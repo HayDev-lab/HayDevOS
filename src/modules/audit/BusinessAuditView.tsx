@@ -16,44 +16,44 @@
  * to the freshly-computed one once the user submits a new audit.
  */
 
-import { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence,motion } from "framer-motion";
 import {
-  ClipboardCheck,
-  FileCheck2,
-  History,
-  GitCompare,
-  Map as MapIcon,
-  Lightbulb,
-  Settings2,
-  type LucideIcon,
+ClipboardCheck,
+FileCheck2,
+GitCompare,
+History,
+Lightbulb,
+Map as MapIcon,
+Settings2,
+type LucideIcon,
 } from "lucide-react";
+import { useMemo,useState } from "react";
 
+import {
+Tabs,
+TabsContent,
+TabsList,
+TabsTrigger,
+} from "@/components/ui/tabs";
 import { useLocale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
 
-import {
-  DEFAULT_AUDIT_SETTINGS,
-  type AnswerMap,
-  type AuditReport,
-  type AuditSettings,
-} from "./types";
-import { HISTORY_RUNS, freshReport, getRun } from "./data";
-import { computeScores } from "./scoring";
+import { HISTORY_RUNS,freshReport,getRun } from "./data";
 import { TOTAL_QUESTIONS } from "./questionnaire";
+import { computeScores } from "./scoring";
+import {
+DEFAULT_AUDIT_SETTINGS,
+type AnswerMap,
+type AuditReport,
+type AuditSettings,
+} from "./types";
 
-import { QuestionnaireView } from "./components/QuestionnaireView";
-import { ReportView } from "./components/ReportView";
-import { HistoryView } from "./components/HistoryView";
-import { CompareView } from "./components/CompareView";
 import { AutomationMapView } from "./components/AutomationMapView";
+import { CompareView } from "./components/CompareView";
+import { HistoryView } from "./components/HistoryView";
+import { QuestionnaireView } from "./components/QuestionnaireView";
 import { RecommendationsView } from "./components/RecommendationsView";
+import { ReportView } from "./components/ReportView";
 import { SettingsView } from "./components/SettingsView";
 import { DeterministicBadge } from "./components/shared";
 
@@ -165,7 +165,6 @@ export function BusinessAuditView() {
         <TabsList className="flex h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl border border-border/60 bg-card/40 p-1 [scrollbar-width:thin]">
           {TABS.map((tabDef) => {
             const Icon = tabDef.icon;
-            const isActive = tab === tabDef.id;
             const count =
               tabDef.id === "history" ? HISTORY_RUNS.length : undefined;
             return (
@@ -277,6 +276,6 @@ function EmptyReport({ onStart }: { onStart: () => void }) {
   );
 }
 
-// Re-export computeScores so the Owner AI (Task 10) can call into the
+// Re-export computeScores so Owner AI can call into the
 // deterministic engine to explain a historical score without re-running it.
 export { computeScores };

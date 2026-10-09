@@ -337,7 +337,7 @@ const en: Dict = {
   // shell — owner ai
   "shell.ownerAi.title": "Owner AI",
   "shell.ownerAi.subtitle": "Your AI co-founder",
-  "shell.ownerAi.placeholder": "AI assistant loads in Task 10…",
+  "shell.ownerAi.placeholder": "Ask Owner AI about current operations…",
   "shell.ownerAi.close": "Close",
   "shell.ownerAi.hint": "Press ⌘J to toggle",
   "shell.ownerAi.soonBadge": "Coming soon",
@@ -777,6 +777,7 @@ const en: Dict = {
   "leados.settings.fieldType": "Field type",
   "leados.toast.leadCreated": "Lead created",
   "leados.toast.exported": "Exported {n} leads",
+  "leados.toast.exportQueued": "Export queued for {n} leads",
   "leados.toast.stageMoved": "Stage updated — {name} → {stage}",
   "leados.toast.taskCompleted": "Task completed",
   "leados.toast.noteAdded": "Note added",
@@ -824,7 +825,7 @@ const en: Dict = {
   "leados.runtime.unavailable": "LeadOS data is unavailable",
 
   // ─────────────────────────────────────────────────────────────────────────
-  // ERP / CRM module (Task 7)
+  // ERP / CRM module
   // ─────────────────────────────────────────────────────────────────────────
   "erp.title": "ERP Hub",
   "erp.subtitle": "Customers, orders, invoices, payments, inventory & finance",
@@ -1186,7 +1187,7 @@ const en: Dict = {
   "erp.integrations.degraded": "Degraded",
   "erp.integrations.error": "Error",
 
-  // ── Automation Builder (Task 6 — Autopilot) ─────────────────────────────
+  // ── Automation Builder — Autopilot ──────────────────────────────────────
   "automation.title": "Autopilot — Automation Builder",
   "automation.subtitle": "Durable workflow engine · WHEN → IF → THEN → EXECUTE → RETRY → OBSERVE → AUDIT",
   "automation.tab.automations": "Automations",
@@ -1442,7 +1443,7 @@ const en: Dict = {
   "automation.settings.save": "Save settings",
   "automation.settings.saved": "Engine settings saved.",
 
-  // ─── QuoteFlow (CPQ module — Task 4) ───
+  // ─── QuoteFlow (CPQ module) ───
   "quoteflow.title": "QuoteFlow",
   "quoteflow.subtitle": "Configure-Price-Quote workflow",
   "quoteflow.tab.requests": "Requests",
@@ -2353,7 +2354,7 @@ const en: Dict = {
   "integration.settings.saved": "Integration settings saved.",
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Business Audit (Task 11)
+  // Business Audit
   // ─────────────────────────────────────────────────────────────────────────
   "audit.subtitle": "Deterministic multilingual readiness audit across six business categories.",
   "audit.deterministic.label": "Deterministic",
@@ -2537,7 +2538,7 @@ const en: Dict = {
   "audit.empty.body": "Run the questionnaire to compute a deterministic report, or load the demo answers to see a full report immediately.",
 
   // ───────────────────────────────────────────────────────────────────────
-  // Owner AI module — Task 10 (panel + full console)
+  // Owner AI module (panel + full console)
   // ───────────────────────────────────────────────────────────────────────
   "ownerAi.title": "Owner AI",
   "ownerAi.subtitle": "Your AI co-founder",
@@ -2703,7 +2704,7 @@ const en: Dict = {
   "ownerAi.chatTab.newChat": "New chat",
   "ownerAi.chatTab.deleteConv": "Delete",
 
-  // ── Activity timeline (Task 13) ────────────────────────────────────────
+  // ── Activity timeline ──────────────────────────────────────────────────
   "activity.title": "Activity",
   "activity.subtitle": "Last 7 days",
   "activity.live": "Live",
@@ -2751,7 +2752,7 @@ const en: Dict = {
   "activity.event.ownerai_run": "Owner AI run · {tool}",
   "activity.event.sla_breach": "SLA breached · {entity}",
 
-  // ── Activity Timeline — Task 13c additions (dot-notation event keys,
+  // ── Activity Timeline additions (dot-notation event keys,
   //    stats strip, filter bar, empty state, toast.opened, last7days) ───
   "activity.last7days": "Last 7 days",
   "activity.stats.total": "Total events",
@@ -2792,7 +2793,7 @@ const en: Dict = {
   "activity.event.task.overdue": "Task overdue · {name}",
   "activity.event.ai.proposed": "Owner AI proposed · {action}",
 
-  // ── Shortcuts help dialog (Task 13) ───────────────────────────────────
+  // ── Shortcuts help dialog ─────────────────────────────────────────────
   "shortcuts.title": "Keyboard shortcuts",
   "shortcuts.subtitle": "Move at the speed of thought.",
   "shortcuts.category.navigation": "Navigation",
@@ -2822,7 +2823,7 @@ const en: Dict = {
   "shortcuts.row.shortcuts": "Shortcuts",
   "shortcuts.tip": "Tip: press {g} then a letter to jump to a module.",
 
-  // ── Notifications i18n (Task 13 — replace hardcoded EN strings) ──────
+  // ── Notifications i18n ────────────────────────────────────────────────
   "notifications.title.sla_breach": "SLA breach on lead",
   "notifications.body.sla_breach": "{name} ({company}) breached the {sla} response SLA. Owner: {owner}.",
   "notifications.title.deal_won": "Deal won 🎉",
@@ -2844,7 +2845,7 @@ const en: Dict = {
   "notifications.title.sla_at_risk": "SLA at risk",
   "notifications.body.sla_at_risk": "{lead} response window closes in {hours}h.",
 
-  // ── Audit log action labels (Task 13) ────────────────────────────────
+  // ── Audit log action labels ───────────────────────────────────────────
   "audit.action.lead.stage_changed": "Lead stage changed",
   "audit.action.lead.assigned": "Lead reassigned",
   "audit.action.quote.created": "Quote created",
@@ -3586,6 +3587,7 @@ const hy: Dict = {
   "leados.settings.fieldType": "Դաշտի տեսակ",
   "leados.toast.leadCreated": "Հայտը ստեղծված է",
   "leados.toast.exported": "Արտահանվեց {n} հայտ",
+  "leados.toast.exportQueued": "Արտահանման հարցումը հերթագրված է՝ {n} հայտ",
   "leados.toast.stageMoved": "Կարգավիճակը փոխվեց — {name} → {stage}",
   "leados.toast.taskCompleted": "Խնդիրը ավարտված է",
   "leados.toast.noteAdded": "Նշումը ավելացված է",
@@ -3632,7 +3634,7 @@ const hy: Dict = {
   "leados.runtime.loading": "LeadOS-ը բեռնվում է…",
   "leados.runtime.unavailable": "LeadOS-ի տվյալները հասանելի չեն",
 
-  // ─── ERP / CRM (Task 7) ───
+  // ─── ERP / CRM ───
   "erp.title": "ERP Hub",
   "erp.subtitle": "Հաճախորդներ, պատվերներ, հաշիվ-ապրանքագրեր, վճարումներ, պաշար և ֆինանսներ",
   "erp.aiProtected": "Պաշտպանված AI-ից",
@@ -3993,7 +3995,7 @@ const hy: Dict = {
   "erp.integrations.degraded": "Դեգրադացված",
   "erp.integrations.error": "Սխալ",
 
-  // ─── QuoteFlow (CPQ module — Task 4) ───
+  // ─── QuoteFlow (CPQ module) ───
   "quoteflow.title": "QuoteFlow",
   "quoteflow.subtitle": "Կազմաձև-Գին-Առաջարկ",
   "quoteflow.tab.requests": "Հարցումներ",
@@ -4312,7 +4314,7 @@ const hy: Dict = {
   "quoteflow.runtime.currencyPipeline": "Առաջարկների ընթացք՝ {currency}",
   "quoteflow.runtime.quoteCount": "{count} առաջարկ · առանց արժույթի փոխարկման",
 
-  // ── Automation Builder (Task 6 — Autopilot) ─────────────────────────────
+  // ── Automation Builder — Autopilot ──────────────────────────────────────
   "automation.title": "Ավտոմատացումների կենտրոն",
   "automation.subtitle": "Երբ → եթե → ապա → գործարկել → կրկնել → վերահսկել → գրանցել",
   "automation.tab.automations": "Ավտոմատացումներ",
@@ -5149,7 +5151,7 @@ const hy: Dict = {
   "integration.settings.saved": "Կապերի կարգավորումները պահպանվեցին։",
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Business Audit (Task 11)
+  // Business Audit
   // ─────────────────────────────────────────────────────────────────────────
   "audit.subtitle": "Ստուգեք՝ բիզնեսը որքանով է պատրաստ աճի և ավտոմատացման՝ 6 հիմնական ուղղությամբ։",
   "audit.deterministic.label": "Հաստատուն հաշվարկ",
@@ -5332,7 +5334,7 @@ const hy: Dict = {
   "audit.empty.title": "Ակտիվ հաշվետվություն դեռ չկա",
   "audit.empty.body": "Լրացրու հարցաշարը հաշվետվություն ստանալու համար կամ բեռնիր փորձնական պատասխանները։",
 
-  // Owner AI module — Task 10
+  // Owner AI module
   "ownerAi.title": "Owner AI",
   "ownerAi.subtitle": "Քո խելացի բիզնես օգնականը",
   "ownerAi.mode": "Ռեժիմ",
@@ -5497,7 +5499,7 @@ const hy: Dict = {
   "ownerAi.chatTab.newChat": "Նոր զրույց",
   "ownerAi.chatTab.deleteConv": "Ջնջել",
 
-  // ── Activity timeline (Task 13) ────────────────────────────────────────
+  // ── Activity timeline ──────────────────────────────────────────────────
   "activity.title": "Ակտիվություն",
   "activity.subtitle": "Վերջին 7 օրը",
   "activity.live": "Կենդանի",
@@ -5545,7 +5547,7 @@ const hy: Dict = {
   "activity.event.ownerai_run": "Owner AI գործարկում · {tool}",
   "activity.event.sla_breach": "SLA խախտում · {entity}",
 
-  // ── Activity Timeline — Task 13c additions (dot-notation event keys,
+  // ── Activity Timeline additions (dot-notation event keys,
   //    stats strip, filter bar, empty state, toast.opened, last7days) ───
   "activity.last7days": "Վերջին 7 օրը",
   "activity.stats.total": "Ընդհանուր իրադարձություններ",
@@ -5586,7 +5588,7 @@ const hy: Dict = {
   "activity.event.task.overdue": "Առաջադրանքը ժամկետանց է · {name}",
   "activity.event.ai.proposed": "Owner AI-ն առաջարկեց · {action}",
 
-  // ── Shortcuts help dialog (Task 13) ───────────────────────────────────
+  // ── Shortcuts help dialog ─────────────────────────────────────────────
   "shortcuts.title": "Ստեղնաշարի դյուրանցումներ",
   "shortcuts.subtitle": "Շարժվիր մտքի արագությամբ։",
   "shortcuts.category.navigation": "Նավիգացիա",
@@ -5616,7 +5618,7 @@ const hy: Dict = {
   "shortcuts.row.shortcuts": "Դյուրանցումներ",
   "shortcuts.tip": "Խորհուրդ՝ սեղմիր {g}, հետո բաժնի տառը։",
 
-  // ── Notifications i18n (Task 13 — replace hardcoded EN strings) ──────
+  // ── Notifications i18n ────────────────────────────────────────────────
   "notifications.title.sla_breach": "Հայտի պատասխանի ժամկետը խախտվել է",
   "notifications.body.sla_breach": "{name} ({company}) խախտեց {sla} պատասխանի SLA-ն։ Սեփականատեր՝ {owner}։",
   "notifications.title.deal_won": "Գործարքը շահված է 🎉",
@@ -5638,7 +5640,7 @@ const hy: Dict = {
   "notifications.title.sla_at_risk": "SLA-ն վտանգի տակ է",
   "notifications.body.sla_at_risk": "{lead}-ի պատասխանի ժամանակը փակվում է {hours} ժ-ում։",
 
-  // ── Audit log action labels (Task 13) ────────────────────────────────
+  // ── Audit log action labels ───────────────────────────────────────────
   "audit.action.lead.stage_changed": "Հայտի փուլի փոփոխություն",
   "audit.action.lead.assigned": "Հայտի պատասխանատուի փոփոխություն",
   "audit.action.quote.created": "Առաջարկի ստեղծում",
@@ -5945,7 +5947,7 @@ const ru: Dict = {
 
   "shell.ownerAi.title": "Owner AI",
   "shell.ownerAi.subtitle": "Ваш AI-сооснователь",
-  "shell.ownerAi.placeholder": "AI-ассистент появится в Task 10…",
+  "shell.ownerAi.placeholder": "Спросите Owner AI о текущих операциях…",
   "shell.ownerAi.close": "Закрыть",
   "shell.ownerAi.hint": "Нажмите ⌘J для переключения",
   "shell.ownerAi.soonBadge": "Скоро",
@@ -6380,6 +6382,7 @@ const ru: Dict = {
   "leados.settings.fieldType": "Тип поля",
   "leados.toast.leadCreated": "Лид создан",
   "leados.toast.exported": "Экспортировано лидов: {n}",
+  "leados.toast.exportQueued": "Экспорт поставлен в очередь: {n} лидов",
   "leados.toast.stageMoved": "Этап обновлён — {name} → {stage}",
   "leados.toast.taskCompleted": "Задача завершена",
   "leados.toast.noteAdded": "Заметка добавлена",
@@ -6426,7 +6429,7 @@ const ru: Dict = {
   "leados.runtime.loading": "Загрузка LeadOS…",
   "leados.runtime.unavailable": "Данные LeadOS недоступны",
 
-  // ─── ERP / CRM (Task 7) ───
+  // ─── ERP / CRM ───
   "erp.title": "ERP Hub",
   "erp.subtitle": "Клиенты, заказы, счета, платежи, склад и финансы",
   "erp.aiProtected": "Защищено от AI",
@@ -6787,7 +6790,7 @@ const ru: Dict = {
   "erp.integrations.degraded": "Деградация",
   "erp.integrations.error": "Ошибка",
 
-  // ─── QuoteFlow (CPQ module — Task 4) ───
+  // ─── QuoteFlow (CPQ module) ───
   "quoteflow.title": "QuoteFlow",
   "quoteflow.subtitle": "Конфигурация-Цена-КП",
   "quoteflow.tab.requests": "Запросы",
@@ -7106,7 +7109,7 @@ const ru: Dict = {
   "quoteflow.runtime.currencyPipeline": "Предложения в {currency}",
   "quoteflow.runtime.quoteCount": "{count} предложений · без конвертации валют",
 
-  // ── Automation Builder (Task 6 — Autopilot) ─────────────────────────────
+  // ── Automation Builder — Autopilot ──────────────────────────────────────
   "automation.title": "Autopilot — Конструктор автоматизаций",
   "automation.subtitle": "Движок долговечных процессов · WHEN → IF → THEN → EXECUTE → RETRY → OBSERVE → AUDIT",
   "automation.tab.automations": "Автоматизации",
@@ -7943,7 +7946,7 @@ const ru: Dict = {
   "integration.settings.saved": "Настройки интеграций сохранены.",
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Business Audit (Task 11)
+  // Business Audit
   // ─────────────────────────────────────────────────────────────────────────
   "audit.subtitle": "Детерминированный мультиязычный аудит готовности по шести бизнес-категориям.",
   "audit.deterministic.label": "Детерминированно",
@@ -8126,7 +8129,7 @@ const ru: Dict = {
   "audit.empty.title": "Активного отчёта пока нет",
   "audit.empty.body": "Запустите опросник, чтобы получить детерминированный отчёт, или загрузите демо-ответы.",
 
-  // Owner AI module — Task 10
+  // Owner AI module
   "ownerAi.title": "Owner AI",
   "ownerAi.subtitle": "Ваш AI-сооснователь",
   "ownerAi.mode": "Режим",
@@ -8291,7 +8294,7 @@ const ru: Dict = {
   "ownerAi.chatTab.newChat": "Новый чат",
   "ownerAi.chatTab.deleteConv": "Удалить",
 
-  // ── Activity timeline (Task 13) ────────────────────────────────────────
+  // ── Activity timeline ──────────────────────────────────────────────────
   "activity.title": "Активность",
   "activity.subtitle": "Последние 7 дней",
   "activity.live": "В реальном времени",
@@ -8339,7 +8342,7 @@ const ru: Dict = {
   "activity.event.ownerai_run": "Запуск Owner AI · {tool}",
   "activity.event.sla_breach": "Нарушение SLA · {entity}",
 
-  // ── Activity Timeline — Task 13c additions (dot-notation event keys,
+  // ── Activity Timeline additions (dot-notation event keys,
   //    stats strip, filter bar, empty state, toast.opened, last7days) ───
   "activity.last7days": "Последние 7 дней",
   "activity.stats.total": "Всего событий",
@@ -8380,7 +8383,7 @@ const ru: Dict = {
   "activity.event.task.overdue": "Задача просрочена · {name}",
   "activity.event.ai.proposed": "Owner AI предложил · {action}",
 
-  // ── Shortcuts help dialog (Task 13) ───────────────────────────────────
+  // ── Shortcuts help dialog ─────────────────────────────────────────────
   "shortcuts.title": "Горячие клавиши",
   "shortcuts.subtitle": "Двигайтесь со скоростью мысли.",
   "shortcuts.category.navigation": "Навигация",
@@ -8410,7 +8413,7 @@ const ru: Dict = {
   "shortcuts.row.shortcuts": "Горячие клавиши",
   "shortcuts.tip": "Совет: нажмите {g} и затем букву, чтобы перейти к модулю.",
 
-  // ── Notifications i18n (Task 13 — replace hardcoded EN strings) ──────
+  // ── Notifications i18n ────────────────────────────────────────────────
   "notifications.title.sla_breach": "Нарушение SLA по лиду",
   "notifications.body.sla_breach": "{name} ({company}) нарушил SLA ответа {sla}. Владелец: {owner}.",
   "notifications.title.deal_won": "Сделка выиграна 🎉",
@@ -8432,7 +8435,7 @@ const ru: Dict = {
   "notifications.title.sla_at_risk": "SLA под угрозой",
   "notifications.body.sla_at_risk": "Окно ответа для {lead} закроется через {hours} ч.",
 
-  // ── Audit log action labels (Task 13) ────────────────────────────────
+  // ── Audit log action labels ───────────────────────────────────────────
   "audit.action.lead.stage_changed": "Смена стадии лида",
   "audit.action.lead.assigned": "Переназначение лида",
   "audit.action.quote.created": "Создание КП",

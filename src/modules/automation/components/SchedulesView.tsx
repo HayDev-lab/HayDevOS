@@ -5,33 +5,32 @@
  * Cron preview reflects the chosen every-N minutes/hours/days.
  */
 
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { Clock, CalendarClock, Pause, Play } from "lucide-react";
-import { useLocale } from "@/lib/i18n";
-import { cn, formatDateTime, relativeTime, toneClasses, statusColor } from "@/lib/utils";
-import type { Schedule } from "../types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card,CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+Select,
+SelectContent,
+SelectItem,
+SelectTrigger,
+SelectValue,
 } from "@/components/ui/select";
+import {
+Table,
+TableBody,
+TableCell,
+TableHead,
+TableHeader,
+TableRow,
+} from "@/components/ui/table";
+import { useLocale } from "@/lib/i18n";
+import { cn,formatDateTime,relativeTime,statusColor,toneClasses } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { CalendarClock,Clock,Pause,Play } from "lucide-react";
+import { useMemo,useState } from "react";
+import type { Schedule } from "../types";
 
 interface Props {
   schedules: Schedule[];

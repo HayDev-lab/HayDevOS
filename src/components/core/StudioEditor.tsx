@@ -75,6 +75,7 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
     event.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("audio/")) { setError("fileError"); return; }
+    pauseAll();
     const track = { url: URL.createObjectURL(file), name: file.name, type: "audio" as const };
     if (kind === "audio") setAudioTrack(track);
     else setVoiceTrack(track);
@@ -92,6 +93,10 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
   function pauseAll() {
     elements().forEach((element) => element.pause());
     setPlaying(false);
+  }
+
+  function syncPlaying() {
+    setPlaying(elements().some((element) => !element.paused && !element.ended));
   }
 
   function toggle() {
@@ -180,7 +185,7 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
   const mediaProps = {
     onLoadedMetadata: (event: { currentTarget: HTMLMediaElement }) => metadata(event.currentTarget),
     onTimeUpdate: (event: { currentTarget: HTMLMediaElement }) => timeUpdate(event.currentTarget),
-    onPlay: () => setPlaying(true), onPause: () => setPlaying(false), onEnded: () => setPlaying(false), onError: () => setError("loadError"), preload: "metadata" as const,
+    onPlay: syncPlaying, onPause: syncPlaying, onEnded: syncPlaying, onError: () => setError("loadError"), preload: "metadata" as const,
   };
   const clipStyle = (from: number, to: number): CSSProperties => {
     const total = timelineDuration || 1;

@@ -909,10 +909,10 @@
 .haydev-core .core-editor .editor-transport .studio-ghost { padding: 6px 8px; font-size: 10px; }
 .haydev-core .core-editor .core-editor-seek { margin: 0; }
 .haydev-core .core-editor .timeline-ruler { padding: 13px 6px 6px; color: #6f8daa; font-variant-numeric: tabular-nums; }
-.haydev-core .core-editor .timeline { min-height: 160px; grid-template-columns: 82px minmax(0, 1fr); border-color: #1c3d5a; border-radius: 8px; background: #061321; }
+.haydev-core .core-editor .timeline { min-height: 200px; grid-template-columns: 82px minmax(0, 1fr); border-color: #1c3d5a; border-radius: 8px; background: #061321; }
 .haydev-core .core-editor .track-labels { background: #071725; border-right-color: #1c3d5a; }
 .haydev-core .core-editor .track-labels span { height: 40px; padding: 12px 8px; color: #8da8c1; border-bottom-color: #12314b; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
-.haydev-core .core-editor .tracks { min-height: 160px; cursor: crosshair; background: repeating-linear-gradient(90deg, #071b2e 0 59px, #0b2942 60px 61px), repeating-linear-gradient(0deg, transparent 0 39px, #14324a 40px 41px); }
+.haydev-core .core-editor .tracks { min-height: 200px; cursor: crosshair; background: repeating-linear-gradient(90deg, #071b2e 0 59px, #0b2942 60px 61px), repeating-linear-gradient(0deg, transparent 0 39px, #14324a 40px 41px); }
 .haydev-core .core-editor .tracks:focus-visible { outline: 2px solid #eac477; outline-offset: -2px; }
 .haydev-core .core-editor .timeline-clip { position: absolute; z-index: 1; height: 28px; min-width: 20px; overflow: hidden; border: 1px solid #4f9acc; border-radius: 5px; padding: 5px 8px; color: #eaf7ff; background: linear-gradient(90deg, #0b6faf, #249ad1); font: inherit; font-size: 9px; text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .haydev-core .core-editor .timeline-clip:hover { border-color: #dbeeff; filter: brightness(1.16); }
@@ -920,6 +920,7 @@
 .haydev-core .core-editor .track-text { top: 46px; border-color: #bb944b; color: #fff1c9; background: linear-gradient(90deg, #806126, #c99e45); }
 .haydev-core .core-editor .track-music { top: 86px; border-color: #856cc3; background: linear-gradient(90deg, #48327f, #7654ac); }
 .haydev-core .core-editor .track-voice { top: 126px; border-color: #5ab39b; background: linear-gradient(90deg, #176754, #2b9b7b); }
+.haydev-core .core-editor .track-sound { top: 166px; border-color: #c17991; background: linear-gradient(90deg, #71334e, #a35370); }
 .haydev-core .core-editor .playhead { z-index: 2; top: -1px; bottom: -1px; width: 2px; background: #ffd46f; box-shadow: 0 0 10px #ffd46f; pointer-events: none; }
 .haydev-core .core-editor .playhead::before { content: ""; position: absolute; top: 0; left: -4px; width: 10px; height: 8px; border-radius: 2px; background: #ffd46f; }
 .haydev-core .core-editor .editor-inspector { padding: 17px 15px; border-left-color: #1c3d5a; background: #071421; overflow: auto; }
@@ -932,3 +933,41 @@
 @media (max-width: 1100px) { .haydev-core .core-editor .editor-layout { grid-template-columns: 64px minmax(0, 1fr) 230px; } .haydev-core .core-editor .editor-stage { padding-inline: 12px; } }
 @media (max-width: 820px) { .haydev-core .core-editor .editor-layout { grid-template-columns: 1fr; } .haydev-core .core-editor .editor-tools { display: flex; overflow-x: auto; border-right: 0; border-bottom: 1px solid #17334e; } .haydev-core .core-editor .editor-tools button { min-width: 68px; } .haydev-core .core-editor .editor-inspector { border-top: 1px solid #1c3d5a; border-left: 0; max-height: none; } .haydev-core .core-editor-canvas { min-height: 220px; } }
 @media (max-width: 560px) { .haydev-core .core-editor { padding: 8px; } .haydev-core .core-editor .editor-toolbar { margin: -8px -8px 8px; padding: 9px; } .haydev-core .core-editor .editor-toolbar strong { width: 100%; } .haydev-core .core-editor .editor-stage { padding: 12px 9px; } .haydev-core .core-editor .editor-transport { grid-template-columns: 1fr 1fr; } .haydev-core .core-editor .editor-transport .core-editor-seek { grid-column: 1 / -1; grid-row: 1; } .haydev-core .core-editor .timeline { grid-template-columns: 66px minmax(0, 1fr); } .haydev-core .core-editor .track-labels span { padding-inline: 6px; font-size: 8px; } }
+
+.haydev-core .editor-magic-panel { margin: 0 0 12px; padding: 16px; border: 1px solid #a67b3c; border-radius: 14px; background: linear-gradient(145deg, #211b13, #071521 74%); box-shadow: 0 16px 38px #0007, inset 0 1px #fff2; }
+.haydev-core .editor-magic-head, .haydev-core .editor-magic-plan-head, .haydev-core .editor-magic-character > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.haydev-core .editor-magic-head h2 { margin: 3px 0 0; color: #ffe19a; font-size: 18px; }
+.haydev-core .editor-magic-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 12px; margin-top: 14px; }
+.haydev-core .editor-magic-prompt, .haydev-core .editor-magic-settings label { display: grid; gap: 6px; color: #aec5d8; font-size: 11px; }
+.haydev-core .editor-magic-prompt textarea, .haydev-core .editor-magic-settings input, .haydev-core .editor-magic-settings select, .haydev-core .editor-magic-character input, .haydev-core .editor-magic-character textarea { width: 100%; min-width: 0; border: 1px solid #315d7d; border-radius: 8px; padding: 9px; color: #eff7ff; background: #04101d; font: inherit; }
+.haydev-core .editor-magic-prompt textarea { min-height: 94px; resize: vertical; }
+.haydev-core .editor-magic-settings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; gap: 8px; }
+.haydev-core .editor-magic-settings input, .haydev-core .editor-magic-settings select { margin-top: auto; }
+.haydev-core .editor-magic-assets, .haydev-core .editor-magic-characters { margin-top: 14px; }
+.haydev-core .editor-magic-section-title { margin-bottom: 8px; color: #f2d288; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.haydev-core .editor-magic-asset-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; }
+.haydev-core .editor-magic-asset { position: relative; display: flex; min-width: 0; min-height: 56px; align-items: center; justify-content: center; gap: 6px; overflow: hidden; border: 1px dashed #3e7194; border-radius: 8px; padding: 8px; color: #96b8d0; background: #06192a; font-size: 10px; text-align: center; cursor: pointer; }
+.haydev-core .editor-magic-asset:hover, .haydev-core .editor-magic-asset.is-filled { color: #ffe49d; border-style: solid; border-color: #c1944d; background: #3c2d174f; }
+.haydev-core .editor-magic-asset span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.haydev-core .editor-magic-remove { position: absolute; top: 2px; right: 3px; display: grid; place-items: center; width: 18px; height: 18px; border: 0; color: #efb6b6; background: transparent; cursor: pointer; }
+.haydev-core .editor-magic-character-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.haydev-core .editor-magic-character { display: grid; gap: 7px; min-width: 0; border: 1px solid #2a5878; border-radius: 9px; padding: 9px; background: #061725; }
+.haydev-core .editor-magic-character.is-locked { border-color: #a27940; background: linear-gradient(145deg, #32261366, #061725); }
+.haydev-core .editor-magic-character strong { overflow: hidden; color: #e6f3ff; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.haydev-core .editor-magic-character input, .haydev-core .editor-magic-character textarea { padding: 7px; font-size: 10px; }
+.haydev-core .editor-magic-character textarea { resize: vertical; }
+.haydev-core .editor-magic-character input:disabled, .haydev-core .editor-magic-character textarea:disabled { opacity: .65; cursor: not-allowed; }
+.haydev-core .editor-magic-lock { display: inline-flex; align-items: center; gap: 4px; border: 1px solid #496f8d; border-radius: 6px; padding: 5px 6px; color: #a9c4da; background: #092139; font: inherit; font-size: 9px; cursor: pointer; }
+.haydev-core .editor-magic-lock:hover { color: #ffe49d; border-color: #d7ad5b; }
+.haydev-core .editor-magic-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.haydev-core .editor-magic-plan { margin-top: 14px; border-top: 1px solid #6d522d; padding-top: 12px; }
+.haydev-core .editor-magic-plan-head strong { color: #f4d58b; font-size: 12px; }
+.haydev-core .editor-magic-plan-head span { max-width: 72%; color: #9fb9cf; font-size: 10px; line-height: 1.4; text-align: right; }
+.haydev-core .editor-magic-plan-head span.is-ready { color: #8de2bd; }
+.haydev-core .editor-magic-plan-head span.is-local { color: #f3be83; }
+.haydev-core .editor-magic-plan ol { display: grid; gap: 6px; margin: 10px 0 0; padding-left: 22px; color: #d9eaf7; }
+.haydev-core .editor-magic-plan li { padding-left: 3px; font-size: 10px; }
+.haydev-core .editor-magic-plan li strong { display: block; color: #f4f8ff; font-size: 11px; }
+.haydev-core .editor-magic-plan li span { display: block; margin-top: 2px; color: #8ca9c1; line-height: 1.4; }
+@media (max-width: 900px) { .haydev-core .editor-magic-grid { grid-template-columns: 1fr; } .haydev-core .editor-magic-asset-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .haydev-core .editor-magic-settings, .haydev-core .editor-magic-character-grid { grid-template-columns: 1fr; } .haydev-core .editor-magic-asset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .haydev-core .editor-magic-plan-head { align-items: flex-start; flex-direction: column; } .haydev-core .editor-magic-plan-head span { max-width: none; text-align: left; } }

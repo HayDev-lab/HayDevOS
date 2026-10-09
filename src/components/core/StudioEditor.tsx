@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
-import { Captions, Diamond, Download, Film, LayoutTemplate, Mic, Music, Pause, Play, Sliders, Sparkles, Type, Upload, WandSparkles } from "lucide-react";
+import { Captions, Diamond, Download, Film, LayoutTemplate, LockKeyhole, Mic, Music, Pause, Play, Sliders, Sparkles, Type, UnlockKeyhole, Upload, WandSparkles } from "lucide-react";
 import { useStudioCopy } from "./studio-copy";
 
 const icons = [Film, LayoutTemplate, Type, Music, Mic, Captions, WandSparkles, Sliders, Diamond, Sparkles];
 const ratios = ["16:9", "9:16", "1:1"];
 const stamp = (value: number) => `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(Math.floor(value % 60)).padStart(2, "0")}`;
 type Media = { url: string; name: string; type: "video" | "image" | "audio" };
+type MagicAssetKind = "reference" | "firstFrame" | "lastFrame" | "music" | "voice" | "sound";
+type MagicAssetSlot = { file: File; url: string; name: string };
+type MagicCharacter = { name: string; description: string; locked: boolean };
+type MagicPlanView = { providerReady: boolean; provider: string; durationSec: number; steps: Array<{ title: string; detail: string }>; aiSummary?: string };
 
 export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGenerator: () => void }) {
   const copy = useStudioCopy();
@@ -18,11 +22,14 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
   const mediaAudio = useRef<HTMLAudioElement | null>(null);
   const music = useRef<HTMLAudioElement | null>(null);
   const voice = useRef<HTMLAudioElement | null>(null);
+  const sound = useRef<HTMLAudioElement | null>(null);
   const [media, setMedia] = useState<Media | null>(null);
   const [audioTrack, setAudioTrack] = useState<Media | null>(null);
   const [voiceTrack, setVoiceTrack] = useState<Media | null>(null);
+  const [soundTrack, setSoundTrack] = useState<Media | null>(null);
   const [audioDuration, setAudioDuration] = useState(0);
   const [voiceDuration, setVoiceDuration] = useState(0);
+  const [soundDuration, setSoundDuration] = useState(0);
   const [tool, setTool] = useState(0);
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
@@ -46,14 +53,81 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
   const [start, setStart] = useState(0);
   const [end, setEnd] = useState(0);
   const [error, setError] = useState<"fileError" | "loadError" | null>(null);
+  const [magicOpen, setMagicOpen] = useState(false);
+  const [magicPrompt, setMagicPrompt] = useState("");
+  const [magicDuration, setMagicDuration] = useState(120);
+  const [magicLanguage, setMagicLanguage] = useState(0);
+  const [magicAssets, setMagicAssets] = useState<Partial<Record<MagicAssetKind, MagicAssetSlot>>>({});
+  const [magicCharacters, setMagicCharacters] = useState<MagicCharacter[]>([
+    { name: "", description: "", locked: false }, { name: "", description: "", locked: false }, { name: "", description: "", locked: false },
+  ]);
+  const [magicBusy, setMagicBusy] = useState(false);
+  const [magicPlan, setMagicPlan] = useState<MagicPlanView | null>(null);
+  const [magicError, setMagicError] = useState<string | null>(null);
+  const magicAssetsRef = useRef(magicAssets);
 
   useEffect(() => () => { if (media) URL.revokeObjectURL(media.url); }, [media]);
   useEffect(() => () => { if (audioTrack) URL.revokeObjectURL(audioTrack.url); }, [audioTrack]);
   useEffect(() => () => { if (voiceTrack) URL.revokeObjectURL(voiceTrack.url); }, [voiceTrack]);
+  useEffect(() => () => { if (soundTrack) URL.revokeObjectURL(soundTrack.url); }, [soundTrack]);
+  useEffect(() => { magicAssetsRef.current = magicAssets; }, [magicAssets]);
+  useEffect(() => () => { Object.values(magicAssetsRef.current).forEach((asset) => { if (asset) URL.revokeObjectURL(asset.url); }); }, []);
 
-  const timelineDuration = Math.max(duration, audioDuration, voiceDuration);
+  const timelineDuration = Math.max(duration, audioDuration, voiceDuration, soundDuration);
   const effectiveEnd = end || timelineDuration;
-  const hasPlayable = Boolean(media?.type === "video" || media?.type === "audio" || audioTrack || voiceTrack);
+  const hasPlayable = Boolean(media?.type === "video" || media?.type === "audio" || audioTrack || voiceTrack || soundTrack);
+
+  const magicPickers: Array<{ kind: MagicAssetKind; label: string; accept: string }> = [
+    { kind: "reference", label: copy.magicReference, accept: "image/*" }, { kind: "firstFrame", label: copy.magicFirst, accept: "image/*,video/*" }, { kind: "lastFrame", label: copy.magicLast, accept: "image/*,video/*" },
+    { kind: "music", label: copy.magicMusic, accept: "audio/*" }, { kind: "voice", label: copy.magicVoice, accept: "audio/*" }, { kind: "sound", label: copy.magicSound, accept: "audio/*" },
+  ];
+
+  function setMagicAsset(kind: MagicAssetKind, event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const valid = kind === "reference" ? file.type.startsWith("image/") : kind === "firstFrame" || kind === "lastFrame" ? file.type.startsWith("image/") || file.type.startsWith("video/") : file.type.startsWith("audio/");
+    if (!valid || file.size > 25 * 1024 * 1024) { setMagicError(copy.magicError); return; }
+    setMagicAssets((current) => {
+      const previous = current[kind];
+      if (previous) URL.revokeObjectURL(previous.url);
+      return { ...current, [kind]: { file, name: file.name, url: URL.createObjectURL(file) } };
+    });
+    setMagicError(null);
+  }
+
+  function updateMagicCharacter(index: number, field: "name" | "description", value: string) {
+    setMagicCharacters((current) => current.map((character, candidate) => candidate === index && !character.locked ? { ...character, [field]: value } : character));
+  }
+
+  async function runMagic() {
+    if (!magicPrompt.trim() || magicBusy) return;
+    setMagicBusy(true); setMagicError(null); setMagicPlan(null);
+    try {
+      const form = new FormData();
+      form.set("prompt", magicPrompt.trim()); form.set("durationSec", String(Math.max(1, Math.min(600, magicDuration)))); form.set("language", copy.languages[magicLanguage]); form.set("aspectRatio", ratios[ratio]); form.set("characters", JSON.stringify(magicCharacters));
+      Object.entries(magicAssets).forEach(([kind, asset]) => { if (asset) form.set(kind, asset.file); });
+      const response = await fetch("/api/studio/magic", { method: "POST", body: form, credentials: "same-origin" });
+      const payload = await response.json() as { plan?: MagicPlanView; error?: string };
+      if (!response.ok || !payload.plan) throw new Error(payload.error ?? copy.magicError);
+      setMagicPlan(payload.plan);
+    } catch (reason) {
+      setMagicError(copy.magicError);
+    } finally {
+      setMagicBusy(false);
+    }
+  }
+
+  function applyMagicPlan() {
+    if (!magicPlan) return;
+    const cloneImage = magicAssets.reference;
+    if (cloneImage) { setMedia({ url: URL.createObjectURL(cloneImage.file), name: cloneImage.name, type: "image" }); setDuration(magicPlan.durationSec); setStart(0); setEnd(magicPlan.durationSec); setPosition(0); }
+    const cloneAudio = (kind: MagicAssetKind): Media | null => { const asset = magicAssets[kind]; return asset ? { url: URL.createObjectURL(asset.file), name: asset.name, type: "audio" } : null; };
+    if (magicAssets.music) setAudioTrack(cloneAudio("music"));
+    if (magicAssets.voice) setVoiceTrack(cloneAudio("voice"));
+    if (magicAssets.sound) setSoundTrack(cloneAudio("sound"));
+    setPlaying(false); setTool(0); setMagicOpen(false);
+  }
 
   function importFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -83,7 +157,7 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
   }
 
   function elements() {
-    return [player.current, mediaAudio.current, music.current, voice.current].filter((item): item is HTMLMediaElement => Boolean(item));
+    return [player.current, mediaAudio.current, music.current, voice.current, sound.current].filter((item): item is HTMLMediaElement => Boolean(item));
   }
 
   function syncTime(value: number) {
@@ -130,10 +204,11 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
     setEnd(length);
   }
 
-  function trackMetadata(element: HTMLMediaElement, kind: "audio" | "voice") {
+  function trackMetadata(element: HTMLMediaElement, kind: "audio" | "voice" | "sound") {
     const length = Number.isFinite(element.duration) ? element.duration : 0;
     if (kind === "audio") setAudioDuration(length);
-    else setVoiceDuration(length);
+    else if (kind === "voice") setVoiceDuration(length);
+    else setSoundDuration(length);
     if (!duration && !end) { setDuration(length); setEnd(length); }
   }
 
@@ -146,7 +221,7 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
       transform: { x, y, scale, rotation, opacity },
       overlays: { text, subtitle, brand, color },
       filters: { preset: ["none", "grayscale", "sepia"][filter], brightness, contrast, saturation, blur, vignette },
-      tracks: { music: audioTrack?.name ?? null, voiceover: voiceTrack?.name ?? null },
+      tracks: { music: audioTrack?.name ?? null, voiceover: voiceTrack?.name ?? null, sound: soundTrack?.name ?? null },
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(project, null, 2)], { type: "application/json" }));
     const link = document.createElement("a");
@@ -200,6 +275,7 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
     <div className="editor-toolbar">
       <button type="button" className="studio-ghost" onClick={onBack}>← {copy.back}</button>
       <strong>{copy.project}</strong><span className="toolbar-spacer" />
+      <button type="button" className="studio-gold" onClick={() => setMagicOpen(true)}><WandSparkles size={14} /> {copy.magic}</button>
       <button type="button" className="studio-ghost" onClick={() => input.current?.click()}><Upload size={14} /> {copy.import}</button>
       <select value={ratio} onChange={(event) => setRatio(Number(event.target.value))} aria-label={copy.format} className="studio-select">{ratios.map((value, index) => <option key={value} value={index}>{value} · {copy.formats[index]}</option>)}</select>
       <button type="button" className="studio-ghost" onClick={downloadProject}><Download size={14} /> {copy.download}</button>
@@ -208,6 +284,18 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
       <input ref={audioInput} type="file" accept="audio/*" onChange={(event) => importTrack(event, "audio")} hidden aria-label={copy.addAudio} />
       <input ref={voiceInput} type="file" accept="audio/*" onChange={(event) => importTrack(event, "voice")} hidden aria-label={copy.addVoice} />
     </div>
+    {magicOpen && <div className="editor-magic-panel" role="dialog" aria-labelledby="magic-title">
+      <div className="editor-magic-head"><div><span className="studio-eyebrow">{copy.magic}</span><h2 id="magic-title">{copy.magicTitle}</h2></div><button type="button" className="studio-ghost" onClick={() => setMagicOpen(false)} aria-label={copy.magic}>{"×"}</button></div>
+      <div className="editor-magic-grid">
+        <label className="editor-magic-prompt">{copy.magicPrompt}<textarea rows={4} maxLength={12000} value={magicPrompt} onChange={(event) => setMagicPrompt(event.target.value)} placeholder={copy.magicPromptPlaceholder} /></label>
+        <div className="editor-magic-settings"><label>{copy.magicDuration}<input type="number" min={1} max={600} value={magicDuration} onChange={(event) => setMagicDuration(Number(event.target.value))} /></label><label>{copy.language}<select value={magicLanguage} onChange={(event) => setMagicLanguage(Number(event.target.value))}>{copy.languages.map((language, index) => <option key={language} value={index}>{language}</option>)}</select></label><label>{copy.format}<select value={ratio} onChange={(event) => setRatio(Number(event.target.value))}>{ratios.map((value, index) => <option key={value} value={index}>{value} · {copy.formats[index]}</option>)}</select></label></div>
+      </div>
+      <div className="editor-magic-assets"><div className="editor-magic-section-title">{copy.magicReference} · {copy.magicFirst} · {copy.magicLast} · {copy.magicMusic} · {copy.magicVoice} · {copy.magicSound}</div><div className="editor-magic-asset-grid">{magicPickers.map(({ kind, label, accept }) => <label key={kind} className={`editor-magic-asset ${magicAssets[kind] ? "is-filled" : ""}`}><Upload size={14} /><span>{magicAssets[kind]?.name ?? label}</span><input type="file" accept={accept} hidden onChange={(event) => setMagicAsset(kind, event)} />{magicAssets[kind] && <button type="button" className="editor-magic-remove" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setMagicAssets((current) => { const asset = current[kind]; if (asset) URL.revokeObjectURL(asset.url); const next = { ...current }; delete next[kind]; return next; }); }}>×</button>}</label>)}</div></div>
+      <div className="editor-magic-characters"><div className="editor-magic-section-title">{copy.magicCharacters}</div><div className="editor-magic-character-grid">{magicCharacters.map((character, index) => <article key={index} className={`editor-magic-character ${character.locked ? "is-locked" : ""}`}><div><strong>{index + 1}. {character.name || copy.magicCharacters}</strong><button type="button" className="editor-magic-lock" onClick={() => setMagicCharacters((current) => current.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, locked: !candidate.locked } : candidate))}>{character.locked ? <LockKeyhole size={13} /> : <UnlockKeyhole size={13} />}{character.locked ? copy.magicUnlock : copy.magicLock}</button></div><input value={character.name} disabled={character.locked} placeholder={copy.magicCharacterPlaceholder} onChange={(event) => updateMagicCharacter(index, "name", event.target.value)} /><textarea rows={2} value={character.description} disabled={character.locked} placeholder={copy.magicCharacterPlaceholder} onChange={(event) => updateMagicCharacter(index, "description", event.target.value)} /></article>)}</div></div>
+      {magicError && <p className="core-studio-notice" role="alert">{magicError}</p>}
+      <div className="editor-magic-actions"><button type="button" className="studio-primary" disabled={!magicPrompt.trim() || magicBusy} onClick={() => void runMagic()}><WandSparkles size={15} /> {magicBusy ? copy.magicRunning : copy.magicRun}</button>{magicPlan && <button type="button" className="studio-gold" onClick={applyMagicPlan}>{copy.magicApply}</button>}</div>
+      {magicPlan && <section className="editor-magic-plan"><div className="editor-magic-plan-head"><strong>{copy.magicPlanSteps}</strong><span className={magicPlan.providerReady ? "is-ready" : "is-local"}>{magicPlan.providerReady ? copy.magicProviderReady : copy.magicPlanOnly}</span></div>{magicPlan.aiSummary && <p className="core-studio-notice">{magicPlan.aiSummary}</p>}<ol>{magicPlan.steps.map((step) => <li key={`${step.title}-${step.detail}`}><strong>{step.title}</strong><span>{step.detail}</span></li>)}</ol></section>}
+    </div>}
     <div className="editor-layout">
       <aside className="editor-tools">{copy.tools.map((label, index) => { const Icon = icons[index]; return <button key={index} type="button" className={tool === index ? "is-active" : ""} aria-pressed={tool === index} onClick={() => { if (index === 9) onGenerator(); else setTool(index); }}><Icon size={18} /><span>{label}</span></button>; })}</aside>
       <div className="editor-stage">
@@ -217,6 +305,7 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
           {media?.type === "audio" && <audio ref={mediaAudio} src={media.url} {...mediaProps} className="core-editor-audio" aria-label={media.name} />}
           {audioTrack && <audio ref={music} src={audioTrack.url} {...mediaProps} onLoadedMetadata={(event) => trackMetadata(event.currentTarget, "audio")} className="core-editor-audio" aria-label={audioTrack.name} />}
           {voiceTrack && <audio ref={voice} src={voiceTrack.url} {...mediaProps} onLoadedMetadata={(event) => trackMetadata(event.currentTarget, "voice")} className="core-editor-audio" aria-label={voiceTrack.name} />}
+          {soundTrack && <audio ref={sound} src={soundTrack.url} {...mediaProps} onLoadedMetadata={(event) => trackMetadata(event.currentTarget, "sound")} className="core-editor-audio" aria-label={soundTrack.name} />}
           <div className="core-editor-vignette" style={{ opacity: vignette / 100 }} />
           <div className="core-editor-overlay" style={{ color }}>{text}</div><div className="core-editor-subtitle" style={{ color }}>{subtitle}</div><div className="core-editor-brand">{brand}</div>
           {hasPlayable && <button type="button" className="stage-play" onClick={toggle} aria-label={playing ? copy.pause : copy.play}>{playing ? <Pause size={18} /> : <Play size={18} />}</button>}
@@ -229,6 +318,7 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
           {(text || subtitle || brand) && <button type="button" className="timeline-clip track-text" style={clipStyle(0, effectiveEnd)} onClick={(event) => { event.stopPropagation(); setTool(text ? 2 : subtitle ? 5 : 8); }}>{text || subtitle || brand}</button>}
           {audioTrack && <button type="button" className="timeline-clip track-music" style={clipStyle(0, audioDuration || timelineDuration)} onClick={(event) => { event.stopPropagation(); setTool(3); }}>{audioTrack.name}</button>}
           {voiceTrack && <button type="button" className="timeline-clip track-voice" style={clipStyle(0, voiceDuration || timelineDuration)} onClick={(event) => { event.stopPropagation(); setTool(4); }}>{voiceTrack.name}</button>}
+          {soundTrack && <button type="button" className="timeline-clip track-sound" style={clipStyle(0, soundDuration || timelineDuration)} onClick={(event) => { event.stopPropagation(); setTool(3); }}>{soundTrack.name}</button>}
           <i className="playhead" style={{ left: `${timelineDuration ? position / timelineDuration * 100 : 0}%` }} />
         </div></div>
         <p className="core-studio-notice">{copy.local}</p><p className="core-studio-notice">{copy.exportSourceNote}</p>

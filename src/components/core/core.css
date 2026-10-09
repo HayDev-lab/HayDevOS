@@ -880,3 +880,55 @@
 .haydev-core .avatar-best-practices { margin: 0; color: #8eacc6; font-size: 10px; line-height: 1.5; }
 @media (max-width: 820px) { .haydev-core .avatar-settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .haydev-core .reference-photo-card { grid-template-columns: 72px minmax(0, 1fr); } .haydev-core .reference-photo-preview { width: 72px; height: 65px; } .haydev-core .avatar-settings-grid { grid-template-columns: 1fr; } }
+
+/* CapCut-inspired editor desk: dense preview, transport and stacked tracks. */
+.haydev-core .core-editor { border: 1px solid #1d3854; border-radius: 18px; padding: 12px; background: #030a14d9; box-shadow: 0 24px 60px #0008, inset 0 1px #ffffff0b; }
+.haydev-core .core-editor .editor-toolbar { position: sticky; top: 0; z-index: 3; margin: -12px -12px 12px; padding: 10px 12px; border: 0; border-bottom: 1px solid #203b59; border-radius: 17px 17px 0 0; background: #07121feF; backdrop-filter: blur(16px); }
+.haydev-core .core-editor .editor-toolbar strong { color: #f3f7ff; font-size: 13px; letter-spacing: .02em; }
+.haydev-core .core-editor .editor-toolbar .studio-primary { display: inline-flex; align-items: center; gap: 6px; }
+.haydev-core .core-editor .editor-layout { grid-template-columns: 70px minmax(0, 1fr) 258px; min-height: 670px; border: 1px solid #1c3a57; border-radius: 14px; overflow: hidden; background: #040b15; }
+.haydev-core .core-editor .editor-tools { gap: 4px; padding: 8px 5px; border-right-color: #17334e; background: #07111e; }
+.haydev-core .core-editor .editor-tools button { min-height: 54px; border-radius: 9px; color: #7795b1; transition: color .15s, background .15s, border-color .15s; }
+.haydev-core .core-editor .editor-tools button:hover { color: #d9eaff; border-color: #2f628b; background: #112941; }
+.haydev-core .core-editor .editor-tools button.is-active { color: #ffd983; border-color: #b48642; background: linear-gradient(145deg, #382911, #17283a); box-shadow: inset 0 1px #ffffff0e; }
+.haydev-core .core-editor .editor-tools button span { line-height: 1.1; }
+.haydev-core .core-editor .editor-stage { padding: 16px 18px 14px; background: #050e19; }
+.haydev-core .core-editor .stage-top { align-items: center; margin-bottom: 9px; color: #89a9c5; font-size: 10px; letter-spacing: .02em; text-transform: uppercase; }
+.haydev-core .core-editor .stage-top span:nth-child(2) { color: #f1d38b; font-variant-numeric: tabular-nums; }
+.haydev-core .core-editor-canvas { max-height: 430px; min-height: 300px; border: 1px solid #244d70; border-radius: 8px; background: #02060c; box-shadow: 0 12px 34px #0008; }
+.haydev-core .core-editor-canvas::after { content: ""; position: absolute; inset: 0; pointer-events: none; border: 1px solid #ffffff08; box-shadow: inset 0 0 80px #0009; }
+.haydev-core .core-editor-canvas video, .haydev-core .core-editor-canvas img { z-index: 1; }
+.haydev-core .core-editor-empty { position: relative; z-index: 1; }
+.haydev-core .core-editor-audio { display: none; }
+.haydev-core .core-editor-vignette { position: absolute; z-index: 2; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 36%, #000 125%); }
+.haydev-core .core-editor-overlay, .haydev-core .core-editor-subtitle, .haydev-core .core-editor-brand { z-index: 3; }
+.haydev-core .core-editor-subtitle { bottom: 52px; padding: 4px 10px; border-radius: 4px; background: #0009; }
+.haydev-core .core-editor-brand { padding: 4px 7px; border: 1px solid #efd08366; border-radius: 4px; background: #071321b8; letter-spacing: .08em; }
+.haydev-core .core-editor .stage-play { z-index: 4; bottom: 12px; width: 34px; height: 34px; border: 1px solid #fff3bc; box-shadow: 0 4px 15px #0008; }
+.haydev-core .core-editor .editor-transport { display: grid; grid-template-columns: auto minmax(100px, 1fr) auto; gap: 8px; align-items: center; margin-top: 10px; }
+.haydev-core .core-editor .editor-transport .studio-ghost { padding: 6px 8px; font-size: 10px; }
+.haydev-core .core-editor .core-editor-seek { margin: 0; }
+.haydev-core .core-editor .timeline-ruler { padding: 13px 6px 6px; color: #6f8daa; font-variant-numeric: tabular-nums; }
+.haydev-core .core-editor .timeline { min-height: 160px; grid-template-columns: 82px minmax(0, 1fr); border-color: #1c3d5a; border-radius: 8px; background: #061321; }
+.haydev-core .core-editor .track-labels { background: #071725; border-right-color: #1c3d5a; }
+.haydev-core .core-editor .track-labels span { height: 40px; padding: 12px 8px; color: #8da8c1; border-bottom-color: #12314b; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
+.haydev-core .core-editor .tracks { min-height: 160px; cursor: crosshair; background: repeating-linear-gradient(90deg, #071b2e 0 59px, #0b2942 60px 61px), repeating-linear-gradient(0deg, transparent 0 39px, #14324a 40px 41px); }
+.haydev-core .core-editor .tracks:focus-visible { outline: 2px solid #eac477; outline-offset: -2px; }
+.haydev-core .core-editor .timeline-clip { position: absolute; z-index: 1; height: 28px; min-width: 20px; overflow: hidden; border: 1px solid #4f9acc; border-radius: 5px; padding: 5px 8px; color: #eaf7ff; background: linear-gradient(90deg, #0b6faf, #249ad1); font: inherit; font-size: 9px; text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.haydev-core .core-editor .timeline-clip:hover { border-color: #dbeeff; filter: brightness(1.16); }
+.haydev-core .core-editor .track-video { top: 6px; }
+.haydev-core .core-editor .track-text { top: 46px; border-color: #bb944b; color: #fff1c9; background: linear-gradient(90deg, #806126, #c99e45); }
+.haydev-core .core-editor .track-music { top: 86px; border-color: #856cc3; background: linear-gradient(90deg, #48327f, #7654ac); }
+.haydev-core .core-editor .track-voice { top: 126px; border-color: #5ab39b; background: linear-gradient(90deg, #176754, #2b9b7b); }
+.haydev-core .core-editor .playhead { z-index: 2; top: -1px; bottom: -1px; width: 2px; background: #ffd46f; box-shadow: 0 0 10px #ffd46f; pointer-events: none; }
+.haydev-core .core-editor .playhead::before { content: ""; position: absolute; top: 0; left: -4px; width: 10px; height: 8px; border-radius: 2px; background: #ffd46f; }
+.haydev-core .core-editor .editor-inspector { padding: 17px 15px; border-left-color: #1c3d5a; background: #071421; overflow: auto; }
+.haydev-core .core-editor .editor-inspector h3 { margin: 5px 0 15px; color: #eff6ff; font-size: 14px; }
+.haydev-core .core-editor .editor-inspector > button, .haydev-core .core-editor .editor-template-grid button { width: 100%; justify-content: center; margin-bottom: 7px; }
+.haydev-core .core-editor .editor-template-grid { display: grid; gap: 6px; margin-bottom: 8px; }
+.haydev-core .core-editor .editor-inspector .studio-ghost.is-selected { color: #ffe49d; border-color: #d9ad57; background: #3f2e154d; }
+.haydev-core .core-editor .editor-inspector .core-studio-notice { margin: 8px 0 12px; }
+.haydev-core .core-editor .editor-inspector > div:not(.editor-template-grid) { margin-top: 11px; }
+@media (max-width: 1100px) { .haydev-core .core-editor .editor-layout { grid-template-columns: 64px minmax(0, 1fr) 230px; } .haydev-core .core-editor .editor-stage { padding-inline: 12px; } }
+@media (max-width: 820px) { .haydev-core .core-editor .editor-layout { grid-template-columns: 1fr; } .haydev-core .core-editor .editor-tools { display: flex; overflow-x: auto; border-right: 0; border-bottom: 1px solid #17334e; } .haydev-core .core-editor .editor-tools button { min-width: 68px; } .haydev-core .core-editor .editor-inspector { border-top: 1px solid #1c3d5a; border-left: 0; max-height: none; } .haydev-core .core-editor-canvas { min-height: 220px; } }
+@media (max-width: 560px) { .haydev-core .core-editor { padding: 8px; } .haydev-core .core-editor .editor-toolbar { margin: -8px -8px 8px; padding: 9px; } .haydev-core .core-editor .editor-toolbar strong { width: 100%; } .haydev-core .core-editor .editor-stage { padding: 12px 9px; } .haydev-core .core-editor .editor-transport { grid-template-columns: 1fr 1fr; } .haydev-core .core-editor .editor-transport .core-editor-seek { grid-column: 1 / -1; grid-row: 1; } .haydev-core .core-editor .timeline { grid-template-columns: 66px minmax(0, 1fr); } .haydev-core .core-editor .track-labels span { padding-inline: 6px; font-size: 8px; } }

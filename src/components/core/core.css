@@ -863,3 +863,20 @@
 .haydev-core .visual-generator-panel { min-width: 0; border: 1px solid #214e75; border-radius: 14px; padding: 13px; background: #04182bc7; }
 @media (max-width: 820px) { .haydev-core .tone-grid, .haydev-core .voice-style-grid, .haydev-core .visual-style-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .haydev-core .tone-grid, .haydev-core .voice-style-grid, .haydev-core .visual-style-grid { grid-template-columns: 1fr; } }
+
+/* Image and avatar reference controls keep source photos explicit and visible. */
+.haydev-core .image-generator-panel, .haydev-core .avatar-generator-panel { display: grid; gap: 14px; }
+.haydev-core .image-generator-panel .video-model-grid, .haydev-core .avatar-generator-panel .video-model-grid { margin-top: 2px; }
+.haydev-core .reference-photo-card { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 9px; align-items: center; padding: 10px; border: 1px solid #39749c; border-radius: 12px; background: linear-gradient(145deg, #082540, #06182b); }
+.haydev-core .reference-photo-preview { width: 92px; height: 78px; border-style: solid; }
+.haydev-core .reference-photo-card .core-studio-notice { grid-column: 1 / -1; margin: 0; }
+.haydev-core .required-field { color: #ffd276; }
+.haydev-core .reference-photo-card .video-reference-prompt { margin-top: 2px; }
+.haydev-core .avatar-settings-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.haydev-core .avatar-settings-grid label, .haydev-core .image-generator-panel .ai-generator-options label, .haydev-core .avatar-generator-panel .ai-generator-options label { display: grid; gap: 5px; color: #9fbcd2; font-size: 10px; }
+.haydev-core .avatar-settings-grid select, .haydev-core .image-generator-panel select, .haydev-core .avatar-generator-panel select { width: 100%; min-width: 0; border: 1px solid #285d83; border-radius: 7px; padding: 8px; color: #eaf5ff; background: #031426; font: inherit; font-size: 10px; }
+.haydev-core .avatar-identity-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid #4a7090; border-radius: 8px; padding: 9px 11px; color: #b8d2e6; background: #08223a; font: inherit; font-size: 11px; cursor: pointer; }
+.haydev-core .avatar-identity-toggle:hover, .haydev-core .avatar-identity-toggle.is-enabled { color: #ffe49d; border-color: #d7ad5b; box-shadow: 0 0 0 1px #d7ad5b25; }
+.haydev-core .avatar-best-practices { margin: 0; color: #8eacc6; font-size: 10px; line-height: 1.5; }
+@media (max-width: 820px) { .haydev-core .avatar-settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .haydev-core .reference-photo-card { grid-template-columns: 72px minmax(0, 1fr); } .haydev-core .reference-photo-preview { width: 72px; height: 65px; } .haydev-core .avatar-settings-grid { grid-template-columns: 1fr; } }

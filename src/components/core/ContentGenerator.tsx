@@ -22,6 +22,7 @@ import { useStudioCopy } from "./studio-copy";
 const icons = [Video, Music, Mic, ImageIcon, UserRound];
 const formats = ["16:9", "9:16", "1:1"];
 const voiceFormats = ["mp3", "wav", "opus"];
+const qualityKeys: ImageQuality[] = ["low", "medium", "high", "xhigh", "max"];
 const preferencesKey = "haydevos.video-generator.preferences.v1";
 
 type VideoTab = "settings" | "styles" | "characters" | "sound";
@@ -30,7 +31,9 @@ type VoiceGender = "female" | "male";
 type FrameSlot = "first" | "last" | "reference";
 type CharacterSlot = { name: string; description: string; locked: boolean };
 type FrameAsset = { name: string; url: string; type: "image" | "video" };
+type ReferenceAsset = { name: string; url: string; type: "image" };
 type FrameState = Record<FrameSlot, FrameAsset | null>;
+type ImageQuality = "low" | "medium" | "high" | "xhigh" | "max";
 
 const videoModels: ReadonlyArray<{
   id: string;
@@ -79,6 +82,38 @@ const voiceModels: ReadonlyArray<{
   { id: "hay-voice-master", name: "Hay Voice Master", providerModel: "gpt-4o-mini-tts", tier: "top", summary: "Рекомендуемые голоса высокого качества", voices: ["marin", "nova", "shimmer", "cedar", "verse", "onyx"] },
 ];
 
+const imageModels: ReadonlyArray<{
+  id: string;
+  name: string;
+  providerModel: string;
+  tier: ModelTier;
+  summary: string;
+  qualities: ImageQuality[];
+}> = [
+  { id: "hay-image-lite", name: "Hay Image Lite", providerModel: "gpt-image-1-mini", tier: "budget", summary: "Быстрые черновики", qualities: ["low", "medium"] },
+  { id: "hay-image-fast", name: "Hay Image Fast", providerModel: "gpt-image-2.5-flare", tier: "budget", summary: "Быстрое image-to-image", qualities: ["low", "medium", "high"] },
+  { id: "hay-image-studio", name: "Hay Image Studio", providerModel: "gpt-image-1", tier: "balanced", summary: "Баланс цены и деталей", qualities: ["medium", "high"] },
+  { id: "hay-image-edit", name: "Hay Image Edit", providerModel: "gpt-image-1.5", tier: "balanced", summary: "Точное редактирование reference", qualities: ["medium", "high"] },
+  { id: "hay-image-pro", name: "Hay Image Pro", providerModel: "gpt-image-2", tier: "top", summary: "Высокая детализация", qualities: ["high", "xhigh"] },
+  { id: "hay-image-master", name: "Hay Image Master", providerModel: "gpt-image-2.5-sunburst", tier: "top", summary: "Максимальная точность reference", qualities: ["high", "xhigh", "max"] },
+];
+
+const avatarModels: ReadonlyArray<{
+  id: string;
+  name: string;
+  providerModel: string;
+  tier: ModelTier;
+  summary: string;
+  qualities: ImageQuality[];
+}> = [
+  { id: "hay-avatar-lite", name: "Hay Avatar Lite", providerModel: "gpt-image-1-mini", tier: "budget", summary: "Быстрый портретный аватар", qualities: ["low", "medium"] },
+  { id: "hay-avatar-fast", name: "Hay Avatar Fast", providerModel: "gpt-image-2.5-flare", tier: "budget", summary: "Быстрые вариации лица", qualities: ["low", "medium", "high"] },
+  { id: "hay-avatar-studio", name: "Hay Avatar Studio", providerModel: "gpt-image-1", tier: "balanced", summary: "Естественный студийный аватар", qualities: ["medium", "high"] },
+  { id: "hay-avatar-natural", name: "Hay Avatar Natural", providerModel: "gpt-image-1.5", tier: "balanced", summary: "Стабильная передача черт", qualities: ["medium", "high"] },
+  { id: "hay-avatar-pro", name: "Hay Avatar Pro", providerModel: "gpt-image-2", tier: "top", summary: "Точная идентичность и свет", qualities: ["high", "xhigh"] },
+  { id: "hay-avatar-master", name: "Hay Avatar Master", providerModel: "gpt-image-2.5-sunburst", tier: "top", summary: "Максимальная точность личности", qualities: ["high", "xhigh", "max"] },
+];
+
 const defaultCharacters: CharacterSlot[] = [
   { name: "", description: "", locked: false },
   { name: "", description: "", locked: false },
@@ -119,9 +154,25 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
   const [imageTone, setImageTone] = useState(0);
   const [avatarStyle, setAvatarStyle] = useState(0);
   const [avatarTone, setAvatarTone] = useState(0);
+  const [imageModelId, setImageModelId] = useState(imageModels[0].id);
+  const [imageQuality, setImageQuality] = useState<ImageQuality>(imageModels[0].qualities[1]);
+  const [imageBackground, setImageBackground] = useState(0);
+  const [imageReferencePrompt, setImageReferencePrompt] = useState("");
+  const [avatarModelId, setAvatarModelId] = useState(avatarModels[0].id);
+  const [avatarQuality, setAvatarQuality] = useState<ImageQuality>(avatarModels[0].qualities[1]);
+  const [avatarPrompt, setAvatarPrompt] = useState("");
+  const [avatarPreserveIdentity, setAvatarPreserveIdentity] = useState(true);
+  const [avatarPose, setAvatarPose] = useState(0);
+  const [avatarExpression, setAvatarExpression] = useState(0);
+  const [avatarBackground, setAvatarBackground] = useState(0);
+  const [avatarFraming, setAvatarFraming] = useState(0);
+  const [avatarFormat, setAvatarFormat] = useState(0);
+  const [imageReference, setImageReference] = useState<ReferenceAsset | null>(null);
+  const [avatarReference, setAvatarReference] = useState<ReferenceAsset | null>(null);
   const [frames, setFrames] = useState<FrameState>(defaultFrames);
   const [preferencesHydrated, setPreferencesHydrated] = useState(false);
   const framesRef = useRef<FrameState>(defaultFrames);
+  const referencesRef = useRef<{ image: ReferenceAsset | null; avatar: ReferenceAsset | null }>({ image: null, avatar: null });
   const active = activeType;
   const isVideo = active === 0;
   const isAudio = active === 1;
@@ -131,6 +182,8 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
   const selectedModel = videoModels.find((model) => model.id === modelId) ?? videoModels[0];
   const selectedVoiceModel = voiceModels.find((model) => model.id === voiceModelId) ?? voiceModels[0];
   const selectedVoice = voiceCatalog.find((voice) => voice.id === voiceId) ?? voiceCatalog[0];
+  const selectedImageModel = imageModels.find((model) => model.id === imageModelId) ?? imageModels[0];
+  const selectedAvatarModel = avatarModels.find((model) => model.id === avatarModelId) ?? avatarModels[0];
 
   useEffect(() => {
     let mounted = true;
@@ -160,8 +213,21 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
             voiceTone: number;
             imageStyle: number;
             imageTone: number;
+            imageModelId: string;
+            imageQuality: ImageQuality;
+            imageBackground: number;
+            imageReferencePrompt: string;
             avatarStyle: number;
             avatarTone: number;
+            avatarModelId: string;
+            avatarQuality: ImageQuality;
+            avatarPrompt: string;
+            avatarPreserveIdentity: boolean;
+            avatarPose: number;
+            avatarExpression: number;
+            avatarBackground: number;
+            avatarFraming: number;
+            avatarFormat: number;
           }>;
           const storedModel = videoModels.find((model) => model.id === parsed.modelId);
           if (storedModel) {
@@ -189,8 +255,27 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
           if (typeof parsed.voiceTone === "number" && parsed.voiceTone >= 0 && parsed.voiceTone < copy.voiceTones.length) setVoiceTone(parsed.voiceTone);
           if (typeof parsed.imageStyle === "number" && parsed.imageStyle >= 0 && parsed.imageStyle < copy.imageStyles.length) setImageStyle(parsed.imageStyle);
           if (typeof parsed.imageTone === "number" && parsed.imageTone >= 0 && parsed.imageTone < copy.imageTones.length) setImageTone(parsed.imageTone);
+          const storedImageModel = imageModels.find((model) => model.id === parsed.imageModelId);
+          if (storedImageModel) {
+            setImageModelId(storedImageModel.id);
+            setImageQuality(typeof parsed.imageQuality === "string" && storedImageModel.qualities.includes(parsed.imageQuality) ? parsed.imageQuality : storedImageModel.qualities[0]);
+          }
+          if (typeof parsed.imageBackground === "number" && parsed.imageBackground >= 0 && parsed.imageBackground < copy.imageBackgrounds.length) setImageBackground(parsed.imageBackground);
+          if (typeof parsed.imageReferencePrompt === "string") setImageReferencePrompt(parsed.imageReferencePrompt);
           if (typeof parsed.avatarStyle === "number" && parsed.avatarStyle >= 0 && parsed.avatarStyle < copy.avatarStyles.length) setAvatarStyle(parsed.avatarStyle);
           if (typeof parsed.avatarTone === "number" && parsed.avatarTone >= 0 && parsed.avatarTone < copy.avatarTones.length) setAvatarTone(parsed.avatarTone);
+          const storedAvatarModel = avatarModels.find((model) => model.id === parsed.avatarModelId);
+          if (storedAvatarModel) {
+            setAvatarModelId(storedAvatarModel.id);
+            setAvatarQuality(typeof parsed.avatarQuality === "string" && storedAvatarModel.qualities.includes(parsed.avatarQuality) ? parsed.avatarQuality : storedAvatarModel.qualities[0]);
+          }
+          if (typeof parsed.avatarPrompt === "string") setAvatarPrompt(parsed.avatarPrompt);
+          if (typeof parsed.avatarPreserveIdentity === "boolean") setAvatarPreserveIdentity(parsed.avatarPreserveIdentity);
+          if (typeof parsed.avatarPose === "number" && parsed.avatarPose >= 0 && parsed.avatarPose < copy.avatarPoses.length) setAvatarPose(parsed.avatarPose);
+          if (typeof parsed.avatarExpression === "number" && parsed.avatarExpression >= 0 && parsed.avatarExpression < copy.avatarExpressions.length) setAvatarExpression(parsed.avatarExpression);
+          if (typeof parsed.avatarBackground === "number" && parsed.avatarBackground >= 0 && parsed.avatarBackground < copy.avatarBackgrounds.length) setAvatarBackground(parsed.avatarBackground);
+          if (typeof parsed.avatarFraming === "number" && parsed.avatarFraming >= 0 && parsed.avatarFraming < copy.avatarFramings.length) setAvatarFraming(parsed.avatarFraming);
+          if (typeof parsed.avatarFormat === "number" && parsed.avatarFormat >= 0 && parsed.avatarFormat < copy.avatarFormats.length) setAvatarFormat(parsed.avatarFormat);
         }
       } catch {
         // A malformed local preference must never block the generator UI.
@@ -202,20 +287,27 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
       mounted = false;
       window.clearTimeout(timer);
     };
-  }, [copy.audioTones.length, copy.avatarStyles.length, copy.imageStyles.length, copy.languages.length, copy.musicStyles.length, copy.soundStyles.length, copy.videoStyles.length, copy.videoTones.length, copy.voiceStyles.length]);
+  }, [copy.audioTones.length, copy.avatarBackgrounds.length, copy.avatarExpressions.length, copy.avatarFormats.length, copy.avatarFramings.length, copy.avatarPoses.length, copy.avatarStyles.length, copy.imageBackgrounds.length, copy.imageStyles.length, copy.languages.length, copy.musicStyles.length, copy.soundStyles.length, copy.videoStyles.length, copy.videoTones.length, copy.voiceStyles.length]);
 
   useEffect(() => {
     if (!preferencesHydrated) return;
-    window.localStorage.setItem(preferencesKey, JSON.stringify({ modelId, duration, style, videoTone, characters, soundStyle, soundLocked, language, audioStyle, audioTone, audioLanguage, rhymePolish, referencePrompt, voiceModelId, voiceId, voiceFormat, voiceStyle, voiceTone, imageStyle, imageTone, avatarStyle, avatarTone }));
-  }, [audioLanguage, audioStyle, audioTone, avatarStyle, avatarTone, characters, duration, imageStyle, imageTone, language, modelId, preferencesHydrated, referencePrompt, rhymePolish, soundLocked, soundStyle, style, videoTone, voiceFormat, voiceId, voiceModelId, voiceStyle, voiceTone]);
+    window.localStorage.setItem(preferencesKey, JSON.stringify({ modelId, duration, style, videoTone, characters, soundStyle, soundLocked, language, audioStyle, audioTone, audioLanguage, rhymePolish, referencePrompt, voiceModelId, voiceId, voiceFormat, voiceStyle, voiceTone, imageStyle, imageTone, imageModelId, imageQuality, imageBackground, imageReferencePrompt, avatarStyle, avatarTone, avatarModelId, avatarQuality, avatarPrompt, avatarPreserveIdentity, avatarPose, avatarExpression, avatarBackground, avatarFraming, avatarFormat }));
+  }, [audioLanguage, audioStyle, audioTone, avatarBackground, avatarExpression, avatarFormat, avatarFraming, avatarModelId, avatarPose, avatarPreserveIdentity, avatarPrompt, avatarQuality, avatarStyle, avatarTone, characters, duration, imageBackground, imageModelId, imageQuality, imageReferencePrompt, imageStyle, imageTone, language, modelId, preferencesHydrated, referencePrompt, rhymePolish, soundLocked, soundStyle, style, videoTone, voiceFormat, voiceId, voiceModelId, voiceStyle, voiceTone]);
 
   useEffect(() => {
     framesRef.current = frames;
   }, [frames]);
 
+  useEffect(() => {
+    referencesRef.current = { image: imageReference, avatar: avatarReference };
+  }, [avatarReference, imageReference]);
+
   useEffect(() => () => {
     Object.values(framesRef.current).forEach((frame) => {
       if (frame) URL.revokeObjectURL(frame.url);
+    });
+    Object.values(referencesRef.current).forEach((reference) => {
+      if (reference) URL.revokeObjectURL(reference.url);
     });
   }, []);
 
@@ -229,6 +321,18 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
     const nextModel = voiceModels.find((model) => model.id === nextId) ?? voiceModels[0];
     setVoiceModelId(nextModel.id);
     setVoiceId(nextModel.voices.includes(voiceId) ? voiceId : nextModel.voices[0]);
+  }
+
+  function chooseImageModel(nextId: string) {
+    const nextModel = imageModels.find((model) => model.id === nextId) ?? imageModels[0];
+    setImageModelId(nextModel.id);
+    setImageQuality(nextModel.qualities.includes(imageQuality) ? imageQuality : nextModel.qualities[0]);
+  }
+
+  function chooseAvatarModel(nextId: string) {
+    const nextModel = avatarModels.find((model) => model.id === nextId) ?? avatarModels[0];
+    setAvatarModelId(nextModel.id);
+    setAvatarQuality(nextModel.qualities.includes(avatarQuality) ? avatarQuality : nextModel.qualities[0]);
   }
 
   function updateCharacter(index: number, key: "name" | "description", value: string) {
@@ -250,8 +354,28 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
     });
   }
 
+  function setReferenceAsset(kind: "image" | "avatar", event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !file.type.startsWith("image/")) return;
+    const next: ReferenceAsset = { name: file.name, url: URL.createObjectURL(file), type: "image" };
+    if (kind === "image") {
+      setImageReference((current) => {
+        if (current) URL.revokeObjectURL(current.url);
+        return next;
+      });
+    } else {
+      setAvatarReference((current) => {
+        if (current) URL.revokeObjectURL(current.url);
+        return next;
+      });
+    }
+  }
+
   async function prepare() {
-    if (active === undefined || !prompt.trim() || busy) return;
+    const missingImageReference = isImage && (!imageReference || !imageReferencePrompt.trim());
+    const missingAvatarReference = isAvatar && (!avatarReference || !avatarPrompt.trim());
+    if (active === undefined || !prompt.trim() || missingImageReference || missingAvatarReference || busy) return;
     const styleLabel = isVideo ? copy.videoStyles[style] : isAudio ? copy.musicStyles[audioStyle] : isVoice ? copy.voiceStyles[voiceStyle] : isImage ? copy.imageStyles[imageStyle] : copy.avatarStyles[avatarStyle];
     const toneLabel = isVideo ? copy.videoTones[videoTone] : isAudio ? copy.audioTones[audioTone] : isVoice ? copy.voiceTones[voiceTone] : isImage ? copy.imageTones[imageTone] : copy.avatarTones[avatarTone];
     const formatLabel = isVoice ? `${voiceFormats[voiceFormat]} · ${copy.voiceFormats[voiceFormat]}` : `${formats[format]} · ${copy.formats[format]}`;
@@ -280,7 +404,30 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
       `${copy.voiceModel}: ${selectedVoiceModel.name} [${selectedVoiceModel.providerModel}] (${copy.modelTiers[selectedVoiceModel.tier]})`,
       `${copy.voice}: ${selectedVoice.id} (${selectedVoice.gender === "female" ? copy.voiceFemale : copy.voiceMale})`,
       `${copy.voiceFormat}: ${voiceFormats[voiceFormat]}`,
-    ].join(" ") : [baseRequest, `${copy.tone}: ${toneLabel}`].join(" ");
+    ].join(" ") : isImage ? [
+      baseRequest,
+      `${copy.imageModel}: ${selectedImageModel.name} [${selectedImageModel.providerModel}] (${copy.modelTiers[selectedImageModel.tier]})`,
+      `${copy.imageQuality}: ${imageQuality}`,
+      `${copy.imageBackground}: ${copy.imageBackgrounds[imageBackground]}`,
+      `${copy.imageReference}: ${imageReference?.name ?? copy.noFrame}`,
+      `${copy.imageReferencePrompt}: ${imageReferencePrompt.trim()}`,
+      copy.photoUsageRequired,
+      `${copy.tone}: ${toneLabel}`,
+    ].join(" ") : [
+      baseRequest,
+      `${copy.avatarModel}: ${selectedAvatarModel.name} [${selectedAvatarModel.providerModel}] (${copy.modelTiers[selectedAvatarModel.tier]})`,
+      `${copy.avatarQuality}: ${avatarQuality}`,
+      `${copy.avatarPhoto}: ${avatarReference?.name ?? copy.noFrame}`,
+      `${copy.avatarPrompt}: ${avatarPrompt.trim()}`,
+      `${copy.avatarIdentity}: ${avatarPreserveIdentity ? copy.avatarIdentityOn : copy.avatarIdentityOff}`,
+      `${copy.avatarPose}: ${copy.avatarPoses[avatarPose]}`,
+      `${copy.avatarExpression}: ${copy.avatarExpressions[avatarExpression]}`,
+      `${copy.avatarBackground}: ${copy.avatarBackgrounds[avatarBackground]}`,
+      `${copy.avatarFraming}: ${copy.avatarFramings[avatarFraming]}`,
+      `${copy.avatarFormat}: ${copy.avatarFormats[avatarFormat]}`,
+      copy.photoUsageRequired,
+      `${copy.tone}: ${toneLabel}`,
+    ].join(" ");
     await onRequest(request);
   }
 
@@ -368,15 +515,25 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
               </div></div></div>
               <div className="voice-generator-controls"><label>{copy.voiceFormat}<select value={voiceFormat} onChange={(event) => setVoiceFormat(Number(event.target.value))}>{voiceFormats.map((formatName, index) => <option key={formatName} value={index}>{formatName.toUpperCase()} · {copy.voiceFormats[index]}</option>)}</select></label></div>
               <p className="core-studio-notice">{copy.voiceOfficialNote}</p><a className="voice-docs-link" href="https://developers.openai.com/api/docs/guides/text-to-speech" target="_blank" rel="noreferrer">{copy.voiceDocsLabel}</a>
-            </div> : isImage ? <div className="visual-generator-panel">
-              <div className="ai-generator-options"><label>{copy.format}<select value={format} onChange={(event) => setFormat(Number(event.target.value))}>{formats.map((ratio, index) => <option key={ratio} value={index}>{ratio} · {copy.formats[index]}</option>)}</select></label></div>
+            </div> : isImage ? <div className="visual-generator-panel image-generator-panel">
+              <div className="video-setting-block"><div className="video-setting-heading"><span>{copy.imageModel}</span><small>{copy.imageModelHint}</small></div><div className="video-model-grid">
+                {imageModels.map((model) => <button key={model.id} type="button" className={`video-model-card ${model.id === imageModelId ? "is-selected" : ""}`} aria-pressed={model.id === imageModelId} onClick={() => chooseImageModel(model.id)}><span className={`video-model-tier tier-${model.tier}`}>{copy.modelTiers[model.tier]}</span><strong>{model.name}</strong><small>{model.providerModel} · {model.summary}</small></button>)}
+              </div></div>
+              <div className="ai-generator-options"><label>{copy.format}<select value={format} onChange={(event) => setFormat(Number(event.target.value))}>{formats.map((ratio, index) => <option key={ratio} value={index}>{ratio} · {copy.formats[index]}</option>)}</select></label><label>{copy.imageQuality}<select value={imageQuality} onChange={(event) => setImageQuality(event.target.value as ImageQuality)}>{selectedImageModel.qualities.map((quality) => <option key={quality} value={quality}>{copy.imageQualities[qualityKeys.indexOf(quality)]}</option>)}</select></label><label>{copy.imageBackground}<select value={imageBackground} onChange={(event) => setImageBackground(Number(event.target.value))}>{copy.imageBackgrounds.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label></div>
+              <article className="reference-photo-card"><div className="video-frame-preview reference-photo-preview">{imageReference ? <img src={imageReference.url} alt={copy.imageReference}/> : <ImageIcon size={24}/>}</div><div className="video-frame-meta"><strong>{copy.imageReference} <span className="required-field">*</span></strong><small>{imageReference?.name ?? copy.noFrame}</small></div><label className="studio-ghost video-frame-upload"><Upload size={13}/>{imageReference ? copy.replaceFrame : copy.chooseFrame}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(event) => setReferenceAsset("image", event)}/></label><p className="core-studio-notice">{!imageReference || !imageReferencePrompt.trim() ? copy.imageReferenceRequired : copy.imageReferenceHint}</p><label className="video-reference-prompt">{copy.imageReferencePrompt} <span className="required-field">*</span><textarea rows={2} required value={imageReferencePrompt} onChange={(event) => setImageReferencePrompt(event.target.value)} placeholder={copy.imageReferencePromptPlaceholder}/></label></article>
               <div className="video-setting-heading"><span>{copy.imageStyle}</span><small>{copy.imageStylesHint}</small></div><div className="visual-style-grid">
                 {copy.imageStyles.map((label, index) => <button key={label} type="button" className={imageStyle === index ? "is-selected" : ""} aria-pressed={imageStyle === index} onClick={() => setImageStyle(index)}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}
               </div><div className="video-tone-block"><div className="video-setting-heading"><span>{copy.tone}</span><small>{copy.imageTonesHint}</small></div><div className="tone-grid">
                 {copy.imageTones.map((label, index) => <button key={label} type="button" className={imageTone === index ? "is-selected" : ""} aria-pressed={imageTone === index} onClick={() => setImageTone(index)}>{label}</button>)}
               </div></div>
-            </div> : isAvatar ? <div className="visual-generator-panel">
-              <div className="ai-generator-options"><label>{copy.format}<select value={format} onChange={(event) => setFormat(Number(event.target.value))}>{formats.map((ratio, index) => <option key={ratio} value={index}>{ratio} · {copy.formats[index]}</option>)}</select></label></div>
+            </div> : isAvatar ? <div className="visual-generator-panel avatar-generator-panel">
+              <div className="video-setting-block"><div className="video-setting-heading"><span>{copy.avatarModel}</span><small>{copy.avatarModelHint}</small></div><div className="video-model-grid">
+                {avatarModels.map((model) => <button key={model.id} type="button" className={`video-model-card ${model.id === avatarModelId ? "is-selected" : ""}`} aria-pressed={model.id === avatarModelId} onClick={() => chooseAvatarModel(model.id)}><span className={`video-model-tier tier-${model.tier}`}>{copy.modelTiers[model.tier]}</span><strong>{model.name}</strong><small>{model.providerModel} · {model.summary}</small></button>)}
+              </div></div>
+              <div className="ai-generator-options"><label>{copy.format}<select value={format} onChange={(event) => setFormat(Number(event.target.value))}>{formats.map((ratio, index) => <option key={ratio} value={index}>{ratio} · {copy.formats[index]}</option>)}</select></label><label>{copy.avatarQuality}<select value={avatarQuality} onChange={(event) => setAvatarQuality(event.target.value as ImageQuality)}>{selectedAvatarModel.qualities.map((quality) => <option key={quality} value={quality}>{copy.avatarQualities[qualityKeys.indexOf(quality)]}</option>)}</select></label></div>
+              <article className="reference-photo-card"><div className="video-frame-preview reference-photo-preview">{avatarReference ? <img src={avatarReference.url} alt={copy.avatarPhoto}/> : <UserRound size={24}/>}</div><div className="video-frame-meta"><strong>{copy.avatarPhoto} <span className="required-field">*</span></strong><small>{avatarReference?.name ?? copy.noFrame}</small></div><label className="studio-ghost video-frame-upload"><Upload size={13}/>{avatarReference ? copy.replaceFrame : copy.chooseFrame}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(event) => setReferenceAsset("avatar", event)}/></label><p className="core-studio-notice">{!avatarReference || !avatarPrompt.trim() ? copy.avatarReferenceRequired : copy.avatarPhotoHint}</p><label className="video-reference-prompt">{copy.avatarPrompt} <span className="required-field">*</span><textarea rows={2} required value={avatarPrompt} onChange={(event) => setAvatarPrompt(event.target.value)} placeholder={copy.avatarPromptPlaceholder}/></label></article>
+              <div className="avatar-settings-grid"><label>{copy.avatarPose}<select value={avatarPose} onChange={(event) => setAvatarPose(Number(event.target.value))}>{copy.avatarPoses.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label><label>{copy.avatarExpression}<select value={avatarExpression} onChange={(event) => setAvatarExpression(Number(event.target.value))}>{copy.avatarExpressions.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label><label>{copy.avatarBackground}<select value={avatarBackground} onChange={(event) => setAvatarBackground(Number(event.target.value))}>{copy.avatarBackgrounds.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label><label>{copy.avatarFraming}<select value={avatarFraming} onChange={(event) => setAvatarFraming(Number(event.target.value))}>{copy.avatarFramings.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label><label>{copy.avatarFormat}<select value={avatarFormat} onChange={(event) => setAvatarFormat(Number(event.target.value))}>{copy.avatarFormats.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label></div>
+              <button type="button" className={`avatar-identity-toggle ${avatarPreserveIdentity ? "is-enabled" : ""}`} aria-pressed={avatarPreserveIdentity} onClick={() => setAvatarPreserveIdentity((enabled) => !enabled)}>{avatarPreserveIdentity ? <LockKeyhole size={15}/> : <UnlockKeyhole size={15}/>} {avatarPreserveIdentity ? copy.avatarIdentityOn : copy.avatarIdentityOff}</button><p className="avatar-best-practices">{copy.avatarBestPractices}</p>
               <div className="video-setting-heading"><span>{copy.avatarStyle}</span><small>{copy.avatarStylesHint}</small></div><div className="visual-style-grid">
                 {copy.avatarStyles.map((label, index) => <button key={label} type="button" className={avatarStyle === index ? "is-selected" : ""} aria-pressed={avatarStyle === index} onClick={() => setAvatarStyle(index)}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}
               </div><div className="video-tone-block"><div className="video-setting-heading"><span>{copy.tone}</span><small>{copy.avatarTonesHint}</small></div><div className="tone-grid">
@@ -385,9 +542,9 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
             </div> : null}
             <p className="core-studio-notice">{copy.mediaUnavailable}</p>
             <button type="button" className="studio-primary" disabled title={copy.mediaUnavailable}>{copy.generate}</button>
-            <button type="button" className="studio-gold" disabled={!prompt.trim() || busy} onClick={() => void prepare()}>{busy ? copy.preparing : copy.prepare}</button>
+            <button type="button" className="studio-gold" disabled={!prompt.trim() || (isImage && (!imageReference || !imageReferencePrompt.trim())) || (isAvatar && (!avatarReference || !avatarPrompt.trim())) || busy} onClick={() => void prepare()}>{busy ? copy.preparing : copy.prepare}</button>
           </div>
-          <div className="ai-generator-preview"><span className="ai-preview-orb"><Sparkles/></span><strong>{copy.preview}</strong><small>{isVideo ? `${copy.videoStyles[style]} · ${copy.videoTones[videoTone]}` : isAudio ? `${copy.musicStyles[audioStyle]} · ${copy.audioTones[audioTone]} · ${copy.languages[audioLanguage]}` : isVoice ? `${selectedVoiceModel.name} · ${selectedVoice.id} · ${copy.voiceStyles[voiceStyle]} · ${copy.voiceTones[voiceTone]}` : isImage ? `${copy.imageStyles[imageStyle]} · ${copy.imageTones[imageTone]}` : isAvatar ? `${copy.avatarStyles[avatarStyle]} · ${copy.avatarTones[avatarTone]}` : copy.previewEmpty}</small></div>
+          <div className="ai-generator-preview"><span className="ai-preview-orb"><Sparkles/></span><strong>{copy.preview}</strong><small>{isVideo ? `${copy.videoStyles[style]} · ${copy.videoTones[videoTone]}` : isAudio ? `${copy.musicStyles[audioStyle]} · ${copy.audioTones[audioTone]} · ${copy.languages[audioLanguage]}` : isVoice ? `${selectedVoiceModel.name} · ${selectedVoice.id} · ${copy.voiceStyles[voiceStyle]} · ${copy.voiceTones[voiceTone]}` : isImage ? `${selectedImageModel.name} · ${copy.imageStyles[imageStyle]} · ${copy.imageTones[imageTone]}${imageReference ? ` · ${imageReference.name}` : ""}` : isAvatar ? `${selectedAvatarModel.name} · ${copy.avatarStyles[avatarStyle]} · ${copy.avatarTones[avatarTone]}${avatarReference ? ` · ${avatarReference.name}` : ""}` : copy.previewEmpty}</small></div>
         </div>
       </section>}
   </>;

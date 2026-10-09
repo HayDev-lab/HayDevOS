@@ -759,3 +759,74 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Video generator controls: a dense production desk with explicit, persistent choices. */
+.haydev-core .video-generator-layout { align-items: start; }
+.haydev-core .video-generator-layout > div:first-child { min-width: 0; }
+.haydev-core .video-generator-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 12px; padding: 4px; border: 1px solid #214a70; border-radius: 13px; background: #031426b8; }
+.haydev-core .video-generator-tabs button { flex: 1 1 130px; border: 1px solid transparent; border-radius: 9px; padding: 9px 11px; color: #9db9d2; background: transparent; font: inherit; font-size: 12px; cursor: pointer; }
+.haydev-core .video-generator-tabs button:hover { color: #fff; background: #0d3151; }
+.haydev-core .video-generator-tabs button.is-active { color: #ffe49d; border-color: #a77f3e; background: linear-gradient(135deg, #4e35134f, #0d3351); box-shadow: inset 0 1px #ffffff14; }
+.haydev-core .video-generator-panel { min-width: 0; border: 1px solid #214e75; border-radius: 14px; padding: 13px; background: #04182bc7; }
+.haydev-core .video-setting-block + .video-setting-block { margin-top: 18px; padding-top: 16px; border-top: 1px solid #21415e; }
+.haydev-core .video-setting-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: #ecf5ff; font-size: 12px; }
+.haydev-core .video-setting-heading small { color: #8eacc6; font-size: 10px; text-align: right; }
+.haydev-core .video-model-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.haydev-core .video-model-card { display: grid; gap: 5px; min-width: 0; text-align: left; border: 1px solid #285d83; border-radius: 11px; padding: 11px; color: #eaf5ff; background: linear-gradient(145deg, #0a2c49, #06182c); cursor: pointer; transition: border-color .2s, transform .2s, box-shadow .2s; }
+.haydev-core .video-model-card:hover { transform: translateY(-2px); border-color: #83cfff; }
+.haydev-core .video-model-card.is-selected { border-color: #efc96f; box-shadow: 0 0 0 1px #efc96f52, 0 8px 20px #008eff22; }
+.haydev-core .video-model-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.haydev-core .video-model-card small { color: #8eacc6; font-size: 10px; line-height: 1.35; }
+.haydev-core .video-model-tier { justify-self: start; border-radius: 99px; padding: 3px 7px; font-size: 9px; letter-spacing: .3px; text-transform: uppercase; }
+.haydev-core .video-model-tier.tier-budget { color: #9ff1cf; background: #1b765347; }
+.haydev-core .video-model-tier.tier-balanced { color: #9fdcff; background: #216b9b47; }
+.haydev-core .video-model-tier.tier-top { color: #ffe19a; background: #8b642c59; }
+.haydev-core .video-duration-output { display: block; margin-top: 5px; color: #ffe19a; font-size: 12px; }
+.haydev-core .video-duration-options { display: flex; flex-wrap: wrap; gap: 7px; }
+.haydev-core .video-duration-options button { border: 1px solid #2d668f; border-radius: 8px; padding: 8px 11px; color: #b9d4e9; background: #061d34; font: inherit; font-size: 11px; cursor: pointer; }
+.haydev-core .video-duration-options button:hover, .haydev-core .video-duration-options button.is-selected { color: #ffe49d; border-color: #d9ad57; background: #3f2e154d; }
+.haydev-core .video-frame-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.haydev-core .video-frame-card { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 9px; align-items: center; min-width: 0; padding: 8px; border: 1px solid #285d83; border-radius: 11px; background: #061b30; }
+.haydev-core .video-frame-preview { display: grid; place-items: center; width: 62px; height: 44px; overflow: hidden; border: 1px dashed #477da1; border-radius: 7px; color: #80b6d8; background: #031224; }
+.haydev-core .video-frame-preview img, .haydev-core .video-frame-preview video { width: 100%; height: 100%; object-fit: cover; }
+.haydev-core .video-frame-meta { min-width: 0; display: grid; gap: 3px; }
+.haydev-core .video-frame-meta strong, .haydev-core .video-frame-meta small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.haydev-core .video-frame-meta strong { color: #e8f5ff; font-size: 11px; }
+.haydev-core .video-frame-meta small { color: #7f9fb9; font-size: 9px; }
+.haydev-core .video-frame-upload { grid-column: 1 / -1; justify-content: center; width: 100%; padding: 7px 8px; font-size: 10px; }
+.haydev-core .video-style-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; max-height: 365px; overflow: auto; padding-right: 2px; }
+.haydev-core .video-style-grid button { display: flex; align-items: center; gap: 7px; min-width: 0; text-align: left; border: 1px solid #245676; border-radius: 8px; padding: 8px 9px; color: #a9c4da; background: #061c31; font: inherit; font-size: 10px; line-height: 1.25; cursor: pointer; }
+.haydev-core .video-style-grid button span { color: #5e9bc0; font-variant-numeric: tabular-nums; }
+.haydev-core .video-style-grid button:hover, .haydev-core .video-style-grid button.is-selected { color: #ffe49d; border-color: #d7ad5b; background: #3f2e154d; }
+.haydev-core .video-style-grid button.is-selected span { color: #ffe49d; }
+.haydev-core .video-character-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.haydev-core .video-character-card { min-width: 0; border: 1px solid #285d83; border-radius: 11px; padding: 10px; background: #061b30; }
+.haydev-core .video-character-card.is-locked { border-color: #a98040; background: linear-gradient(145deg, #33271466, #061b30); }
+.haydev-core .video-character-heading { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 9px; color: #eaf5ff; font-size: 11px; }
+.haydev-core .video-lock-button, .haydev-core .video-sound-lock { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #4a7090; border-radius: 7px; padding: 6px 8px; color: #9fc0d8; background: #08223a; font: inherit; font-size: 9px; cursor: pointer; }
+.haydev-core .video-lock-button:hover, .haydev-core .video-lock-button[aria-pressed="true"], .haydev-core .video-sound-lock:hover, .haydev-core .video-sound-lock.is-locked { color: #ffe49d; border-color: #d7ad5b; }
+.haydev-core .video-character-card label, .haydev-core .video-sound-grid label { display: grid; gap: 5px; margin-top: 8px; color: #9fbcd2; font-size: 10px; }
+.haydev-core .video-character-card input, .haydev-core .video-character-card textarea, .haydev-core .video-sound-grid select { width: 100%; min-width: 0; border: 1px solid #285d83; border-radius: 7px; padding: 8px; color: #eaf5ff; background: #031426; font: inherit; font-size: 10px; }
+.haydev-core .video-character-card textarea { resize: vertical; }
+.haydev-core .video-character-card input:disabled, .haydev-core .video-character-card textarea:disabled, .haydev-core .video-sound-grid select:disabled { opacity: .65; cursor: not-allowed; }
+.haydev-core .video-sound-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.haydev-core .video-sound-lock { margin-top: 13px; }
+.haydev-core .field-label-with-icon { display: inline-flex; align-items: center; gap: 5px; }
+@media (max-width: 820px) { .haydev-core .video-model-grid, .haydev-core .video-character-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .haydev-core .video-style-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .haydev-core .video-frame-grid, .haydev-core .video-sound-grid, .haydev-core .video-character-grid { grid-template-columns: 1fr; } .haydev-core .video-model-grid { grid-template-columns: 1fr; } .haydev-core .video-style-grid { grid-template-columns: 1fr; max-height: 430px; } }
+
+/* Audio generation controls share the same compact studio language as video. */
+.haydev-core .audio-generator-panel { min-width: 0; border: 1px solid #214e75; border-radius: 14px; padding: 13px; background: #04182bc7; }
+.haydev-core .audio-style-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; max-height: 365px; overflow: auto; padding-right: 2px; }
+.haydev-core .audio-style-grid button { display: flex; align-items: center; gap: 7px; min-width: 0; text-align: left; border: 1px solid #245676; border-radius: 8px; padding: 8px 9px; color: #a9c4da; background: #061c31; font: inherit; font-size: 10px; line-height: 1.25; cursor: pointer; }
+.haydev-core .audio-style-grid button span { color: #5e9bc0; font-variant-numeric: tabular-nums; }
+.haydev-core .audio-style-grid button:hover, .haydev-core .audio-style-grid button.is-selected { color: #ffe49d; border-color: #d7ad5b; background: #3f2e154d; }
+.haydev-core .audio-style-grid button.is-selected span { color: #ffe49d; }
+.haydev-core .audio-generator-controls { margin-top: 14px; }
+.haydev-core .audio-rhyme-polish { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px; border: 1px solid #4a7090; border-radius: 8px; padding: 9px 11px; color: #b8d2e6; background: #08223a; font: inherit; font-size: 11px; cursor: pointer; }
+.haydev-core .audio-rhyme-polish:hover, .haydev-core .audio-rhyme-polish.is-enabled { color: #ffe49d; border-color: #d7ad5b; box-shadow: 0 0 0 1px #d7ad5b25; }
+.haydev-core .video-reference-card { grid-template-columns: 62px minmax(0, 1fr); }
+.haydev-core .video-reference-prompt { grid-column: 1 / -1; display: grid; gap: 5px; color: #9fbcd2; font-size: 10px; }
+.haydev-core .video-reference-prompt textarea { width: 100%; resize: vertical; min-height: 52px; border: 1px solid #285d83; border-radius: 7px; padding: 8px; color: #eaf5ff; background: #031426; font: inherit; font-size: 10px; }
+@media (max-width: 820px) { .haydev-core .audio-style-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .haydev-core .audio-style-grid { grid-template-columns: 1fr; max-height: 430px; } }

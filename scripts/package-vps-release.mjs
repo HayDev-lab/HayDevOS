@@ -80,7 +80,12 @@ const staging = await mkdtemp(temporaryPrefix);
 try {
   await cp(standalone, staging, { recursive: true, force: false, dereference: true });
   await mkdir(path.join(staging, "scripts"), { recursive: true });
-  for (const script of ["backup-production.mjs", "restore-drill.mjs"]) {
+  for (const script of [
+    "backup-production.mjs",
+    "restore-drill.mjs",
+    "openclaw-broker.mjs",
+    "openclaw-broker-lib.mjs",
+  ]) {
     await cp(path.join(root, "scripts", script), path.join(staging, "scripts", script));
   }
 

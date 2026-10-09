@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "@/components/core/archive.css";
+import "@/components/core/core.css";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -11,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "HayDevOS — The operating system for ambitious teams",
+  title: "HayDevOS · Ядро управления",
   description:
     "HayDevOS is a multi-tenant enterprise platform unifying lead-to-cash, document AI, automations, ERP, integrations and an AI co-founder.",
   keywords: [
@@ -25,7 +27,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "HayDevOS" }],
   icons: {
-    icon: "/branding/haydevos-logo.png",
+    icon: "/core/haydevos-logo.png",
   },
   openGraph: {
     title: "HayDevOS",

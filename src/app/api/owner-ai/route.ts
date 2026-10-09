@@ -27,6 +27,7 @@ import { executeTenantAction } from "@/lib/owner-ai/action-executor";
 import {
   createOwnerAiCompletion,
   ownerAiDemoEnabled,
+  ownerAiProviderName,
   type OwnerAiChatMessage,
 } from "@/lib/owner-ai/provider";
 import {
@@ -318,12 +319,23 @@ export async function POST(req: NextRequest) {
         userId: context.userId,
         focusConversationId: body.conversationId,
       },
-      () => runOwnerAi(body, context),
+      () => runOwnerAi(body, context, localeFromRequest(req.headers.get("accept-language"))),
     );
   });
 }
 
-async function runOwnerAi(body: OwnerAiInput, context: AuthContext) {
+function localeFromRequest(value: string | null): "hy" | "ru" | "en" {
+  const primary = value?.split(",", 1)[0]?.trim().toLowerCase() ?? "";
+  if (primary.startsWith("hy")) return "hy";
+  if (primary.startsWith("ru")) return "ru";
+  return "en";
+}
+
+async function runOwnerAi(
+  body: OwnerAiInput,
+  context: AuthContext,
+  locale: "hy" | "ru" | "en",
+) {
   const orgId = context.orgId;
   const org = context.organizations.find((candidate) => candidate.id === orgId);
   if (!org) throw new ApiError(401, "INVALID_SESSION", "Active organization is unavailable");
@@ -349,7 +361,7 @@ async function runOwnerAi(body: OwnerAiInput, context: AuthContext) {
   const run = startRun({
     conversationId: conv.id,
     mode,
-    provider: "openai-compatible", // tentative — development may use the offline fallback
+    provider: ownerAiProviderName(), // development may still use the offline fallback
   });
 
   const toolCallRecords: ToolCallRecord[] = [];
@@ -401,25 +413,39 @@ async function runOwnerAi(body: OwnerAiInput, context: AuthContext) {
         payload: { turn, messageCount: workHistory.length },
         correlationId: run.correlationId,
         promptVersion: PROMPT_VERSION,
-        provider: "openai-compatible",
+        provider: run.provider,
       });
 
       const resp = await createOwnerAiCompletion(
         buildLlmMessages(systemPrompt, workHistory),
+        {
+          context: {
+            tenantId: context.orgId,
+            actorUserId: context.userId,
+            actorRole: context.role,
+            locale,
+            conversationId: conv.id,
+            requestId: `${run.id}_t${turn}`,
+            correlationId: run.correlationId,
+            actionIntent: mode === "OBSERVE" ? "observe" : mode === "AUTO" ? "auto" : "assist",
+            riskClass: mode === "AUTO" ? "approval-gated" : "read",
+            originTrustLevel: "authenticated_owner_ai",
+          },
+        },
       );
       lastAssistantText = resp.choices?.[0]?.message?.content ?? "";
-      model = resp.model ?? "glm-4-plus";
+      model = resp.model;
       online = true;
 
       addAuditEvent({
         runId: run.id,
         conversationId: conv.id,
         type: "llm_response",
-        message: `LLM response turn ${turn} (${lastAssistantText.length} chars, model=${model})`,
-        payload: { turn, length: lastAssistantText.length, model },
+        message: `LLM response turn ${turn} (${lastAssistantText.length} chars, model=${model ?? "unreported"})`,
+        payload: { turn, length: lastAssistantText.length, model: model ?? null },
         correlationId: run.correlationId,
         promptVersion: PROMPT_VERSION,
-        provider: "openai-compatible",
+        provider: run.provider,
         model,
       });
 
@@ -489,7 +515,7 @@ async function runOwnerAi(body: OwnerAiInput, context: AuthContext) {
         payload: { blockedActionCount },
         correlationId: run.correlationId,
         promptVersion: PROMPT_VERSION,
-        provider: "openai-compatible",
+        provider: run.provider,
         model,
       });
     }

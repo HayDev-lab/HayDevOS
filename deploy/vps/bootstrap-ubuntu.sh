@@ -8,6 +8,8 @@ fi
 
 readonly APP_USER="haydevos"
 readonly APP_GROUP="haydevos"
+readonly OPENCLAW_USER="haydev-openclaw"
+readonly OPENCLAW_GROUP="haydev-openclaw"
 readonly APP_ROOT="/opt/haydevos"
 readonly NODE_VERSION="${NODE_VERSION:-24.18.0}"
 readonly HAYDEV_DOMAIN="${HAYDEV_DOMAIN:-haydevos.com}"
@@ -85,17 +87,27 @@ fi
 if ! id -u "${APP_USER}" >/dev/null 2>&1; then
   useradd --system --gid "${APP_GROUP}" --home-dir /var/lib/haydevos --create-home --shell /usr/sbin/nologin "${APP_USER}"
 fi
+if ! getent group "${OPENCLAW_GROUP}" >/dev/null; then
+  groupadd --system "${OPENCLAW_GROUP}"
+fi
+if ! id -u "${OPENCLAW_USER}" >/dev/null 2>&1; then
+  useradd --system --gid "${OPENCLAW_GROUP}" --home-dir /var/lib/haydev-openclaw --create-home --shell /usr/sbin/nologin "${OPENCLAW_USER}"
+fi
 
 install -d -o root -g "${APP_GROUP}" -m 0750 "${APP_ROOT}" "${APP_ROOT}/releases" /etc/haydevos
 install -d -o "${APP_USER}" -g "${APP_GROUP}" -m 0700 /var/lib/haydevos /var/backups/haydevos
+install -d -o "${OPENCLAW_USER}" -g "${OPENCLAW_GROUP}" -m 0700 /var/lib/haydev-openclaw
 if [[ ! -e /etc/haydevos/haydevos.env ]]; then
   install -o root -g "${APP_GROUP}" -m 0640 /dev/null /etc/haydevos/haydevos.env
+fi
+if [[ ! -e /etc/haydevos/openclaw-broker.env ]]; then
+  install -o root -g "${OPENCLAW_GROUP}" -m 0640 /dev/null /etc/haydevos/openclaw-broker.env
 fi
 
 install -o root -g root -m 0644 "${REPOSITORY_ROOT}/Caddyfile" /etc/caddy/Caddyfile
 install -d -o root -g root -m 0755 /etc/systemd/system/caddy.service.d
 install -o root -g root -m 0644 "${REPOSITORY_ROOT}/deploy/systemd/caddy-haydevos.conf" /etc/systemd/system/caddy.service.d/haydevos.conf
-for unit in haydevos.service haydevos-readiness.service haydevos-readiness.timer haydevos-backup.service haydevos-backup.timer; do
+for unit in haydevos.service haydevos-readiness.service haydevos-readiness.timer haydevos-backup.service haydevos-backup.timer haydev-openclaw-broker.service; do
   install -o root -g root -m 0644 "${REPOSITORY_ROOT}/deploy/systemd/${unit}" "/etc/systemd/system/${unit}"
 done
 
@@ -113,3 +125,4 @@ ufw --force enable
 
 echo "Bootstrap complete. Install secrets in /etc/haydevos/haydevos.env, then install a verified release."
 echo "The backup timer remains disabled until an encrypted backup destination and /etc/haydevos/backup.env are verified."
+echo "The OpenClaw broker unit remains disabled until an isolated Gateway and /etc/haydevos/openclaw-broker.env are independently verified."

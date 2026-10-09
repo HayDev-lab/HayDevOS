@@ -17,6 +17,7 @@ import {
 import type { ClientSession } from "@/lib/auth/types";
 import { useAppStore } from "@/lib/store/app-store";
 import { resetOwnerAiClientState } from "@/modules/ownerai/state";
+import { coreLocales } from "@/components/core/locales";
 import { LoginScreen } from "./LoginScreen";
 import { RegisterScreen } from "./RegisterScreen";
 import { ShellLayout } from "./ShellLayout";
@@ -46,6 +47,7 @@ export function HayDevShell({ initialSession }: HayDevShellProps) {
 
   useEffect(() => {
     document.documentElement.lang = locale;
+    document.title = coreLocales[locale].title;
   }, [locale]);
 
   const invalidateSession = useCallback(() => {

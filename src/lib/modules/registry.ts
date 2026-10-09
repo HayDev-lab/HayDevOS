@@ -21,9 +21,13 @@ import {
   Sparkles,
   ClipboardCheck,
   Settings,
+  Grid3X3,
+  Megaphone,
 } from "lucide-react";
 import type { ComponentType } from "react";
-import { placeholderFor } from "./placeholder";
+import { ModulesView } from "@/components/core/ModulesView";
+import { MarketingView } from "@/components/core/MarketingView";
+import { SettingsWorkspace } from "@/components/core/SettingsWorkspace";
 import { DashboardView } from "@/components/shell/DashboardView";
 import { ErpCrmView } from "@/modules/erp";
 import { DocumentFlowView } from "@/modules/documentflow";
@@ -70,17 +74,22 @@ export interface ModuleManifest {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Placeholder binding is retained only for the settings route, whose full UI
-// is exposed through the shell settings panel.
+// Both the catalog and core orbit use these stable module bindings.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// placeholderFor keeps this registry JSX-free.
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Registry — 10 modules + dashboard
+// Registry — connected workspaces and the core dashboard
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const ModuleRegistry: ModuleManifest[] = [
+  {
+    id: "modules", nameKey: "core.modules", icon: Grid3X3, category: "core",
+    route: "modules", description: "Explore the HayDevOS ecosystem.", accent: "cyan", component: ModulesView,
+  },
+  {
+    id: "marketing", nameKey: "core.marketing", icon: Megaphone, category: "operations",
+    route: "marketing", description: "Content preparation and connected marketing workflows.", accent: "amber", component: MarketingView,
+  },
   {
     id: "dashboard",
     nameKey: "nav.dashboard",
@@ -189,7 +198,7 @@ export const ModuleRegistry: ModuleManifest[] = [
     route: "settings",
     description: "Org, members, billing and preferences.",
     accent: "lime",
-    component: placeholderFor("settings"),
+    component: SettingsWorkspace,
   },
 ];
 

@@ -10,7 +10,7 @@ export type OwnerAiMode = "OBSERVE" | "ASSIST" | "AUTO";
 
 export type TimeWindow = "today" | "7d" | "30d" | "quarter";
 
-export type Provider = "openai-compatible" | "offline-fallback";
+export type Provider = "openai-compatible" | "openclaw-broker" | "offline-fallback";
 
 export type OwnerAiSystemProvider = Provider | "unavailable";
 

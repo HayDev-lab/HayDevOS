@@ -41,6 +41,7 @@ import { OwnerAiPanel } from "./OwnerAiPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { ActivityTimelineSheet } from "./ActivityTimelineSheet";
 import { ShortcutsHelpDialog } from "./ShortcutsHelpDialog";
+import { ModuleFrame } from "@/components/core/ModuleFrame";
 
 interface ShellLayoutProps {
   onLogout: () => void;
@@ -232,8 +233,8 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
   return (
     <div
       className={cn(
-        "app-backdrop haydev-shell flex h-dvh min-h-0 w-full min-w-0 max-w-full flex-col overflow-hidden text-foreground",
-        activeModule === "dashboard" && "haydev-shell--home",
+        "haydev-core core-shell flex h-dvh min-h-0 w-full min-w-0 max-w-full flex-col overflow-hidden text-foreground",
+        activeModule === "dashboard" && "core-shell--home",
       )}
     >
       <TopBar
@@ -244,7 +245,7 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Main content area */}
         <main
-          className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto"
+          className="core-main relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto"
           aria-label={mod ? t(mod.nameKey) : t("shell.content")}
         >
           <div className="flex min-h-0 flex-1 flex-col">
@@ -255,16 +256,19 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -4 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
-                className="min-h-0 flex-1"
+                className="core-active-view min-h-0 flex-1"
               >
-                {ActiveComponent ? <ActiveComponent /> : null}
+                {ActiveComponent ? ["dashboard", "control", "modules", "marketing"].includes(activeModule)
+                  ? <ActiveComponent />
+                  : <ModuleFrame nameKey={mod!.nameKey}><ActiveComponent /></ModuleFrame>
+                  : null}
               </motion.div>
             </AnimatePresence>
 
             {/* Footer pinned at the bottom of the viewport */}
             <footer
               className={cn(
-                "flex h-8 shrink-0 items-center justify-between gap-3 border-t border-border bg-sidebar/60 px-4 text-[10px] uppercase tracking-wider text-muted-foreground/70",
+                "core-footer flex h-8 shrink-0 items-center justify-between gap-3 border-t border-border bg-sidebar/60 px-4 text-[10px] uppercase tracking-wider text-muted-foreground/70",
                 activeModule === "dashboard" && "hidden",
               )}
             >
@@ -277,10 +281,10 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
               </div>
               <div className="flex items-center gap-3">
                 <span className="hidden sm:block">{t("shell.footer.version")}</span>
-                <span className="flex items-center gap-1.5">
-                  <Activity className="h-3 w-3 text-success" />
-                  <span className="text-success/90">{t("shell.footer.operational")}</span>
-                </span>
+                <button type="button" onClick={() => setActivityOpen(true)} className="flex items-center gap-1.5">
+                  <Activity className="h-3 w-3" />
+                  <span>{t("activity.title")}</span>
+                </button>
               </div>
             </footer>
           </div>

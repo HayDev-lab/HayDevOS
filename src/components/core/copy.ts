@@ -1,0 +1,178 @@
+"use client";
+
+import { useLocale } from "@/lib/i18n";
+import { coreLocales } from "./locales";
+
+export function useCoreCopy() {
+  const { locale } = useLocale();
+  return coreLocales[locale];
+}
+
+export const workspaceCopy = {
+  ru: {
+    all: "Все модули",
+    subtitle: "Единая экосистема для роста вашего бизнеса",
+    search: "Поиск модулей…",
+    open: "Открыть",
+    back: "Ядро",
+    workspace: "Рабочее пространство",
+    marketingSubtitle: "Единое пространство для идей, производства и роста",
+    create: "Создать с Owner AI",
+    resources: "Открыть документы",
+    integrations: "Подключить каналы",
+    marketingStatus: "Подготовка контента",
+    marketingNote:
+      "Планируйте кампании с Owner AI, храните материалы в DocumentFlow и настройте каналы в интеграциях. Публикация и статистика доступны после подключения маркетингового сервиса.",
+    tabs: [
+      "Обзор",
+      "Проекты",
+      "Редактор",
+      "Ресурсы",
+      "Кампании",
+      "Календарь",
+      "Согласование",
+      "Публикация",
+      "Аналитика",
+    ],
+    actions: [
+      "Идеи для контента",
+      "Текст публикации",
+      "План кампании",
+      "Контент-план",
+    ],
+    prompts: [
+      "Предложи идеи для контента моего бизнеса. Сначала уточни аудиторию и цель.",
+      "Помоги написать публикацию. Уточни продукт, аудиторию и подтвержденные факты.",
+      "Помоги составить маркетинговую кампанию с целями, каналами и бюджетом.",
+      "Помоги составить контент-план на неделю с темами и каналами.",
+    ],
+    draftNote: "Опишите задачу — результат будет в вашем диалоге Owner AI.",
+    request: "Что вы хотите создать?",
+    pending: "Отправка…",
+    notConfigured: "Подключение AI не настроено",
+    failed: "Не удалось получить ответ. Повторите запрос в Owner AI.",
+    checking: "Проверка подключения",
+    ready: "AI настроен",
+    authTitle: "Ваше рабочее пространство",
+    authSubtitle: "Люди. Технологии. Результаты.",
+    empty: "Модули не найдены",
+    categories: ["Все", "Бизнес", "Операции", "AI", "Интеграции"],
+    approvals: "Открыть согласования",
+    analytics: "Открыть бизнес-аудит",
+    calendar: "Настроить расписание",
+    settings: "Настройки пространства",
+  },
+  en: {
+    all: "All modules",
+    subtitle: "One ecosystem for your business growth",
+    search: "Search modules…",
+    open: "Open",
+    back: "Core",
+    workspace: "Workspace",
+    marketingSubtitle: "One workspace for ideas, production and growth",
+    create: "Create with Owner AI",
+    resources: "Open documents",
+    integrations: "Connect channels",
+    marketingStatus: "Content preparation",
+    marketingNote:
+      "Plan campaigns with Owner AI, keep assets in DocumentFlow and configure channels in Integrations. Publishing and statistics become available when a marketing service is connected.",
+    tabs: [
+      "Overview",
+      "Projects",
+      "Editor",
+      "Resources",
+      "Campaigns",
+      "Calendar",
+      "Approval",
+      "Publishing",
+      "Analytics",
+    ],
+    actions: [
+      "Content ideas",
+      "Post copy",
+      "Campaign plan",
+      "Content calendar",
+    ],
+    prompts: [
+      "Suggest content ideas for my business. First ask about the audience and goal.",
+      "Help write a post. Ask about the product, audience and verified facts.",
+      "Help plan a marketing campaign with goals, channels and a budget.",
+      "Help create a weekly content plan with topics and channels.",
+    ],
+    draftNote:
+      "Describe your task — the result will be in your Owner AI conversation.",
+    request: "What would you like to create?",
+    pending: "Sending…",
+    notConfigured: "AI connection is not configured",
+    failed: "Could not get a response. Retry your request in Owner AI.",
+    checking: "Checking connection",
+    ready: "AI configured",
+    authTitle: "Your workspace",
+    authSubtitle: "People. Technology. Results.",
+    empty: "No modules found",
+    categories: ["All", "Business", "Operations", "AI", "Integrations"],
+    approvals: "Open approvals",
+    analytics: "Open business audit",
+    calendar: "Configure a schedule",
+    settings: "Workspace settings",
+  },
+  hy: {
+    all: "Բոլոր մոդուլները",
+    subtitle: "Միասնական էկոհամակարգ՝ ձեր բիզնեսի աճի համար",
+    search: "Փնտրել մոդուլներ…",
+    open: "Բացել",
+    back: "Միջուկ",
+    workspace: "Աշխատանքային տարածք",
+    marketingSubtitle: "Գաղափարների, արտադրության և աճի միասնական տարածք",
+    create: "Ստեղծել Owner AI-ի հետ",
+    resources: "Բացել փաստաթղթերը",
+    integrations: "Միացնել ալիքները",
+    marketingStatus: "Բովանդակության պատրաստում",
+    marketingNote:
+      "Պլանավորեք արշավները Owner AI-ի հետ, պահեք նյութերը DocumentFlow-ում և կարգավորեք ալիքները ինտեգրացիաներում։ Հրապարակումն ու վիճակագրությունը հասանելի են մարքեթինգային ծառայությունը միացնելուց հետո։",
+    tabs: [
+      "Ակնարկ",
+      "Նախագծեր",
+      "Խմբագիր",
+      "Ռեսուրսներ",
+      "Արշավներ",
+      "Օրացույց",
+      "Համաձայնեցում",
+      "Հրապարակում",
+      "Վերլուծություն",
+    ],
+    actions: [
+      "Բովանդակության գաղափարներ",
+      "Գրառման տեքստ",
+      "Արշավի պլան",
+      "Բովանդակության պլան",
+    ],
+    prompts: [
+      "Առաջարկիր բիզնեսիս բովանդակության գաղափարներ։ Նախ ճշտիր լսարանն ու նպատակը։",
+      "Օգնիր գրել հրապարակում։ Ճշտիր արտադրանքը, լսարանն ու հաստատված փաստերը։",
+      "Օգնիր կազմել մարքեթինգային արշավ՝ նպատակներով, ալիքներով և բյուջեով։",
+      "Օգնիր կազմել շաբաթվա բովանդակության պլան՝ թեմաներով և ալիքներով։",
+    ],
+    draftNote:
+      "Նկարագրեք խնդիրը․ արդյունքը կլինի ձեր Owner AI երկխոսության մեջ։",
+    request: "Ի՞նչ եք ցանկանում ստեղծել։",
+    pending: "Ուղարկվում է…",
+    notConfigured: "ԱԲ միացումը կարգավորված չէ",
+    failed: "Պատասխան ստանալ չհաջողվեց։ Կրկնեք հարցումը Owner AI-ում։",
+    checking: "Միացման ստուգում",
+    ready: "ԱԲ-ն կարգավորված է",
+    authTitle: "Ձեր աշխատանքային տարածքը",
+    authSubtitle: "Մարդիկ։ Տեխնոլոգիաներ։ Արդյունքներ։",
+    empty: "Մոդուլներ չեն գտնվել",
+    categories: ["Բոլորը", "Բիզնես", "Գործընթացներ", "ԱԲ", "Ինտեգրացիաներ"],
+    approvals: "Բացել համաձայնեցումները",
+    analytics: "Բացել բիզնեսի աուդիտը",
+    calendar: "Կարգավորել ժամանակացույցը",
+    settings: "Տարածքի կարգավորումներ",
+  },
+} as const;
+
+export function useWorkspaceCopy() {
+  const { locale } = useLocale();
+  return workspaceCopy[locale];
+}

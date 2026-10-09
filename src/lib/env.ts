@@ -78,6 +78,15 @@ export function validateRuntimeEnvironment(
 export function ownerAiEnvironmentConfigured(
   source: NodeJS.ProcessEnv = process.env,
 ): boolean {
+  const backend = source.OWNER_AI_BACKEND?.trim() || "openai-compatible";
+  if (backend === "openclaw-broker") {
+    return z.object({
+      HAYDEV_OPENCLAW_BROKER_URL: httpsUrl,
+      HAYDEV_OPENCLAW_BROKER_TOKEN: z.string().min(24),
+      HAYDEV_OPENCLAW_BROKER_HMAC_KEY: z.string().min(32),
+    }).safeParse(source).success;
+  }
+  if (backend !== "openai-compatible") return false;
   return z.object({
     OWNER_AI_BASE_URL: httpsUrl,
     OWNER_AI_API_KEY: z.string().min(16),

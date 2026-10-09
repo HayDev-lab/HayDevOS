@@ -4,8 +4,7 @@
  * SettingsPanel — Dialog with four tabs (General / Appearance / Members / Modules).
  */
 
-import { useState } from "react";
-import { toast } from "sonner";
+import type { ReactNode } from "react";
 import {
   Settings as SettingsIcon,
   Building2,
@@ -31,7 +30,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
+import { useAppStore } from "@/lib/store/app-store";
+import { useWorkspaceCopy } from "@/components/core/copy";
 import {
   Select,
   SelectContent,
@@ -44,6 +44,7 @@ import { TeamManagementPanel } from "./TeamManagementPanel";
 interface SettingsPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  embedded?: boolean;
 }
 
 const ROLE_TONE: Record<string, string> = {
@@ -54,29 +55,28 @@ const ROLE_TONE: Record<string, string> = {
   VIEWER: "border-border bg-muted text-muted-foreground",
 };
 
-export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
+export function SettingsPanel({
+  open,
+  onOpenChange,
+  embedded = false,
+}: SettingsPanelProps) {
   const { t, locale, setLocale } = useLocale();
   const { session } = useAuth();
+  const copy = useWorkspaceCopy();
+  const setModule = useAppStore((s) => s.setActiveModule);
   const activeOrg = session.activeOrganization;
   const currentMember = {
     ...session.user,
     role: activeOrg.role,
   };
 
-  const [orgName, setOrgName] = useState(activeOrg.name);
-  const [currency, setCurrency] = useState("USD");
-  const [moduleEnabled, setModuleEnabled] = useState<Record<string, boolean>>(
-    Object.fromEntries(ModuleRegistry.map((m) => [m.id, true])),
-  );
-
-  function handleSave() {
-    toast.success(t("shell.settings.saved"));
-    onOpenChange(false);
-  }
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
+    <SettingsContainer
+      open={open}
+      onOpenChange={onOpenChange}
+      embedded={embedded}
+    >
+      <div
         className="glass-strong flex min-h-0 flex-col gap-0 overflow-hidden p-0"
         style={{
           width: "min(96vw, 860px)",
@@ -85,21 +85,31 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
           maxHeight: "calc(100dvh - 16px)",
         }}
       >
-        <DialogHeader className="shrink-0 border-b border-border px-5 py-4 pr-12">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-lime">
-              <SettingsIcon className="h-4 w-4" />
-            </span>
+        {embedded ? (
+          <div className="core-settings-heading">
+            <SettingsIcon />
             <div>
-              <DialogTitle className="text-base font-semibold">
-                {t("shell.settings.title")}
-              </DialogTitle>
-              <DialogDescription className="text-xs">
-                {t("shell.settings.subtitle")}
-              </DialogDescription>
+              <h1>{t("shell.settings.title")}</h1>
+              <p>{t("shell.settings.subtitle")}</p>
             </div>
           </div>
-        </DialogHeader>
+        ) : (
+          <DialogHeader className="shrink-0 border-b border-border px-5 py-4 pr-12">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-lime">
+                <SettingsIcon className="h-4 w-4" />
+              </span>
+              <div>
+                <DialogTitle className="text-base font-semibold">
+                  {t("shell.settings.title")}
+                </DialogTitle>
+                <DialogDescription className="text-xs">
+                  {t("shell.settings.subtitle")}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+        )}
 
         <Tabs
           defaultValue="general"
@@ -132,8 +142,8 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
                   </Label>
                   <Input
                     id="org-name"
-                    value={orgName}
-                    onChange={(e) => setOrgName(e.target.value)}
+                    value={activeOrg.name}
+                    readOnly
                     className="h-9"
                   />
                 </div>
@@ -160,20 +170,9 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">
-                      {t("shell.settings.defaultCurrency")}
+                      {t("shell.register.companySlug")}
                     </Label>
-                    <Select value={currency} onValueChange={setCurrency}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {["USD", "EUR", "RUB", "AMD", "GBP"].map((c) => (
-                          <SelectItem key={c} value={c}>
-                            {c}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input value={activeOrg.slug} readOnly className="h-9" />
                   </div>
                 </div>
               </TabsContent>
@@ -239,7 +238,9 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
 
               {/* MODULES */}
               <TabsContent value="modules" className="mt-0 space-y-2">
-                {ModuleRegistry.map((m) => {
+                {ModuleRegistry.filter(
+                  (m) => !["modules", "control", "settings"].includes(m.id),
+                ).map((m) => {
                   const Icon = m.icon;
                   return (
                     <div
@@ -257,13 +258,16 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
                           {t(`shell.settings.moduleDescription.${m.id}`)}
                         </p>
                       </div>
-                      <Switch
-                        checked={moduleEnabled[m.id]}
-                        onCheckedChange={(checked) =>
-                          setModuleEnabled((prev) => ({ ...prev, [m.id]: checked }))
-                        }
-                        aria-label={t("shell.settings.enabled")}
-                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setModule(m.id);
+                          onOpenChange(false);
+                        }}
+                      >
+                        {copy.open}
+                      </Button>
                     </div>
                   );
                 })}
@@ -272,28 +276,47 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
           </div>
 
           {/* Footer */}
-          <div className="shrink-0 border-t border-border bg-background/92 px-4 py-3 backdrop-blur-xl sm:px-5">
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSave}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                {t("common.save")}
-              </Button>
+          {!embedded && (
+            <div className="shrink-0 border-t border-border bg-background/92 px-4 py-3 backdrop-blur-xl sm:px-5">
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                >
+                  {t("common.close")}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </Tabs>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </SettingsContainer>
   );
 }
 
 export default SettingsPanel;
+
+function SettingsContainer({
+  embedded,
+  open,
+  onOpenChange,
+  children,
+}: SettingsPanelProps & { children: ReactNode }) {
+  if (embedded)
+    return <section className="core-settings-workspace">{children}</section>;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="core-settings-dialog overflow-y-auto"
+        style={{
+          width: "min(96vw, 900px)",
+          maxWidth: "min(96vw, 900px)",
+          maxHeight: "90dvh",
+        }}
+      >
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+}

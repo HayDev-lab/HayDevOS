@@ -19,7 +19,10 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles, RefreshCw } from "lucide-react";
+import { RefreshCw, Mic } from "lucide-react";
+import { toast } from "sonner";
+import { Wave } from "@/components/core/CoreHome";
+import { useCoreCopy, useWorkspaceCopy } from "@/components/core/copy";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +32,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLocale } from "@/lib/i18n";
+import { useAppStore } from "@/lib/store/app-store";
 import { useOwnerAiStore } from "./state";
 import { ChatTab } from "./components/ChatTab";
 import { ConversationsTab } from "./components/ConversationsTab";
@@ -38,7 +42,14 @@ import { ApprovalsTab } from "./components/ApprovalsTab";
 import { AuditTab } from "./components/AuditTab";
 import { SettingsTab } from "./components/SettingsTab";
 
-type Tab = "chat" | "conversations" | "runs" | "tools" | "approvals" | "audit" | "settings";
+type Tab =
+  | "chat"
+  | "conversations"
+  | "runs"
+  | "tools"
+  | "approvals"
+  | "audit"
+  | "settings";
 
 interface TabDef {
   id: Tab;
@@ -57,11 +68,14 @@ const TABS: TabDef[] = [
 
 export function OwnerAiView() {
   const { t } = useLocale();
-  const [tab, setTab] = useState<Tab>("chat");
+  const coreCopy = useCoreCopy();
+  const workspaceCopy = useWorkspaceCopy();
+  const [tab, setTab] = useState<Tab>(() => useAppStore.getState().moduleEntryTab === "approvals" ? "approvals" : "chat");
   const init = useOwnerAiStore((s) => s.init);
   const refreshState = useOwnerAiStore((s) => s.refreshState);
   const isProcessing = useOwnerAiStore((s) => s.isProcessing);
   const approvals = useOwnerAiStore((s) => s.approvals);
+  const config = useOwnerAiStore((s) => s.config);
   const pendingApprovals = useMemo(
     () => approvals.filter((a) => a.status === "pending"),
     [approvals],
@@ -78,24 +92,46 @@ export function OwnerAiView() {
   }, [tab, refreshState]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="core-owner-console flex h-full min-h-0 flex-col">
+      <div className="core-owner-stage">
+        <div className="owner-ai-heading">
+          <div>
+            <span className="workspace-eyebrow">OWNER AI · ASSISTANT</span>
+            <h1>
+              Owner <b>{coreCopy.live}</b>
+            </h1>
+            <p>{t("ownerAi.view.subtitle")}</p>
+          </div>
+          <span
+            className={`owner-online ${config && ["openai-compatible", "openclaw-broker"].includes(config.provider) ? "" : "core-ai-unavailable"}`}
+          >
+            {config &&
+            ["openai-compatible", "openclaw-broker"].includes(config.provider)
+              ? workspaceCopy.ready
+              : workspaceCopy.notConfigured}
+          </span>
+        </div>
+        <div className="owner-voice-stage">
+          <Wave />
+          <button
+            type="button"
+            className="owner-mic"
+            aria-label={coreCopy.voiceAbout}
+            onClick={() => toast.info(coreCopy.voiceUnavailable)}
+          >
+            <Mic />
+          </button>
+          <Wave />
+        </div>
+      </div>
       {/* Header */}
       <div className="shrink-0 border-b border-border bg-card/40 px-4 py-3 backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2.5">
-            <span className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-lime/30 bg-lime/10 text-lime">
-              <Sparkles className="h-4 w-4" />
-            </span>
-            <div>
-              <h1 className="text-base font-semibold text-foreground">{t("ownerAi.view.title")}</h1>
-              <p className="text-[11px] text-muted-foreground">{t("ownerAi.view.subtitle")}</p>
-            </div>
-          </div>
-
           <div className="ml-auto flex items-center gap-2">
             {pendingApprovals.length > 0 && (
               <span className="inline-flex items-center gap-1 rounded-md border border-amber/40 bg-amber/10 px-2 py-1 text-[11px] font-semibold text-amber">
-                {pendingApprovals.length} {t("ownerAi.audit.stats.pending").toLowerCase()}
+                {pendingApprovals.length}{" "}
+                {t("ownerAi.audit.stats.pending").toLowerCase()}
               </span>
             )}
             <TooltipProvider delayDuration={200}>
@@ -108,8 +144,15 @@ export function OwnerAiView() {
                     disabled={isProcessing}
                     className="h-8 gap-1.5 border-border/60 text-xs"
                   >
-                    <RefreshCw className={cn("h-3.5 w-3.5", isProcessing && "animate-spin")} />
-                    <span className="hidden sm:inline">{t("common.refresh")}</span>
+                    <RefreshCw
+                      className={cn(
+                        "h-3.5 w-3.5",
+                        isProcessing && "animate-spin",
+                      )}
+                    />
+                    <span className="hidden sm:inline">
+                      {t("common.refresh")}
+                    </span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-[11px]">
@@ -124,7 +167,8 @@ export function OwnerAiView() {
         <div className="mt-3 flex flex-wrap gap-1">
           {TABS.map((tabDef) => {
             const isActive = tab === tabDef.id;
-            const showBadge = tabDef.id === "approvals" && pendingApprovals.length > 0;
+            const showBadge =
+              tabDef.id === "approvals" && pendingApprovals.length > 0;
             return (
               <button
                 key={tabDef.id}
@@ -153,7 +197,9 @@ export function OwnerAiView() {
       {/* Tab content */}
       <div className="min-h-0 flex-1 overflow-hidden p-4">
         {tab === "chat" && <ChatTab />}
-        {tab === "conversations" && <ConversationsTab onOpenChat={() => setTab("chat")} />}
+        {tab === "conversations" && (
+          <ConversationsTab onOpenChat={() => setTab("chat")} />
+        )}
         {tab === "runs" && <AgentRunsTab />}
         {tab === "tools" && <ToolCallsTab />}
         {tab === "approvals" && <ApprovalsTab />}

@@ -54,6 +54,3 @@ export {
 } from "./adapters";
 
 export type { WorkerSnapshot } from "./adapters";
-
-export { KpiCard, KpiCardCompact, PriorityBadge } from "./components/KpiCard";
-export { EcosystemViz } from "./components/EcosystemViz";

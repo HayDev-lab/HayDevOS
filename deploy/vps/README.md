@@ -32,6 +32,10 @@ HAYDEV_ENVIRONMENT=production
 
 All database, Storage, scanner and Owner AI values remain server-only.
 
+## Optional OpenClaw broker (not enabled by bootstrap)
+
+The bootstrap installs a separate `haydev-openclaw` account, locked `/etc/haydevos/openclaw-broker.env` and a disabled `haydev-openclaw-broker.service`. It does not install OpenClaw, create a Gateway token, or enable a broker. After a separately approved OpenClaw installation and per-trust-boundary review, add only broker credentials to the application environment and keep the raw Gateway URL/token solely in the broker environment. Confirm a signed, read-only smoke and an unsigned-request rejection before enabling the unit.
+
 ## 3. Build and transfer an immutable release
 
 On the trusted build workstation:

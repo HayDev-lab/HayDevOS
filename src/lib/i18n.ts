@@ -32,6 +32,12 @@ type Dict = Record<string, string>;
 // ─────────────────────────────────────────────────────────────────────────────
 
 const en: Dict = {
+  "core.modules": "Modules",
+  "core.modules.desc": "Explore your connected business workspace.",
+  "core.marketing": "Marketing Studio",
+  "core.marketing.desc": "Campaigns, content and connected workflows.",
+  "shell.settings.moduleDescription.modules": "Explore all modules.",
+  "shell.settings.moduleDescription.marketing": "Content preparation with Owner AI.",
   // common actions
   "common.save": "Save",
   "common.cancel": "Cancel",
@@ -1772,6 +1778,11 @@ const en: Dict = {
   "owner.dashboard.orbitLabel": "Modules orbiting around the live WebGL model",
   "owner.dashboard.openModule": "Open {module}",
   "owner.dashboard.period": "Reporting period and live command-center data",
+  "owner.dashboard.coreReady": "WebGL core · ready",
+  "owner.dashboard.coreAdaptive": "Core · adaptive mode",
+  "owner.dashboard.aiWorkspace": "Workspace AI",
+  "owner.dashboard.workspaceStatus": "Owner workspace",
+  "shell.modules.ecosystem": "HayDevOS ecosystem",
   "control.text.unclassified": "not classified",
   "control.text.prospect": "the customer",
   "control.text.attention.slaTitle": "{name} — response time missed",
@@ -2861,6 +2872,12 @@ const en: Dict = {
 };
 
 const hy: Dict = {
+  "core.modules": "Մոդուլներ",
+  "core.modules.desc": "Ձեր էկոհամակարգի բոլոր աշխատանքային բաժինները։",
+  "core.marketing": "Marketing Studio",
+  "core.marketing.desc": "Արշավներ, բովանդակություն և կապակցված գործընթացներ։",
+  "shell.settings.moduleDescription.modules": "Բոլոր մոդուլների ցանկը։",
+  "shell.settings.moduleDescription.marketing": "Բովանդակության պատրաստում Owner AI-ի հետ։",
   "common.save": "Պահպանել",
   "common.cancel": "Չեղարկել",
   "common.delete": "Ջնջել",
@@ -4580,6 +4597,11 @@ const hy: Dict = {
   "owner.dashboard.orbitLabel": "WebGL կենդանի պատկերի շուրջ պտտվող բաժիններ",
   "owner.dashboard.openModule": "Բացել «{module}» բաժինը",
   "owner.dashboard.period": "Ընտրիր ժամանակահատվածը և տես թարմ տվյալները",
+  "owner.dashboard.coreReady": "WebGL միջուկ · պատրաստ է",
+  "owner.dashboard.coreAdaptive": "Միջուկ · հարմարվող ռեժիմ",
+  "owner.dashboard.aiWorkspace": "AI աշխատանքային միջավայր",
+  "owner.dashboard.workspaceStatus": "Սեփականատիրոջ աշխատանքային միջավայր",
+  "shell.modules.ecosystem": "HayDevOS էկոհամակարգ",
   "control.text.unclassified": "չդասակարգված",
   "control.text.prospect": "հաճախորդի",
   "control.text.attention.slaTitle": "{name} — պատասխանը ուշացել է",
@@ -5656,6 +5678,12 @@ const hy: Dict = {
 };
 
 const ru: Dict = {
+  "core.modules": "Модули",
+  "core.modules.desc": "Все рабочие разделы вашей экосистемы.",
+  "core.marketing": "Marketing Studio",
+  "core.marketing.desc": "Кампании, контент и связанные процессы.",
+  "shell.settings.moduleDescription.modules": "Каталог всех модулей.",
+  "shell.settings.moduleDescription.marketing": "Подготовка контента с Owner AI.",
   "common.save": "Сохранить",
   "common.cancel": "Отмена",
   "common.delete": "Удалить",
@@ -7375,6 +7403,11 @@ const ru: Dict = {
   "owner.dashboard.orbitLabel": "Модули вокруг интерактивной WebGL-модели",
   "owner.dashboard.openModule": "Открыть раздел «{module}»",
   "owner.dashboard.period": "Выберите период и смотрите актуальные данные",
+  "owner.dashboard.coreReady": "WebGL-ядро · готово",
+  "owner.dashboard.coreAdaptive": "Ядро · адаптивный режим",
+  "owner.dashboard.aiWorkspace": "Рабочее пространство AI",
+  "owner.dashboard.workspaceStatus": "Рабочее пространство владельца",
+  "shell.modules.ecosystem": "Экосистема HayDevOS",
   "control.text.unclassified": "не классифицирован",
   "control.text.prospect": "клиентом",
   "control.text.attention.slaTitle": "{name} — ответ просрочен",

@@ -16,11 +16,14 @@ import type { Locale } from "@/lib/i18n";
 // module). The default locale "hy" is duplicated as a constant below; keep it
 // in sync with DEFAULT_LOCALE in i18n.ts.
 const APP_DEFAULT_LOCALE: Locale = "hy";
+export type ModuleEntryTab = "approvals" | "schedules";
 
 interface AppState {
   // module
   activeModule: string;
   setActiveModule: (moduleId: string) => void;
+  moduleEntryTab: ModuleEntryTab | null;
+  openModule: (moduleId: string, tab?: ModuleEntryTab) => void;
 
   // locale
   locale: Locale;
@@ -57,7 +60,9 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       activeModule: "dashboard",
-      setActiveModule: (moduleId) => set({ activeModule: moduleId }),
+      setActiveModule: (moduleId) => set({ activeModule: moduleId, moduleEntryTab: null }),
+      moduleEntryTab: null,
+      openModule: (moduleId, tab) => set({ activeModule: moduleId, moduleEntryTab: tab ?? null }),
 
       locale: APP_DEFAULT_LOCALE,
       setLocale: (locale) => set({ locale }),

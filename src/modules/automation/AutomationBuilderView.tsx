@@ -54,6 +54,7 @@ import { SchedulesView } from "./components/SchedulesView";
 import { WebhooksView } from "./components/WebhooksView";
 import { VariablesView } from "./components/VariablesView";
 import { WorkersView } from "./components/WorkersView";
+import { useAppStore } from "@/lib/store/app-store";
 import { AnalyticsView } from "./components/AnalyticsView";
 import { SettingsView } from "./components/SettingsView";
 
@@ -73,7 +74,7 @@ type TabId =
 
 export function AutomationBuilderView() {
   const { t, locale } = useLocale();
-  const [tab, setTab] = useState<TabId>("automations");
+  const [tab, setTab] = useState<TabId>(() => useAppStore.getState().moduleEntryTab === "schedules" ? "schedules" : "automations");
 
   // Shared in-memory state — the list view mutates this; the builder reads it.
   const [automations, setAutomations] = useState<Automation[]>(seedAutomations);

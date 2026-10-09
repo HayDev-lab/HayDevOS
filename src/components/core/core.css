@@ -830,3 +830,22 @@
 .haydev-core .video-reference-prompt textarea { width: 100%; resize: vertical; min-height: 52px; border: 1px solid #285d83; border-radius: 7px; padding: 8px; color: #eaf5ff; background: #031426; font: inherit; font-size: 10px; }
 @media (max-width: 820px) { .haydev-core .audio-style-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .haydev-core .audio-style-grid { grid-template-columns: 1fr; max-height: 430px; } }
+
+/* Voice generation controls use the same tiered model desk and explicit voice selection. */
+.haydev-core .voice-generator-panel { min-width: 0; border: 1px solid #214e75; border-radius: 14px; padding: 13px; background: #04182bc7; }
+.haydev-core .voice-model-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.haydev-core .voice-setting-block { margin-top: 18px; padding-top: 16px; border-top: 1px solid #21415e; }
+.haydev-core .voice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.haydev-core .voice-card { display: grid; gap: 5px; min-width: 0; text-align: left; border: 1px solid #285d83; border-radius: 9px; padding: 10px; color: #eaf5ff; background: #061b30; font: inherit; cursor: pointer; }
+.haydev-core .voice-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.haydev-core .voice-card small { color: #8eacc6; font-size: 10px; }
+.haydev-core .voice-card.voice-female { border-left: 3px solid #df9fd4; }
+.haydev-core .voice-card.voice-male { border-left: 3px solid #7dbde2; }
+.haydev-core .voice-card:hover, .haydev-core .voice-card.is-selected { color: #ffe49d; border-color: #d7ad5b; background: #3f2e154d; box-shadow: 0 0 0 1px #d7ad5b2b; }
+.haydev-core .voice-generator-controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 14px; }
+.haydev-core .voice-generator-controls label { display: grid; gap: 5px; color: #9fbcd2; font-size: 10px; }
+.haydev-core .voice-generator-controls select { width: 100%; border: 1px solid #285d83; border-radius: 7px; padding: 8px; color: #eaf5ff; background: #031426; font: inherit; font-size: 10px; }
+.haydev-core .voice-docs-link { display: inline-flex; margin-top: 5px; color: #9fdcff; font-size: 10px; text-decoration: underline; text-underline-offset: 3px; }
+.haydev-core .voice-docs-link:hover { color: #ffe49d; }
+@media (max-width: 820px) { .haydev-core .voice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .haydev-core .voice-model-grid, .haydev-core .voice-grid { grid-template-columns: 1fr; } }

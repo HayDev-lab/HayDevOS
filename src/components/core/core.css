@@ -849,3 +849,17 @@
 .haydev-core .voice-docs-link:hover { color: #ffe49d; }
 @media (max-width: 820px) { .haydev-core .voice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .haydev-core .voice-model-grid, .haydev-core .voice-grid { grid-template-columns: 1fr; } }
+
+/* Each generator type gets its own style vocabulary plus a compact tone rail. */
+.haydev-core .video-tone-block { margin-top: 16px; padding-top: 14px; border-top: 1px solid #21415e; }
+.haydev-core .tone-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.haydev-core .tone-grid button { min-width: 0; border: 1px solid #245676; border-radius: 8px; padding: 8px 9px; color: #a9c4da; background: #061c31; font: inherit; font-size: 10px; line-height: 1.25; cursor: pointer; }
+.haydev-core .tone-grid button:hover, .haydev-core .tone-grid button.is-selected { color: #ffe49d; border-color: #d7ad5b; background: #3f2e154d; }
+.haydev-core .voice-style-grid, .haydev-core .visual-style-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; max-height: 365px; overflow: auto; padding-right: 2px; }
+.haydev-core .voice-style-grid button, .haydev-core .visual-style-grid button { display: flex; align-items: center; gap: 7px; min-width: 0; text-align: left; border: 1px solid #245676; border-radius: 8px; padding: 8px 9px; color: #a9c4da; background: #061c31; font: inherit; font-size: 10px; line-height: 1.25; cursor: pointer; }
+.haydev-core .voice-style-grid button span, .haydev-core .visual-style-grid button span { color: #5e9bc0; font-variant-numeric: tabular-nums; }
+.haydev-core .voice-style-grid button:hover, .haydev-core .voice-style-grid button.is-selected, .haydev-core .visual-style-grid button:hover, .haydev-core .visual-style-grid button.is-selected { color: #ffe49d; border-color: #d7ad5b; background: #3f2e154d; }
+.haydev-core .voice-style-grid button.is-selected span, .haydev-core .visual-style-grid button.is-selected span { color: #ffe49d; }
+.haydev-core .visual-generator-panel { min-width: 0; border: 1px solid #214e75; border-radius: 14px; padding: 13px; background: #04182bc7; }
+@media (max-width: 820px) { .haydev-core .tone-grid, .haydev-core .voice-style-grid, .haydev-core .visual-style-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .haydev-core .tone-grid, .haydev-core .voice-style-grid, .haydev-core .visual-style-grid { grid-template-columns: 1fr; } }

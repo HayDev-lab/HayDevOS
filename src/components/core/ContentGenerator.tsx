@@ -97,7 +97,7 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
   const [prompt, setPrompt] = useState("");
   const [format, setFormat] = useState(0);
   const [style, setStyle] = useState(0);
-  const [genericStyle, setGenericStyle] = useState(0);
+  const [videoTone, setVideoTone] = useState(0);
   const [videoTab, setVideoTab] = useState<VideoTab>("settings");
   const [modelId, setModelId] = useState(videoModels[0].id);
   const [duration, setDuration] = useState(videoModels[0].durations[1]);
@@ -106,12 +106,19 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
   const [soundLocked, setSoundLocked] = useState(false);
   const [language, setLanguage] = useState(0);
   const [audioStyle, setAudioStyle] = useState(0);
+  const [audioTone, setAudioTone] = useState(0);
   const [audioLanguage, setAudioLanguage] = useState(0);
   const [rhymePolish, setRhymePolish] = useState(false);
   const [referencePrompt, setReferencePrompt] = useState("");
   const [voiceModelId, setVoiceModelId] = useState(voiceModels[0].id);
   const [voiceId, setVoiceId] = useState(voiceModels[0].voices[0]);
   const [voiceFormat, setVoiceFormat] = useState(0);
+  const [voiceStyle, setVoiceStyle] = useState(0);
+  const [voiceTone, setVoiceTone] = useState(0);
+  const [imageStyle, setImageStyle] = useState(0);
+  const [imageTone, setImageTone] = useState(0);
+  const [avatarStyle, setAvatarStyle] = useState(0);
+  const [avatarTone, setAvatarTone] = useState(0);
   const [frames, setFrames] = useState<FrameState>(defaultFrames);
   const [preferencesHydrated, setPreferencesHydrated] = useState(false);
   const framesRef = useRef<FrameState>(defaultFrames);
@@ -119,6 +126,8 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
   const isVideo = active === 0;
   const isAudio = active === 1;
   const isVoice = active === 2;
+  const isImage = active === 3;
+  const isAvatar = active === 4;
   const selectedModel = videoModels.find((model) => model.id === modelId) ?? videoModels[0];
   const selectedVoiceModel = voiceModels.find((model) => model.id === voiceModelId) ?? voiceModels[0];
   const selectedVoice = voiceCatalog.find((voice) => voice.id === voiceId) ?? voiceCatalog[0];
@@ -134,17 +143,25 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
             modelId: string;
             duration: number;
             style: number;
+            videoTone: number;
             characters: CharacterSlot[];
             soundStyle: number;
             soundLocked: boolean;
             language: number;
             audioStyle: number;
+            audioTone: number;
             audioLanguage: number;
             rhymePolish: boolean;
             referencePrompt: string;
             voiceModelId: string;
             voiceId: string;
             voiceFormat: number;
+            voiceStyle: number;
+            voiceTone: number;
+            imageStyle: number;
+            imageTone: number;
+            avatarStyle: number;
+            avatarTone: number;
           }>;
           const storedModel = videoModels.find((model) => model.id === parsed.modelId);
           if (storedModel) {
@@ -152,11 +169,13 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
             setDuration(typeof parsed.duration === "number" && storedModel.durations.includes(parsed.duration) ? parsed.duration : storedModel.durations[0]);
           }
           if (typeof parsed.style === "number" && parsed.style >= 0 && parsed.style < copy.videoStyles.length) setStyle(parsed.style);
+          if (typeof parsed.videoTone === "number" && parsed.videoTone >= 0 && parsed.videoTone < copy.videoTones.length) setVideoTone(parsed.videoTone);
           if (Array.isArray(parsed.characters) && parsed.characters.length === 3) setCharacters(parsed.characters);
           if (typeof parsed.soundStyle === "number" && parsed.soundStyle >= 0 && parsed.soundStyle < copy.soundStyles.length) setSoundStyle(parsed.soundStyle);
           if (typeof parsed.soundLocked === "boolean") setSoundLocked(parsed.soundLocked);
           if (typeof parsed.language === "number" && parsed.language >= 0 && parsed.language < copy.languages.length) setLanguage(parsed.language);
           if (typeof parsed.audioStyle === "number" && parsed.audioStyle >= 0 && parsed.audioStyle < copy.musicStyles.length) setAudioStyle(parsed.audioStyle);
+          if (typeof parsed.audioTone === "number" && parsed.audioTone >= 0 && parsed.audioTone < copy.audioTones.length) setAudioTone(parsed.audioTone);
           if (typeof parsed.audioLanguage === "number" && parsed.audioLanguage >= 0 && parsed.audioLanguage < copy.languages.length) setAudioLanguage(parsed.audioLanguage);
           if (typeof parsed.rhymePolish === "boolean") setRhymePolish(parsed.rhymePolish);
           if (typeof parsed.referencePrompt === "string") setReferencePrompt(parsed.referencePrompt);
@@ -166,6 +185,12 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
             setVoiceId(typeof parsed.voiceId === "string" && storedVoiceModel.voices.includes(parsed.voiceId) ? parsed.voiceId : storedVoiceModel.voices[0]);
           }
           if (typeof parsed.voiceFormat === "number" && parsed.voiceFormat >= 0 && parsed.voiceFormat < voiceFormats.length) setVoiceFormat(parsed.voiceFormat);
+          if (typeof parsed.voiceStyle === "number" && parsed.voiceStyle >= 0 && parsed.voiceStyle < copy.voiceStyles.length) setVoiceStyle(parsed.voiceStyle);
+          if (typeof parsed.voiceTone === "number" && parsed.voiceTone >= 0 && parsed.voiceTone < copy.voiceTones.length) setVoiceTone(parsed.voiceTone);
+          if (typeof parsed.imageStyle === "number" && parsed.imageStyle >= 0 && parsed.imageStyle < copy.imageStyles.length) setImageStyle(parsed.imageStyle);
+          if (typeof parsed.imageTone === "number" && parsed.imageTone >= 0 && parsed.imageTone < copy.imageTones.length) setImageTone(parsed.imageTone);
+          if (typeof parsed.avatarStyle === "number" && parsed.avatarStyle >= 0 && parsed.avatarStyle < copy.avatarStyles.length) setAvatarStyle(parsed.avatarStyle);
+          if (typeof parsed.avatarTone === "number" && parsed.avatarTone >= 0 && parsed.avatarTone < copy.avatarTones.length) setAvatarTone(parsed.avatarTone);
         }
       } catch {
         // A malformed local preference must never block the generator UI.
@@ -177,12 +202,12 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
       mounted = false;
       window.clearTimeout(timer);
     };
-  }, [copy.languages.length, copy.musicStyles.length, copy.soundStyles.length, copy.videoStyles.length]);
+  }, [copy.audioTones.length, copy.avatarStyles.length, copy.imageStyles.length, copy.languages.length, copy.musicStyles.length, copy.soundStyles.length, copy.videoStyles.length, copy.videoTones.length, copy.voiceStyles.length]);
 
   useEffect(() => {
     if (!preferencesHydrated) return;
-    window.localStorage.setItem(preferencesKey, JSON.stringify({ modelId, duration, style, characters, soundStyle, soundLocked, language, audioStyle, audioLanguage, rhymePolish, referencePrompt, voiceModelId, voiceId, voiceFormat }));
-  }, [audioLanguage, audioStyle, characters, duration, language, modelId, preferencesHydrated, referencePrompt, rhymePolish, soundLocked, soundStyle, style, voiceFormat, voiceId, voiceModelId]);
+    window.localStorage.setItem(preferencesKey, JSON.stringify({ modelId, duration, style, videoTone, characters, soundStyle, soundLocked, language, audioStyle, audioTone, audioLanguage, rhymePolish, referencePrompt, voiceModelId, voiceId, voiceFormat, voiceStyle, voiceTone, imageStyle, imageTone, avatarStyle, avatarTone }));
+  }, [audioLanguage, audioStyle, audioTone, avatarStyle, avatarTone, characters, duration, imageStyle, imageTone, language, modelId, preferencesHydrated, referencePrompt, rhymePolish, soundLocked, soundStyle, style, videoTone, voiceFormat, voiceId, voiceModelId, voiceStyle, voiceTone]);
 
   useEffect(() => {
     framesRef.current = frames;
@@ -227,7 +252,8 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
 
   async function prepare() {
     if (active === undefined || !prompt.trim() || busy) return;
-    const styleLabel = isVideo ? copy.videoStyles[style] : isAudio ? copy.musicStyles[audioStyle] : copy.styles[genericStyle];
+    const styleLabel = isVideo ? copy.videoStyles[style] : isAudio ? copy.musicStyles[audioStyle] : isVoice ? copy.voiceStyles[voiceStyle] : isImage ? copy.imageStyles[imageStyle] : copy.avatarStyles[avatarStyle];
+    const toneLabel = isVideo ? copy.videoTones[videoTone] : isAudio ? copy.audioTones[audioTone] : isVoice ? copy.voiceTones[voiceTone] : isImage ? copy.imageTones[imageTone] : copy.avatarTones[avatarTone];
     const formatLabel = isVoice ? `${voiceFormats[voiceFormat]} · ${copy.voiceFormats[voiceFormat]}` : `${formats[format]} · ${copy.formats[format]}`;
     const baseRequest = copy.request.replace("{type}", copy.types[active]).replace("{format}", formatLabel).replace("{style}", styleLabel).replace("{prompt}", prompt.trim());
     const request = isVideo ? [
@@ -238,20 +264,23 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
       `${copy.lastFrame}: ${frames.last?.name ?? copy.noFrame}`,
       `${copy.referencePhoto}: ${frames.reference?.name ?? copy.noFrame}`,
       `${copy.referencePrompt}: ${referencePrompt.trim() || copy.noPrompt}`,
+      `${copy.tone}: ${toneLabel}`,
       `${copy.soundStyle}: ${copy.soundStyles[soundStyle]}${soundLocked ? ` (${copy.locked})` : ""}`,
       `${copy.language}: ${copy.languages[language]}`,
       `${copy.characters}: ${characters.map((character, index) => `${index + 1}) ${character.name || copy.emptyCharacter}${character.description ? ` — ${character.description}` : ""}${character.locked ? ` (${copy.locked})` : ""}`).join("; ")}`,
     ].join(" ") : isAudio ? [
       baseRequest,
+      `${copy.tone}: ${toneLabel}`,
       `${copy.audioStyle}: ${copy.musicStyles[audioStyle]}`,
       `${copy.audioLanguage}: ${copy.languages[audioLanguage]}`,
       `${copy.rhymePolish}: ${rhymePolish ? copy.rhymePolishOn : copy.rhymePolishOff}`,
     ].join(" ") : isVoice ? [
       baseRequest,
+      `${copy.tone}: ${toneLabel}`,
       `${copy.voiceModel}: ${selectedVoiceModel.name} [${selectedVoiceModel.providerModel}] (${copy.modelTiers[selectedVoiceModel.tier]})`,
       `${copy.voice}: ${selectedVoice.id} (${selectedVoice.gender === "female" ? copy.voiceFemale : copy.voiceMale})`,
       `${copy.voiceFormat}: ${voiceFormats[voiceFormat]}`,
-    ].join(" ") : baseRequest;
+    ].join(" ") : [baseRequest, `${copy.tone}: ${toneLabel}`].join(" ");
     await onRequest(request);
   }
 
@@ -302,9 +331,11 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
                   </article>; })()}
                 </div></div>
               </div>}
-              {videoTab === "styles" && <div className="video-generator-panel"><div className="video-setting-heading"><span>{copy.style}</span><small>{copy.stylesHint}</small></div><div className="video-style-grid">
+              {videoTab === "styles" && <div className="video-generator-panel"><div className="video-setting-heading"><span>{copy.style}</span><small>{copy.videoStylesHint}</small></div><div className="video-style-grid">
                 {copy.videoStyles.map((label, index) => <button key={label} type="button" className={style === index ? "is-selected" : ""} aria-pressed={style === index} onClick={() => setStyle(index)}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}
-              </div></div>}
+              </div><div className="video-tone-block"><div className="video-setting-heading"><span>{copy.tone}</span><small>{copy.toneHint}</small></div><div className="tone-grid">
+                {copy.videoTones.map((label, index) => <button key={label} type="button" className={videoTone === index ? "is-selected" : ""} aria-pressed={videoTone === index} onClick={() => setVideoTone(index)}>{label}</button>)}
+              </div></div></div>}
               {videoTab === "characters" && <div className="video-generator-panel"><div className="video-setting-heading"><span>{copy.characters}</span><small>{copy.charactersHint}</small></div><div className="video-character-grid">
                 {characters.map((character, index) => <article className={`video-character-card ${character.locked ? "is-locked" : ""}`} key={index}><div className="video-character-heading"><strong>{copy.characterSlot.replace("{n}", String(index + 1))}</strong><button type="button" className="video-lock-button" aria-pressed={character.locked} onClick={() => toggleCharacterLock(index)}>{character.locked ? <LockKeyhole size={14}/> : <UnlockKeyhole size={14}/>} {character.locked ? copy.unlock : copy.lock}</button></div><label>{copy.characterName}<input value={character.name} disabled={character.locked} onChange={(event) => updateCharacter(index, "name", event.target.value)} placeholder={copy.characterNamePlaceholder}/></label><label>{copy.characterDescription}<textarea rows={2} value={character.description} disabled={character.locked} onChange={(event) => updateCharacter(index, "description", event.target.value)} placeholder={copy.characterDescriptionPlaceholder}/></label></article>)}
               </div></div>}
@@ -314,6 +345,9 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
               <div className="audio-style-grid">
                 {copy.musicStyles.map((label, index) => <button key={label} type="button" className={audioStyle === index ? "is-selected" : ""} aria-pressed={audioStyle === index} onClick={() => setAudioStyle(index)}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}
               </div>
+              <div className="video-tone-block"><div className="video-setting-heading"><span>{copy.tone}</span><small>{copy.audioTonesHint}</small></div><div className="tone-grid">
+                {copy.audioTones.map((label, index) => <button key={label} type="button" className={audioTone === index ? "is-selected" : ""} aria-pressed={audioTone === index} onClick={() => setAudioTone(index)}>{label}</button>)}
+              </div></div>
               <div className="video-sound-grid audio-generator-controls"><label><span className="field-label-with-icon"><Languages size={13}/>{copy.audioLanguage}</span><select value={audioLanguage} onChange={(event) => setAudioLanguage(Number(event.target.value))}>{copy.languages.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label></div>
               <button type="button" className={`audio-rhyme-polish ${rhymePolish ? "is-enabled" : ""}`} aria-pressed={rhymePolish} onClick={() => setRhymePolish((enabled) => !enabled)}><Sparkles size={15}/>{rhymePolish ? copy.rhymePolishOn : copy.rhymePolishOff}</button>
               <p className="core-studio-notice">{copy.rhymePolishHint}</p>
@@ -327,17 +361,33 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
               <div className="voice-setting-block"><div className="video-setting-heading"><span>{copy.voice}</span><small>{copy.voiceHint}</small></div><div className="voice-grid">
                 {selectedVoiceModel.voices.map((id) => { const voice = voiceCatalog.find((candidate) => candidate.id === id) ?? voiceCatalog[0]; const isSelected = voice.id === voiceId; return <button key={voice.id} type="button" className={`voice-card voice-${voice.gender} ${isSelected ? "is-selected" : ""}`} aria-pressed={isSelected} onClick={() => setVoiceId(voice.id)}><strong>{voice.id}</strong><small>{voice.gender === "female" ? copy.voiceFemale : copy.voiceMale}</small></button>; })}
               </div></div>
+              <div className="voice-setting-block"><div className="video-setting-heading"><span>{copy.voiceStyle}</span><small>{copy.voiceStylesHint}</small></div><div className="voice-style-grid">
+                {copy.voiceStyles.map((label, index) => <button key={label} type="button" className={voiceStyle === index ? "is-selected" : ""} aria-pressed={voiceStyle === index} onClick={() => setVoiceStyle(index)}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}
+              </div><div className="video-tone-block"><div className="video-setting-heading"><span>{copy.tone}</span><small>{copy.voiceTonesHint}</small></div><div className="tone-grid">
+                {copy.voiceTones.map((label, index) => <button key={label} type="button" className={voiceTone === index ? "is-selected" : ""} aria-pressed={voiceTone === index} onClick={() => setVoiceTone(index)}>{label}</button>)}
+              </div></div></div>
               <div className="voice-generator-controls"><label>{copy.voiceFormat}<select value={voiceFormat} onChange={(event) => setVoiceFormat(Number(event.target.value))}>{voiceFormats.map((formatName, index) => <option key={formatName} value={index}>{formatName.toUpperCase()} · {copy.voiceFormats[index]}</option>)}</select></label></div>
               <p className="core-studio-notice">{copy.voiceOfficialNote}</p><a className="voice-docs-link" href="https://developers.openai.com/api/docs/guides/text-to-speech" target="_blank" rel="noreferrer">{copy.voiceDocsLabel}</a>
-            </div> : <div className="ai-generator-options">
-              <label>{copy.format}<select value={format} onChange={(event) => setFormat(Number(event.target.value))}>{formats.map((ratio, index) => <option key={ratio} value={index}>{ratio} · {copy.formats[index]}</option>)}</select></label>
-              <label>{copy.style}<select value={genericStyle} onChange={(event) => setGenericStyle(Number(event.target.value))}>{copy.styles.map((label, index) => <option key={index} value={index}>{label}</option>)}</select></label>
-            </div>}
+            </div> : isImage ? <div className="visual-generator-panel">
+              <div className="ai-generator-options"><label>{copy.format}<select value={format} onChange={(event) => setFormat(Number(event.target.value))}>{formats.map((ratio, index) => <option key={ratio} value={index}>{ratio} · {copy.formats[index]}</option>)}</select></label></div>
+              <div className="video-setting-heading"><span>{copy.imageStyle}</span><small>{copy.imageStylesHint}</small></div><div className="visual-style-grid">
+                {copy.imageStyles.map((label, index) => <button key={label} type="button" className={imageStyle === index ? "is-selected" : ""} aria-pressed={imageStyle === index} onClick={() => setImageStyle(index)}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}
+              </div><div className="video-tone-block"><div className="video-setting-heading"><span>{copy.tone}</span><small>{copy.imageTonesHint}</small></div><div className="tone-grid">
+                {copy.imageTones.map((label, index) => <button key={label} type="button" className={imageTone === index ? "is-selected" : ""} aria-pressed={imageTone === index} onClick={() => setImageTone(index)}>{label}</button>)}
+              </div></div>
+            </div> : isAvatar ? <div className="visual-generator-panel">
+              <div className="ai-generator-options"><label>{copy.format}<select value={format} onChange={(event) => setFormat(Number(event.target.value))}>{formats.map((ratio, index) => <option key={ratio} value={index}>{ratio} · {copy.formats[index]}</option>)}</select></label></div>
+              <div className="video-setting-heading"><span>{copy.avatarStyle}</span><small>{copy.avatarStylesHint}</small></div><div className="visual-style-grid">
+                {copy.avatarStyles.map((label, index) => <button key={label} type="button" className={avatarStyle === index ? "is-selected" : ""} aria-pressed={avatarStyle === index} onClick={() => setAvatarStyle(index)}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}
+              </div><div className="video-tone-block"><div className="video-setting-heading"><span>{copy.tone}</span><small>{copy.avatarTonesHint}</small></div><div className="tone-grid">
+                {copy.avatarTones.map((label, index) => <button key={label} type="button" className={avatarTone === index ? "is-selected" : ""} aria-pressed={avatarTone === index} onClick={() => setAvatarTone(index)}>{label}</button>)}
+              </div></div>
+            </div> : null}
             <p className="core-studio-notice">{copy.mediaUnavailable}</p>
             <button type="button" className="studio-primary" disabled title={copy.mediaUnavailable}>{copy.generate}</button>
             <button type="button" className="studio-gold" disabled={!prompt.trim() || busy} onClick={() => void prepare()}>{busy ? copy.preparing : copy.prepare}</button>
           </div>
-          <div className="ai-generator-preview"><span className="ai-preview-orb"><Sparkles/></span><strong>{copy.preview}</strong><small>{isVideo ? `${selectedModel.name} · ${duration} ${copy.secondsUnit} · ${copy.videoStyles[style]}` : isAudio ? `${copy.musicStyles[audioStyle]} · ${copy.languages[audioLanguage]}` : isVoice ? `${selectedVoiceModel.name} · ${selectedVoice.id} · ${voiceFormats[voiceFormat].toUpperCase()}` : copy.previewEmpty}</small></div>
+          <div className="ai-generator-preview"><span className="ai-preview-orb"><Sparkles/></span><strong>{copy.preview}</strong><small>{isVideo ? `${copy.videoStyles[style]} · ${copy.videoTones[videoTone]}` : isAudio ? `${copy.musicStyles[audioStyle]} · ${copy.audioTones[audioTone]} · ${copy.languages[audioLanguage]}` : isVoice ? `${selectedVoiceModel.name} · ${selectedVoice.id} · ${copy.voiceStyles[voiceStyle]} · ${copy.voiceTones[voiceTone]}` : isImage ? `${copy.imageStyles[imageStyle]} · ${copy.imageTones[imageTone]}` : isAvatar ? `${copy.avatarStyles[avatarStyle]} · ${copy.avatarTones[avatarTone]}` : copy.previewEmpty}</small></div>
         </div>
       </section>}
   </>;

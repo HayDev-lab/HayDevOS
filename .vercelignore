@@ -6,6 +6,14 @@ node_modules/
 .vercel/
 .tmp/
 .artifacts/
+.agents/
+.codex/
+.aws/
+.playwright-cli/
+.playwright-mcp/
+.serena/
+output/
+haydev_marketing_webgl/
 deploy/
 .kilo/
 tool-results/

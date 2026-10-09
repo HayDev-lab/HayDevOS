@@ -114,7 +114,7 @@ export function ApprovalsTab() {
 }
 
 function HistoryRow({ approval }: { approval: Approval }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const tone = approval.status === "approved" ? "lime" : "rose";
   const Icon = approval.status === "approved" ? ShieldCheck : ShieldX;
   return (
@@ -141,14 +141,14 @@ function HistoryRow({ approval }: { approval: Approval }) {
         </pre>
       </td>
       <td className="px-3 py-2 text-[11px] text-muted-foreground">
-        <div className="font-mono">{formatDateTime(approval.requestedAt)}</div>
-        <div className="text-[10px] text-muted-foreground/70">{relativeTime(approval.requestedAt)}</div>
+        <div className="font-mono">{formatDateTime(approval.requestedAt, locale)}</div>
+        <div className="text-[10px] text-muted-foreground/70">{relativeTime(approval.requestedAt, locale)}</div>
       </td>
       <td className="px-3 py-2 text-[11px] text-muted-foreground">
         {approval.decidedAt ? (
           <>
-            <div className="font-mono">{formatDateTime(approval.decidedAt)}</div>
-            <div className="text-[10px] text-muted-foreground/70">{relativeTime(approval.decidedAt)}</div>
+            <div className="font-mono">{formatDateTime(approval.decidedAt, locale)}</div>
+            <div className="text-[10px] text-muted-foreground/70">{relativeTime(approval.decidedAt, locale)}</div>
           </>
         ) : (
           "—"

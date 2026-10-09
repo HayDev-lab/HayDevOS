@@ -5,6 +5,7 @@ import "@/components/core/archive.css";
 import "@/components/core/core.css";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
+import { coreLocales } from "@/components/core/locales";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -13,9 +14,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "HayDevOS · Ядро управления",
-  description:
-    "HayDevOS is a multi-tenant enterprise platform unifying lead-to-cash, document AI, automations, ERP, integrations and an AI co-founder.",
+  title: coreLocales.hy.title,
+  description: coreLocales.hy.meta,
   keywords: [
     "HayDevOS",
     "enterprise platform",
@@ -31,14 +31,14 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "HayDevOS",
-    description: "The operating system for ambitious teams.",
+    description: coreLocales.hy.meta,
     siteName: "HayDevOS",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "HayDevOS",
-    description: "The operating system for ambitious teams.",
+    description: coreLocales.hy.meta,
   },
 };
 

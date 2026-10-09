@@ -261,7 +261,7 @@ export function IntegrationDetail({
                           <div className="flex items-center gap-1.5 text-foreground">
                             <StatusPill status={run.status} />
                             <span className="text-[10px] text-muted-foreground">
-                              {relativeTime(run.startedAt, locale)} · {run.durationMs}ms
+                              {relativeTime(run.startedAt, locale)} · {run.durationMs} {t("common.millisecond")}
                             </span>
                           </div>
                           {run.error && (
@@ -342,7 +342,7 @@ export function IntegrationDetail({
                               {ev.eventType}
                             </code>
                             <div className="text-[10px] text-muted-foreground">
-                              {relativeTime(ev.receivedAt, locale)} · {ev.bodyBytes}b · {ev.responseCode}
+                              {relativeTime(ev.receivedAt, locale)} · {ev.bodyBytes} {t("common.byte")} · {ev.responseCode}
                             </div>
                           </div>
                           <span

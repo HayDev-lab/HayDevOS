@@ -13,6 +13,7 @@ import type {
   LeadTaskDto,
 } from "@/lib/leads/types";
 import { fetchWithSession } from "@/lib/auth/client-session";
+import { localizeApiError } from "@/lib/i18n-errors";
 
 type ApiFailure = { error?: { message?: string; code?: string } };
 
@@ -32,7 +33,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     } catch {
       // Preserve the normalized HTTP status when the body is unavailable.
     }
-    const error = new Error(failure.error?.message ?? `Request failed (${response.status})`);
+    const error = new Error(localizeApiError(failure.error, response.status));
     error.name = failure.error?.code ?? "LEADOS_REQUEST_FAILED";
     throw error;
   }

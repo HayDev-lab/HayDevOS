@@ -87,7 +87,7 @@ const SOURCE_COLORS: string[] = [
 ];
 
 export function AnalyticsView() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { overview } = useLeadOSData();
   const data = overview!;
 
@@ -257,7 +257,7 @@ export function AnalyticsView() {
           <div className="mt-2 flex items-center gap-4 text-[10px] uppercase tracking-wider text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-cyan" />
-              {t("leados.detail.responseTime")} (min)
+              {t("leados.detail.responseTime")} ({t("common.minute")})
             </span>
             <span className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-lime" />
@@ -353,10 +353,10 @@ export function AnalyticsView() {
                     </div>
                   </TableCell>
                   <TableCell className="py-2.5 text-sm font-medium text-foreground">
-                    {formatCurrency(s.pipelineValue, "USD")}
+                    {formatCurrency(s.pipelineValue, "USD", locale)}
                   </TableCell>
                   <TableCell className="py-2.5 text-sm text-foreground">
-                    {s.wonLeads} · {formatCompact(s.wonValue)}
+                    {s.wonLeads} · {formatCompact(s.wonValue, locale)}
                   </TableCell>
                 </motion.tr>
               ))}
@@ -367,10 +367,9 @@ export function AnalyticsView() {
 
       {/* Footer summary */}
       <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-wider text-muted-foreground/60">
-        <span>{LEAD_STAGES.length} stages · {data.dashboard.totalLeads} leads</span>
+        <span>{t("leados.runtime.leadStageSummary", { stages: LEAD_STAGES.length, leads: data.dashboard.totalLeads })}</span>
         <span>
-          {velocity.reduce((sum, item) => sum + item.deals, 0)} leads ·{" "}
-          {slaData[slaData.length - 1]?.pct ?? 0}% SLA
+          {t("leados.runtime.slaSummary", { leads: velocity.reduce((sum, item) => sum + item.deals, 0), percent: slaData[slaData.length - 1]?.pct ?? 0 })}
         </span>
       </div>
     </div>

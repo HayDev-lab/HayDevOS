@@ -59,7 +59,7 @@ export interface ModuleManifest {
   icon: LucideIcon;
   /** Logical grouping for sidebar/registry */
   category: ModuleCategory;
-  /** Internal route key (single-page app switches on this) */
+  /** Public page URL; navigation state is derived from the URL */
   route: string;
   /** Short description (English fallback) */
   description: string;
@@ -82,18 +82,18 @@ export interface ModuleManifest {
 export const ModuleRegistry: ModuleManifest[] = [
   {
     id: "modules", nameKey: "core.modules", icon: Grid3X3, category: "core",
-    route: "modules", description: "Explore the HayDevOS ecosystem.", accent: "cyan", component: ModulesView,
+    route: "/modules", description: "Explore the HayDevOS ecosystem.", accent: "cyan", component: ModulesView,
   },
   {
     id: "marketing", nameKey: "core.marketing", icon: Megaphone, category: "operations",
-    route: "marketing", description: "Content preparation and connected marketing workflows.", accent: "amber", component: MarketingView,
+    route: "/marketing", description: "Content preparation and connected marketing workflows.", accent: "amber", component: MarketingView,
   },
   {
     id: "dashboard",
     nameKey: "nav.dashboard",
     icon: LayoutDashboard,
     category: "core",
-    route: "dashboard",
+    route: "/",
     description: "Operational overview across every module.",
     accent: "lime",
     component: CoreHome,
@@ -103,7 +103,7 @@ export const ModuleRegistry: ModuleManifest[] = [
     nameKey: "module.leados",
     icon: Target,
     category: "core",
-    route: "leados",
+    route: "/leados",
     description: "Lead-to-cash pipeline with SLA tracking.",
     accent: "lime",
     component: LeadOSView,
@@ -113,7 +113,7 @@ export const ModuleRegistry: ModuleManifest[] = [
     nameKey: "module.quoteflow",
     icon: FileText,
     category: "core",
-    route: "quoteflow",
+    route: "/quoteflow",
     description: "Quotes, versioning, approvals and e-sign.",
     accent: "cyan",
     component: QuoteFlowView,
@@ -123,7 +123,7 @@ export const ModuleRegistry: ModuleManifest[] = [
     nameKey: "module.docsmart",
     icon: ScanLine,
     category: "operations",
-    route: "docsmart",
+    route: "/docsmart",
     description: "Document AI — classify, extract, review.",
     accent: "amber",
     component: DocumentFlowView,
@@ -133,7 +133,7 @@ export const ModuleRegistry: ModuleManifest[] = [
     nameKey: "module.autopilot",
     icon: Workflow,
     category: "operations",
-    route: "autopilot",
+    route: "/autopilot",
     description: "No-code automations & approval flows.",
     accent: "violet",
     component: AutomationBuilderView,
@@ -143,7 +143,7 @@ export const ModuleRegistry: ModuleManifest[] = [
     nameKey: "module.erphub",
     icon: Boxes,
     category: "operations",
-    route: "erphub",
+    route: "/erphub",
     description: "Customers, orders, invoices, payments.",
     accent: "lime",
     component: ErpCrmView,
@@ -153,7 +153,7 @@ export const ModuleRegistry: ModuleManifest[] = [
     nameKey: "module.connect",
     icon: Plug,
     category: "integrations",
-    route: "connect",
+    route: "/connect",
     description: "Integrations & webhooks across providers.",
     accent: "cyan",
     component: IntegrationHubView,
@@ -163,7 +163,7 @@ export const ModuleRegistry: ModuleManifest[] = [
     nameKey: "module.ownerAi",
     icon: Sparkles,
     category: "intelligence",
-    route: "ownerAi",
+    route: "/owner-ai",
     description: "Your AI co-founder and ops assistant.",
     accent: "violet",
     component: OwnerAiView,
@@ -173,7 +173,7 @@ export const ModuleRegistry: ModuleManifest[] = [
     nameKey: "module.audit",
     icon: ClipboardCheck,
     category: "intelligence",
-    route: "audit",
+    route: "/audit",
     description: "Readiness scoring & compliance questionnaires.",
     accent: "rose",
     component: BusinessAuditView,
@@ -183,7 +183,7 @@ export const ModuleRegistry: ModuleManifest[] = [
     nameKey: "module.settings",
     icon: Settings,
     category: "core",
-    route: "settings",
+    route: "/settings",
     description: "Org, members, billing and preferences.",
     accent: "lime",
     component: SettingsWorkspace,

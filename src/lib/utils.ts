@@ -19,9 +19,9 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 };
 
 /** Format a numeric amount with currency symbol. Falls back to ISO code. */
-export function formatCurrency(amount: number, currency: string = "USD"): string {
-  const symbol = CURRENCY_SYMBOLS[currency] ?? "";
-  const value = new Intl.NumberFormat("en-US", {
+export function formatCurrency(amount: number, currency: string = "USD", locale: string = "en"): string {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `;
+  const value = new Intl.NumberFormat(LOCALE_MAP[locale] ?? locale, {
     minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(amount);
@@ -192,8 +192,8 @@ export function toneClasses(tone: StatusTone): { text: string; bg: string; borde
 }
 
 /** Format a number compactly (e.g. 12.4K, 3.1M). */
-export function formatCompact(n: number): string {
-  return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+export function formatCompact(n: number, locale: string = "en"): string {
+  return new Intl.NumberFormat(LOCALE_MAP[locale] ?? locale, { notation: "compact", maximumFractionDigits: 1 }).format(n);
 }
 
 /** Initials from a name, e.g. "Aram Hayrapetyan" → "AH". */

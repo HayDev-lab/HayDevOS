@@ -1,5 +1,7 @@
 "use client";
 
+import { localizeError } from "@/lib/i18n-errors";
+
 import { useState } from "react";
 import { Clock, Columns3, Save, Workflow } from "lucide-react";
 import { toast } from "sonner";
@@ -25,7 +27,7 @@ export function SettingsView() {
       await updateSla(sla);
       toast.success(t("leados.runtime.slaSaved"));
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : t("leados.runtime.slaSaveFailed"));
+      toast.error(cause instanceof Error ? localizeError(cause) : t("leados.runtime.slaSaveFailed"));
     } finally {
       setSaving(false);
     }

@@ -121,7 +121,7 @@ export function WorkersView({ workers }: Props) {
                         {t("automation.workers.col.processed")}
                       </div>
                       <div className="text-sm font-semibold text-foreground">
-                        {w.jobsProcessed.toLocaleString()}
+                        {w.jobsProcessed.toLocaleString(locale)}
                       </div>
                     </div>
                   </div>

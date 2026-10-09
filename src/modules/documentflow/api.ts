@@ -1,4 +1,5 @@
 import type { DocumentDto } from "@/lib/documents/types";
+import { localizeApiError } from "@/lib/i18n-errors";
 
 type ApiFailure = { error?: { message?: string; code?: string } };
 
@@ -7,7 +8,7 @@ async function documentRequest<T>(url: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     let failure: ApiFailure = {};
     try { failure = await response.json() as ApiFailure; } catch { /* HTTP fallback */ }
-    const error = new Error(failure.error?.message ?? `Request failed (${response.status})`);
+    const error = new Error(localizeApiError(failure.error, response.status));
     error.name = failure.error?.code ?? "DOCUMENT_REQUEST_FAILED";
     throw error;
   }

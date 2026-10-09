@@ -16,6 +16,7 @@ import { ArrowRight, Building2, Lock, Mail, User } from "lucide-react";
 
 import { useLocale } from "@/lib/i18n";
 import type { ClientSession } from "@/lib/auth/types";
+import { localizeApiError, localizeError } from "@/lib/i18n-errors";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -89,7 +90,7 @@ export function RegisterScreen({
       if (!response.ok || !payload || !("session" in payload)) {
         throw new Error(
           payload && "error" in payload
-            ? (payload.error?.message ?? t("shell.register.failed"))
+            ? localizeApiError(payload.error, response.status)
             : t("shell.register.failed"),
         );
       }
@@ -97,9 +98,7 @@ export function RegisterScreen({
       onSignedIn(payload.session);
     } catch (registerError) {
       setError(
-        registerError instanceof Error
-          ? registerError.message
-          : t("shell.register.failed"),
+        localizeError(registerError),
       );
     } finally {
       setSubmitting(false);
@@ -255,7 +254,7 @@ export function RegisterScreen({
 
           {error ? (
             <p role="alert" className="text-xs text-destructive">
-              {error}
+              {localizeError(error)}
             </p>
           ) : null}
 

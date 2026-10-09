@@ -128,7 +128,7 @@ export function SyncView({
         />
         <SyncStat
           label={t("integration.sync.kpi.avgDuration")}
-          value={`${kpis.avgDuration}ms`}
+          value={`${kpis.avgDuration} {t("common.millisecond")}`}
           icon={<Clock className="h-3.5 w-3.5" />}
           tone="violet"
         />
@@ -252,7 +252,7 @@ export function SyncView({
                       <div className="text-[10px]">{relativeTime(run.startedAt, locale)}</div>
                     </TableCell>
                     <TableCell className="hidden py-2 font-mono text-[11px] text-foreground md:table-cell">
-                      {run.durationMs}ms
+                      {run.durationMs} {t("common.millisecond")}
                     </TableCell>
                     <TableCell className="hidden py-2 text-[11px] text-muted-foreground md:table-cell">
                       {run.recordsIn}→{run.recordsOut}

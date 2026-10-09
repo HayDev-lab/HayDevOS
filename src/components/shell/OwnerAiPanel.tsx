@@ -80,7 +80,7 @@ export function OwnerAiPanel() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 280 }}
-            className="glass-strong fixed inset-0 z-50 flex w-full flex-col border-l border-border md:inset-auto md:right-0 md:top-0 md:h-full md:w-[400px]"
+            className="glass-strong fixed inset-0 z-50 flex h-dvh min-h-0 w-full flex-col overflow-hidden border-l border-border md:inset-auto md:right-0 md:top-0 md:h-full md:w-[400px]"
             role="dialog"
             aria-modal="true"
             aria-label={t("ownerAi.title")}

@@ -1,5 +1,7 @@
 "use client";
 
+import { localizeError } from "@/lib/i18n-errors";
+
 import { useEffect, useState } from "react";
 import { Building2, CheckCircle2, Clock, Mail, Phone, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -36,7 +38,7 @@ export function LeadDetail({ lead, open, onOpenChange, onStageChange }: LeadDeta
     void getLead(lead.id).then((next) => {
       if (!cancelled) setDetail(next);
     }).catch((cause) => {
-      if (!cancelled) toast.error(cause instanceof Error ? cause.message : translateText("leados.runtime.loadFailed", locale));
+      if (!cancelled) toast.error(cause instanceof Error ? localizeError(cause) : translateText("leados.runtime.loadFailed", locale));
     });
     return () => { cancelled = true; };
   }, [getLead, lead, locale, open]);
@@ -53,7 +55,7 @@ export function LeadDetail({ lead, open, onOpenChange, onStageChange }: LeadDeta
       await refreshDetail();
       toast.success(t("leados.toast.stageMoved", { name: current?.name ?? "", stage: STAGE_BY_ID[stage].labelKey ? t(STAGE_BY_ID[stage].labelKey) : STAGE_BY_ID[stage].id }));
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : t("leados.runtime.stageFailed"));
+      toast.error(cause instanceof Error ? localizeError(cause) : t("leados.runtime.stageFailed"));
     } finally {
       setBusy(false);
     }
@@ -68,7 +70,7 @@ export function LeadDetail({ lead, open, onOpenChange, onStageChange }: LeadDeta
       await refreshDetail();
       toast.success(t("leados.toast.noteAdded"));
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : t("leados.runtime.noteFailed"));
+      toast.error(cause instanceof Error ? localizeError(cause) : t("leados.runtime.noteFailed"));
     } finally {
       setBusy(false);
     }
@@ -80,7 +82,7 @@ export function LeadDetail({ lead, open, onOpenChange, onStageChange }: LeadDeta
       await completeTask(id, completed);
       await refreshDetail();
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : t("leados.runtime.taskFailed"));
+      toast.error(cause instanceof Error ? localizeError(cause) : t("leados.runtime.taskFailed"));
     } finally {
       setBusy(false);
     }
@@ -97,7 +99,7 @@ export function LeadDetail({ lead, open, onOpenChange, onStageChange }: LeadDeta
             <SheetHeader className="border-b border-border p-5">
               <div className="flex items-start justify-between gap-3">
                 <div><SheetTitle>{current.name}</SheetTitle><SheetDescription className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{current.company ?? "—"}</SheetDescription></div>
-                <p className="text-lg font-semibold text-lime">{formatCurrency(current.value, current.currency)}</p>
+                <p className="text-lg font-semibold text-lime">{formatCurrency(current.value, current.currency, locale)}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <StageBadge stage={current.stage} /><SourceBadge source={current.source} />
@@ -131,7 +133,7 @@ export function LeadDetail({ lead, open, onOpenChange, onStageChange }: LeadDeta
                 </Section>
 
                 <Section title={t("leados.detail.activity")} icon={Clock}>
-                  <ol className="space-y-2">{detail?.activities.map((activity) => <li key={activity.id} className="border-l border-border pl-3"><p className="text-sm">{activity.body}</p><p className="text-[10px] uppercase text-muted-foreground">{activity.type.replaceAll("_", " ")} · {relativeTime(activity.createdAt, locale)}</p></li>)}</ol>
+                  <ol className="space-y-2">{detail?.activities.map((activity) => <li key={activity.id} className="border-l border-border pl-3"><p className="text-sm">{activity.body}</p><p className="text-[10px] uppercase text-muted-foreground">{t(`leados.activity.${activity.type.toLowerCase()}`)} · {relativeTime(activity.createdAt, locale)}</p></li>)}</ol>
                 </Section>
 
                 <Section title="Owner AI" icon={Sparkles}>

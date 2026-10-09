@@ -77,7 +77,7 @@ const CHART_TOOLTIP_STYLE = {
 } as const;
 
 export function SourcesView() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { overview } = useLeadOSData();
   const sourceStats = overview!.sourceStats;
   const metaConnected = false;
@@ -167,7 +167,7 @@ export function SourcesView() {
               <SubStat label={t("leados.sources.leadCount")} value="0" tone="lime" />
               <SubStat label={t("leados.sources.conversionRate")} value="—" tone="cyan" />
               <SubStat label={t("leados.sources.costPerLead")} value="—" tone="amber" />
-              <SubStat label="Sync" value="Off" tone="rose" />
+              <SubStat label={t("integration.tab.sync")} value={t("common.paused")} tone="rose" />
             </div>
           </CardContent>
         </Card>
@@ -183,10 +183,10 @@ export function SourcesView() {
             </div>
             <div className="mt-3 space-y-2">
               <SubStat label={t("leados.kpi.totalLeads")} value={String(totalLeads)} tone="lime" />
-              <SubStat label={t("leados.sources.costPerLead")} value={blendedCpl === null ? "—" : formatCurrency(blendedCpl, "USD")} tone="cyan" />
+              <SubStat label={t("leados.sources.costPerLead")} value={blendedCpl === null ? "—" : formatCurrency(blendedCpl, "USD", locale)} tone="cyan" />
               <SubStat
                 label={t("leados.team.pipelineValue")}
-                value={formatCompact(sourceStats.reduce((s, x) => s + x.totalValue, 0))}
+                value={formatCompact(sourceStats.reduce((s, x) => s + x.totalValue, 0), locale)}
                 tone="violet"
               />
             </div>
@@ -220,7 +220,7 @@ export function SourcesView() {
                   {t("leados.table.value")}
                 </TableHead>
                 <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Total cost
+                  {t("leados.runtime.totalCost")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -252,13 +252,13 @@ export function SourcesView() {
                       {Math.round(s.conversionRate * 100)}%
                     </TableCell>
                     <TableCell className="py-2.5 text-sm text-foreground">
-                      {s.costPerLead === null ? "—" : formatCurrency(s.costPerLead, "USD")}
+                      {s.costPerLead === null ? "—" : formatCurrency(s.costPerLead, "USD", locale)}
                     </TableCell>
                     <TableCell className="py-2.5 text-sm font-medium text-foreground">
-                      {formatCurrency(s.totalValue, "USD")}
+                      {formatCurrency(s.totalValue, "USD", locale)}
                     </TableCell>
                     <TableCell className="py-2.5 text-sm text-muted-foreground">
-                      {formatCurrency(totalCost, "USD")}
+                      {formatCurrency(totalCost, "USD", locale)}
                     </TableCell>
                   </motion.tr>
                 );

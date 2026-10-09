@@ -5,10 +5,14 @@
  * Lives in a .tsx file so the registry itself can stay pure TypeScript.
  */
 
+import { useLocale } from "@/lib/i18n";
 import { Sparkles } from "lucide-react";
 import type { ComponentType } from "react";
 
 export function ModulePlaceholder({ moduleId }: { moduleId: string }) {
+  void moduleId;
+  void moduleId;
+  const { t } = useLocale();
   return (
     <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-3 p-10 text-center">
       <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8">
@@ -16,12 +20,10 @@ export function ModulePlaceholder({ moduleId }: { moduleId: string }) {
           <Sparkles className="h-6 w-6" />
         </div>
         <p className="text-sm text-muted-foreground">
-          Module <code className="text-foreground">{moduleId}</code> is registered
-          but its view has not been implemented yet.
+          {t("common.moduleUnavailable")}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          This placeholder is rendered by the Core foundation. Replace it in{" "}
-          <code>src/lib/modules/registry.ts</code>.
+          {t("common.moduleUnavailableHint")}
         </p>
       </div>
     </div>

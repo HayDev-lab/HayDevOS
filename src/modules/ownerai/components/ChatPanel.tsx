@@ -213,9 +213,9 @@ export function ChatPanel({ compact = false, onClose, showHeaderActions = false 
                     ? t("ownerAi.onlineTooltip")
                     : t("ownerAi.offlineTooltip")}
                 </p>
-                {config?.model && <p className="text-muted-foreground">model: {config.model}</p>}
+                {config?.model && <p className="text-muted-foreground">{t("ownerAi.metadata.model")}: {config.model}</p>}
                 {config?.promptVersion && (
-                  <p className="text-muted-foreground">prompt: {config.promptVersion}</p>
+                  <p className="text-muted-foreground">{t("ownerAi.metadata.prompt")}: {config.promptVersion}</p>
                 )}
               </TooltipContent>
             </Tooltip>

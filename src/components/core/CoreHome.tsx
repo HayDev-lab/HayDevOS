@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { workspaceHref } from "@/lib/workspace-routes";
+
 import {
   BarChart3,
   UserRound,
@@ -26,6 +29,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useAppStore } from "@/lib/store/app-store";
 import { useOwnerAiStore } from "@/modules/ownerai/state";
+import { useLocale } from "@/lib/i18n";
 import { EarthCore } from "./EarthCore";
 import { useCoreCopy, useWorkspaceCopy } from "./copy";
 
@@ -62,6 +66,7 @@ const subscribeMotion = (notify: () => void) => {
 const getMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function CoreHome() {
+  const { t } = useLocale();
   const copy = useCoreCopy();
   const ws = useWorkspaceCopy();
   const [paused, setPaused] = useState(false);
@@ -206,9 +211,8 @@ export function CoreHome() {
               .toLocaleLowerCase()
               .includes(search);
           return (
-            <button
+            <Link
               key={item.id}
-              type="button"
               className={`module ${item.className}${matches ? (search ? " match" : "") : " dim"}`}
               data-module={item.id}
               aria-label={names[index]}
@@ -218,12 +222,12 @@ export function CoreHome() {
                   top: `${50 + Math.sin(theta) * 38}%`,
                 } as CSSProperties
               }
-              onClick={() => setModule(item.id)}
+              href={workspaceHref(item.id)}
             >
               <item.icon aria-hidden="true" />
               <strong>{names[index]}</strong>
               {descriptions[index] && <span>{descriptions[index]}</span>}
-            </button>
+            </Link>
           );
         })}
         <div className="core-controls">
@@ -254,7 +258,7 @@ export function CoreHome() {
         </p>
       )}
       <p className="texture-credit">
-        Earth textures:{" "}
+        {t("core.earthTextures")}{" "}
         <a
           href="https://www.solarsystemscope.com/textures/"
           target="_blank"
@@ -304,7 +308,7 @@ export function CoreAiDock() {
     <aside className="ai-panel" aria-labelledby="core-ai-title">
       <div className="ai-heading">
         <h1 id="core-ai-title">
-          <span className="diamond">◇</span> Owner <b>AI Live</b>
+          <span className="diamond">◇</span> Owner AI
         </h1>
         <span className="core-provider">
           <Sparkles />

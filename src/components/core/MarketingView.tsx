@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { resolveWorkspaceRoute, workspaceSections } from "@/lib/workspace-routes";
 import {
   Sparkles,
   Lightbulb,
@@ -15,12 +18,21 @@ import {
 import { useAuth } from "@/components/auth/AuthContext";
 import { useAppStore, type ModuleEntryTab } from "@/lib/store/app-store";
 import { useOwnerAiStore } from "@/modules/ownerai/state";
+import { useLocale } from "@/lib/i18n";
 import { useWorkspaceCopy } from "./copy";
+import { useStudioCopy } from "./studio-copy";
+import { ContentGenerator } from "./ContentGenerator";
+import { StudioEditor } from "./StudioEditor";
 
 export function MarketingView() {
+  const { t } = useLocale();
   const copy = useWorkspaceCopy();
+  const studio = useStudioCopy();
   const { session } = useAuth();
-  const [tab, setTab] = useState(0);
+  const route = resolveWorkspaceRoute(usePathname());
+  const router = useRouter();
+  const section = route?.section ?? "overview";
+  const tab = workspaceSections.marketing.indexOf(section as typeof workspaceSections.marketing[number]);
   const [draft, setDraft] = useState("");
   const openModule = useAppStore((s) => s.openModule);
   const setAiOpen = useAppStore((s) => s.setOwnerAiOpen);
@@ -59,35 +71,36 @@ export function MarketingView() {
       <div className="studio-shell">
         <div className="studio-topline">
           <div className="studio-heading">
-            <span className="studio-eyebrow">HAYDEVOS · MARKETING STUDIO</span>
-            <h1 id="studio-title">Marketing Studio</h1>
+            <span className="studio-eyebrow">ՀայDevOS · {t("core.marketing")}</span>
+            <h1 id="studio-title">{section === "generator" ? studio.generator : section === "editor" ? studio.editor : t("core.marketing")}</h1>
             <p>{copy.marketingSubtitle}</p>
           </div>
-          <span className="studio-live">{copy.marketingStatus}</span>
+          <div className="core-studio-actions"><Link className="studio-gold" href="/marketing/generator"><Sparkles size={16}/> {studio.generator}</Link><Link className="studio-ghost" href="/marketing/editor">{studio.editor}</Link><span className="studio-live">{copy.marketingStatus}</span></div>
         </div>
-        <nav className="studio-tabs" aria-label="Marketing Studio">
+        <nav className="studio-tabs" aria-label={t("core.marketing")}>
           {copy.tabs.map((name, index) => (
-            <button
+            <Link
               key={index}
-              type="button"
               className={tab === index ? "is-active" : ""}
               aria-current={tab === index ? "page" : undefined}
-              onClick={() => setTab(index)}
+              href={`/marketing/${workspaceSections.marketing[index]}`}
             >
               {name}
-            </button>
+            </Link>
           ))}
         </nav>
         <div className="studio-body">
+          {[0, 4, 9].includes(tab) && <ContentGenerator key={`generator-${session.activeOrganization.id}`} onRequest={create} busy={isProcessing} activeType={section === "generator" ? route?.generatorType ?? 0 : undefined} />}
+          {tab === 2 ? <StudioEditor key={`editor-${session.activeOrganization.id}`} onBack={() => router.push("/marketing")} onGenerator={() => router.push("/marketing/generator")}/> : tab === 9 ? null : <>
           <div className="ai-creation-dock">
             <div className="ai-creation-head">
               <div>
-                <span className="studio-eyebrow">OWNER AI · CREATION</span>
+                <span className="studio-eyebrow">{t("brand.creation")}</span>
                 <h2>{copy.tabs[tab]}</h2>
                 <p>{copy.marketingNote}</p>
               </div>
             </div>
-            {[0, 2, 4].includes(tab) && (
+            {[0, 4].includes(tab) && (
               <>
                 <div className="core-generation-grid">
                   {copy.actions.map((title, index) => {
@@ -148,6 +161,7 @@ export function MarketingView() {
               </button>
             ))}
           </div>
+          </>}
         </div>
       </div>
     </section>

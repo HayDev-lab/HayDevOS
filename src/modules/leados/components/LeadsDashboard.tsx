@@ -526,11 +526,10 @@ export function LeadsDashboard() {
       {/* Footer summary */}
       <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-wider text-muted-foreground/60">
         <span>
-          {LEAD_SOURCES.length} sources · {LEAD_STAGES.length} stages ·{" "}
-          {formatCompact(allLeads.reduce((s, l) => s + l.value, 0))} total pipeline
+          {t("leados.runtime.pipelineSummary", { sources: LEAD_SOURCES.length, stages: LEAD_STAGES.length, value: formatCompact(allLeads.reduce((s, l) => s + l.value, 0), locale) })}
         </span>
         <span>
-          {formatCurrency(allLeads.filter((l) => l.stage === "won").reduce((s, l) => s + l.value, 0))} won
+          {t("leados.runtime.wonValue", { value: formatCurrency(allLeads.filter((l) => l.stage === "won").reduce((s, l) => s + l.value, 0), "USD", locale) })}
         </span>
       </div>
     </div>

@@ -1,8 +1,10 @@
 "use client";
 
-import Image from "next/image";
+import Link from "next/link";
+import { workspaceHref } from "@/lib/workspace-routes";
+
 import { FileText, Grid3X3, Home, Search, Sparkles } from "lucide-react";
-import { LOCALES, LOCALE_LABELS, useLocale, type Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n";
 import { useAppStore } from "@/lib/store/app-store";
 import { useCoreCopy } from "@/components/core/copy";
 import { NotificationsPopover } from "./NotificationsPopover";
@@ -16,10 +18,9 @@ export function TopBar({
   onLogout: () => void;
 }) {
   const copy = useCoreCopy();
-  const { t, locale, setLocale } = useLocale();
+  const { t } = useLocale();
   const {
     activeModule,
-    setActiveModule,
     searchQuery,
     setSearchQuery,
     setCommandOpen,
@@ -31,37 +32,18 @@ export function TopBar({
     { id: "docsmart", icon: FileText, name: copy.documentsNav },
   ];
   return (
-    <header className="topbar core-topbar">
-      <button
-        type="button"
-        className="brand has-logo"
-        onClick={() => setActiveModule("dashboard")}
-        aria-label={copy.homeLabel}
-      >
-        <span className="brand-wordmark">
-          <Image
-            className="brand-logo"
-            src="/core/haydevos-logo.png"
-            alt="HayDevOS"
-            width={1254}
-            height={1254}
-            priority
-            unoptimized
-          />
-        </span>
-      </button>
+    <div className="topbar core-topbar">
       <nav aria-label={copy.navigation}>
         {items.map((item) => (
-          <button
-            type="button"
+          <Link
             key={item.id}
             className={`nav-item ${activeModule === item.id || (item.id === "modules" && !["dashboard", "ownerAi", "docsmart"].includes(activeModule)) ? "active" : ""}`}
             aria-current={activeModule === item.id ? "page" : undefined}
-            onClick={() => setActiveModule(item.id)}
+            href={workspaceHref(item.id)}
           >
             <item.icon />
             <span>{item.name}</span>
-          </button>
+          </Link>
         ))}
       </nav>
       <label className="search">
@@ -92,25 +74,11 @@ export function TopBar({
       >
         <Search />
       </button>
-      <label className="language-control">
-        <span className="sr-only">{copy.language}</span>
-        <select
-          value={locale}
-          onChange={(event) => setLocale(event.target.value as Locale)}
-          aria-label={copy.language}
-        >
-          {LOCALES.map((language) => (
-            <option key={language} value={language}>
-              {LOCALE_LABELS[language]}
-            </option>
-          ))}
-        </select>
-      </label>
       <div className="core-account-actions">
         <NotificationsPopover />
         <UserMenu onOpenSettings={onOpenSettings} onLogout={onLogout} />
       </div>
-    </header>
+    </div>
   );
 }
 

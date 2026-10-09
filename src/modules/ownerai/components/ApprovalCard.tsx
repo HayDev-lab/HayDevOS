@@ -26,7 +26,7 @@ interface ApprovalCardProps {
 }
 
 export function ApprovalCard({ approval, compact = false }: ApprovalCardProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const decideApproval = useOwnerAiStore((s) => s.decideApproval);
   const [showReason, setShowReason] = useState(false);
   const [reason, setReason] = useState("");
@@ -114,13 +114,13 @@ export function ApprovalCard({ approval, compact = false }: ApprovalCardProps) {
                 <span>
                   ✓ {t("ownerAi.approval.approvedBy")}{" "}
                   <span className="font-mono text-lime">{approval.decidedBy}</span>
-                  {approval.decidedAt ? ` · ${new Date(approval.decidedAt).toLocaleString()}` : ""}
+                  {approval.decidedAt ? ` · ${new Date(approval.decidedAt).toLocaleString(locale)}` : ""}
                 </span>
               ) : (
                 <span>
                   ✗ {t("ownerAi.approval.rejectedBy")}{" "}
                   <span className="font-mono text-rose">{approval.decidedBy}</span>
-                  {approval.decidedAt ? ` · ${new Date(approval.decidedAt).toLocaleString()}` : ""}
+                  {approval.decidedAt ? ` · ${new Date(approval.decidedAt).toLocaleString(locale)}` : ""}
                   {approval.reason ? ` · ${approval.reason}` : ""}
                 </span>
               )}

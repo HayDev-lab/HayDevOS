@@ -1,0 +1,65 @@
+.header {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) minmax(0, 8fr) minmax(130px, 1fr);
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+  padding: 10px clamp(16px, 2.25vw, 44px);
+  border-bottom: 1px solid #eac47730;
+  background: linear-gradient(180deg, #020813e6, #02081370);
+}
+
+.home {
+  display: block;
+  width: 72px;
+  border-radius: 12px;
+  background: transparent;
+}
+
+.logo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px #0009);
+}
+
+.language {
+  justify-self: end;
+}
+
+.language select {
+  width: 126px;
+  padding: 10px 12px;
+  border: 1px solid #58728d;
+  border-radius: 22px;
+  background: #06172be6;
+  color: #e8f1fc;
+  font-family: var(--font-inter), "Segoe UI", sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .header {
+    grid-template-columns: 1fr auto;
+    gap: 4px 16px;
+    padding: 8px 16px 12px;
+  }
+
+  .home,
+  .logo {
+    width: 52px;
+    height: 52px;
+  }
+
+  .header > div {
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+
+  .language {
+    grid-row: 1;
+    grid-column: 2;
+  }
+}

@@ -260,7 +260,7 @@ export function AnalyticsView({ runs }: Props) {
                     fontSize={10}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(v) => formatCompact(v as number)}
+                    tickFormatter={(v) => formatCompact(v as number, locale)}
                   />
                   <YAxis
                     type="category"

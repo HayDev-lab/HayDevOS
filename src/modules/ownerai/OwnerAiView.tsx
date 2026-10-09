@@ -1,5 +1,7 @@
 "use client";
 
+import { useWorkspaceSection } from "@/lib/workspace-navigation";
+
 /**
  * OwnerAiView — full-page Owner AI console.
  *
@@ -18,7 +20,7 @@
  * tab switch.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { RefreshCw, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { Wave } from "@/components/core/CoreHome";
@@ -32,7 +34,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLocale } from "@/lib/i18n";
-import { useAppStore } from "@/lib/store/app-store";
+import Link from "next/link";
+import { workspaceHref } from "@/lib/workspace-routes";
 import { useOwnerAiStore } from "./state";
 import { ChatTab } from "./components/ChatTab";
 import { ConversationsTab } from "./components/ConversationsTab";
@@ -70,7 +73,7 @@ export function OwnerAiView() {
   const { t } = useLocale();
   const coreCopy = useCoreCopy();
   const workspaceCopy = useWorkspaceCopy();
-  const [tab, setTab] = useState<Tab>(() => useAppStore.getState().moduleEntryTab === "approvals" ? "approvals" : "chat");
+  const [tab, setTab] = useWorkspaceSection<Tab>("ownerAi", "chat");
   const init = useOwnerAiStore((s) => s.init);
   const refreshState = useOwnerAiStore((s) => s.refreshState);
   const isProcessing = useOwnerAiStore((s) => s.isProcessing);
@@ -92,13 +95,13 @@ export function OwnerAiView() {
   }, [tab, refreshState]);
 
   return (
-    <div className="core-owner-console flex h-full min-h-0 flex-col">
+    <div className="core-owner-console flex flex-col">
       <div className="core-owner-stage">
         <div className="owner-ai-heading">
           <div>
-            <span className="workspace-eyebrow">OWNER AI · ASSISTANT</span>
+            <span className="workspace-eyebrow">{t("brand.assistant")}</span>
             <h1>
-              Owner <b>{coreCopy.live}</b>
+              {t("ownerAi.title")}
             </h1>
             <p>{t("ownerAi.view.subtitle")}</p>
           </div>
@@ -170,10 +173,9 @@ export function OwnerAiView() {
             const showBadge =
               tabDef.id === "approvals" && pendingApprovals.length > 0;
             return (
-              <button
+              <Link
                 key={tabDef.id}
-                type="button"
-                onClick={() => setTab(tabDef.id)}
+                href={workspaceHref("ownerAi", tabDef.id)}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
                   isActive
@@ -188,14 +190,14 @@ export function OwnerAiView() {
                     {pendingApprovals.length}
                   </span>
                 )}
-              </button>
+              </Link>
             );
           })}
         </div>
       </div>
 
       {/* Tab content */}
-      <div className="min-h-0 flex-1 overflow-hidden p-4">
+      <div className="min-w-0 p-4">
         {tab === "chat" && <ChatTab />}
         {tab === "conversations" && (
           <ConversationsTab onOpenChat={() => setTab("chat")} />

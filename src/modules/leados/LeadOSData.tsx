@@ -1,5 +1,7 @@
 "use client";
 
+import { localizeError } from "@/lib/i18n-errors";
+
 import {
   createContext,
   useCallback,
@@ -56,7 +58,7 @@ export function LeadOSDataProvider({ children }: { children: ReactNode }) {
     } catch (cause) {
       overviewRef.current = null;
       setOverview(null);
-      setError(cause instanceof Error ? cause.message : "LeadOS data could not be loaded");
+      setError(cause instanceof Error ? localizeError(cause) : localizeError(undefined));
     } finally {
       setLoading(false);
     }
@@ -73,7 +75,7 @@ export function LeadOSDataProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
       overviewRef.current = null;
       setOverview(null);
-      setError(cause instanceof Error ? cause.message : "LeadOS data could not be loaded");
+      setError(cause instanceof Error ? localizeError(cause) : localizeError(undefined));
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });

@@ -26,7 +26,7 @@ export const workspaceCopy = {
     tabs: [
       "Обзор",
       "Проекты",
-      "Редактор",
+      "Монтажная",
       "Ресурсы",
       "Кампании",
       "Календарь",
@@ -79,7 +79,7 @@ export const workspaceCopy = {
     tabs: [
       "Overview",
       "Projects",
-      "Editor",
+      "Editing room",
       "Resources",
       "Campaigns",
       "Calendar",
@@ -133,7 +133,7 @@ export const workspaceCopy = {
     tabs: [
       "Ակնարկ",
       "Նախագծեր",
-      "Խմբագիր",
+      "Մոնտաժային սենյակ",
       "Ռեսուրսներ",
       "Արշավներ",
       "Օրացույց",

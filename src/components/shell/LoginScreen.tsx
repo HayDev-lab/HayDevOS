@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AuthFrame } from "@/components/core/AuthFrame";
 import { useLocale } from "@/lib/i18n";
 import type { ClientSession } from "@/lib/auth/types";
+import { localizeApiError, localizeError } from "@/lib/i18n-errors";
 
 interface LoginScreenProps {
   onSignIn: (session: ClientSession) => void;
@@ -38,12 +39,12 @@ export function LoginScreen({
         error?: { message?: string };
       } | null;
       if (!response.ok || !payload?.session)
-        throw new Error(payload?.error?.message ?? t("shell.login.failed"));
+        throw new Error(localizeApiError(payload?.error, response.status));
       toast.success(t("shell.toast.signedIn"));
       onSignIn(payload.session);
     } catch (failure) {
       setError(
-        failure instanceof Error ? failure.message : t("shell.login.failed"),
+        localizeError(failure),
       );
     } finally {
       setSubmitting(false);
@@ -90,7 +91,7 @@ export function LoginScreen({
         </label>
         {error && (
           <p role="alert" className="core-auth-error">
-            {error}
+            {localizeError(error)}
           </p>
         )}
         <button

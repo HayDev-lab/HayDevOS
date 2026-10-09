@@ -1,5 +1,7 @@
 "use client";
 
+import { localizeError } from "@/lib/i18n-errors";
+
 /**
  * LeadOS — Leads table.
  *
@@ -113,7 +115,7 @@ export function LeadsTable({ onSelectLead, externalQuery, limit = 15 }: LeadsTab
       }).catch((cause) => {
         if (cancelled) return;
         setLeads([]);
-        setLoadError(cause instanceof Error ? cause.message : "Lead list could not be loaded");
+        setLoadError(cause instanceof Error ? localizeError(cause) : localizeError(undefined));
       });
     }, 200);
     return () => {
@@ -274,7 +276,7 @@ export function LeadsTable({ onSelectLead, externalQuery, limit = 15 }: LeadsTab
                     <OwnerAvatar ownerId={lead.ownerId} size="xs" />
                   </TableCell>
                   <TableCell className="py-2.5 text-sm font-medium text-foreground">
-                    {formatCurrency(lead.value, lead.currency)}
+                    {formatCurrency(lead.value, lead.currency, locale)}
                   </TableCell>
                   <TableCell className="py-2.5">
                     <SlaBadge
@@ -314,11 +316,11 @@ export function LeadsTable({ onSelectLead, externalQuery, limit = 15 }: LeadsTab
         </span>
         <span className="flex items-center gap-2">
           <button type="button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} className="disabled:opacity-40">
-            Previous
+            {t("common.previous")}
           </button>
           {page} / {Math.max(totalPages, 1)}
           <button type="button" disabled={page >= totalPages} onClick={() => setPage((value) => value + 1)} className="disabled:opacity-40">
-            Next
+            {t("common.next")}
           </button>
         </span>
       </div>

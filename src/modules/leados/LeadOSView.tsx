@@ -1,5 +1,12 @@
 "use client";
 
+import Link from "next/link";
+import { workspaceHref } from "@/lib/workspace-routes";
+
+import { useWorkspaceSection } from "@/lib/workspace-navigation";
+
+import { localizeError } from "@/lib/i18n-errors";
+
 /**
  * LeadOS — main module view.
  *
@@ -109,7 +116,7 @@ export function LeadOSView() {
 function LeadOSContent() {
   const { t } = useLocale();
   const { overview, loading, error, refresh, createLead, changeStage } = useLeadOSData();
-  const [tab, setTab] = useState<TabId>("dashboard");
+  const [tab] = useWorkspaceSection<TabId>("leados", "dashboard");
   const [search, setSearch] = useState("");
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
@@ -161,7 +168,7 @@ function LeadOSContent() {
       setFormStage("new");
       setFormSource("web");
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : t("leados.runtime.createFailed"));
+      toast.error(cause instanceof Error ? localizeError(cause) : t("leados.runtime.createFailed"));
     }
   }
 
@@ -229,14 +236,14 @@ function LeadOSContent() {
       }
       throw new Error(t("leados.runtime.exportFailed"));
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : t("leados.runtime.exportFailed"));
+      toast.error(cause instanceof Error ? localizeError(cause) : t("leados.runtime.exportFailed"));
     } finally {
       setExporting(false);
     }
   }
 
   if (loading && !overview) return <div className="p-8 text-sm text-muted-foreground">{t("leados.runtime.loading")}</div>;
-  if (error || !overview) return <div className="p-8 text-sm text-destructive">{error ?? t("leados.runtime.unavailable")} <Button variant="outline" size="sm" onClick={() => void refresh()}>{t("common.retry")}</Button></div>;
+  if (error || !overview) return <div className="p-8 text-sm text-destructive">{error ? localizeError(error) : t("leados.runtime.unavailable")} <Button variant="outline" size="sm" onClick={() => void refresh()}>{t("common.retry")}</Button></div>;
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
@@ -261,22 +268,22 @@ function LeadOSContent() {
           </div>
           <div className="flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse-dot" />
-            {overview.dashboard.totalLeads} leads · {overview.pipelines.flatMap((pipeline) => pipeline.stages).length} stages
+            {t("leados.runtime.leadStageSummary", { leads: overview.dashboard.totalLeads, stages: overview.pipelines.flatMap((pipeline) => pipeline.stages).length })}
           </div>
         </div>
       </motion.div>
 
       {/* Tabs nav */}
-      <div className="mb-4 flex overflow-x-auto border-b border-border pb-px">
-        <div className="flex min-w-max items-center gap-1">
+      <nav className="mb-4 border-b border-border pb-px">
+        <div className="flex flex-wrap items-center gap-1">
           {TABS.map((tabDef) => {
             const Icon = tabDef.icon;
             const isActive = tab === tabDef.id;
             return (
-              <button
+              <Link
                 key={tabDef.id}
-                type="button"
-                onClick={() => setTab(tabDef.id)}
+                href={workspaceHref("leados", tabDef.id)}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors",
                   isActive
@@ -293,11 +300,11 @@ function LeadOSContent() {
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-              </button>
+              </Link>
             );
           })}
         </div>
-      </div>
+      </nav>
 
       {/* Secondary toolbar */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -367,7 +374,7 @@ function LeadOSContent() {
                 id="nl-name"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                placeholder="Anna Petrosyan"
+                placeholder={t("leados.runtime.exampleName")}
               />
             </div>
             <div className="space-y-1.5">
@@ -376,7 +383,7 @@ function LeadOSContent() {
                 id="nl-company"
                 value={formCompany}
                 onChange={(e) => setFormCompany(e.target.value)}
-                placeholder="Acme Inc."
+                placeholder={t("leados.runtime.exampleCompany")}
               />
             </div>
             <div className="space-y-1.5">

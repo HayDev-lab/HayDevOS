@@ -1,5 +1,7 @@
 "use client";
 
+import { useWorkspaceSection } from "@/lib/workspace-navigation";
+
 /**
  * AutomationBuilderView — top-level view for the Autopilot module.
  * Tabs: Automations | Builder | Templates | Executions | Failed Jobs |
@@ -41,7 +43,7 @@ import {
   localizeWebhook,
 } from "./localization";
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/core/WorkspacePages";
 import { Badge } from "@/components/ui/badge";
 
 import { AutomationsListView } from "./components/AutomationsListView";
@@ -54,7 +56,6 @@ import { SchedulesView } from "./components/SchedulesView";
 import { WebhooksView } from "./components/WebhooksView";
 import { VariablesView } from "./components/VariablesView";
 import { WorkersView } from "./components/WorkersView";
-import { useAppStore } from "@/lib/store/app-store";
 import { AnalyticsView } from "./components/AnalyticsView";
 import { SettingsView } from "./components/SettingsView";
 
@@ -74,7 +75,7 @@ type TabId =
 
 export function AutomationBuilderView() {
   const { t, locale } = useLocale();
-  const [tab, setTab] = useState<TabId>(() => useAppStore.getState().moduleEntryTab === "schedules" ? "schedules" : "automations");
+  const [tab, setTab] = useWorkspaceSection<TabId>("autopilot", "automations");
 
   // Shared in-memory state — the list view mutates this; the builder reads it.
   const [automations, setAutomations] = useState<Automation[]>(seedAutomations);

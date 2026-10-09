@@ -1,5 +1,7 @@
 "use client";
 
+import { useWorkspaceSection } from "@/lib/workspace-navigation";
+
 /**
  * IntegrationHubView — top-level view for the HayDevOS Integration Hub.
  *
@@ -55,7 +57,7 @@ WebhookEvent,
 } from "./types";
 
 import { Badge } from "@/components/ui/badge";
-import { Tabs,TabsContent,TabsList,TabsTrigger } from "@/components/ui/tabs";
+import { Tabs,TabsContent,TabsList,TabsTrigger } from "@/components/core/WorkspacePages";
 
 import { AnalyticsView } from "./components/AnalyticsView";
 import { AuditView } from "./components/AuditView";
@@ -85,7 +87,7 @@ type TabId =
 
 export function IntegrationHubView() {
   const { t, locale } = useLocale();
-  const [tab, setTab] = useState<TabId>("providers");
+  const [tab, setTab] = useWorkspaceSection<TabId>("connect", "providers");
 
   // Shared in-memory state.
   const [integrations, setIntegrations] = useState<Integration[]>(seedIntegrations);

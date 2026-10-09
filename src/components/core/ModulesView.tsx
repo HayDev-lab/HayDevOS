@@ -4,13 +4,13 @@ import { useState } from "react";
 import { Search, ArrowUpRight } from "lucide-react";
 import { ModuleRegistry } from "@/lib/modules/registry";
 import { useLocale } from "@/lib/i18n";
-import { useAppStore } from "@/lib/store/app-store";
+import Link from "next/link";
+import { workspaceHref } from "@/lib/workspace-routes";
 import { useWorkspaceCopy } from "./copy";
 
 export function ModulesView() {
   const { t } = useLocale();
   const copy = useWorkspaceCopy();
-  const setModule = useAppStore((s) => s.setActiveModule);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const modules = ModuleRegistry.filter(
@@ -28,7 +28,7 @@ export function ModulesView() {
       <div className="workspace-shell">
         <div className="workspace-topline">
           <div>
-            <span className="workspace-eyebrow">HAYDEVOS · ECOSYSTEM</span>
+            <span className="workspace-eyebrow">ՀայDevOS · {t("brand.ecosystem")}</span>
             <h1 id="modules-title">{copy.all}</h1>
             <p>{copy.subtitle}</p>
           </div>
@@ -61,11 +61,10 @@ export function ModulesView() {
         </div>
         <div className="module-catalog">
           {filtered.map((module) => (
-            <button
+            <Link
               key={module.id}
-              type="button"
               className="catalog-card"
-              onClick={() => setModule(module.id)}
+              href={workspaceHref(module.id)}
             >
               <span className="catalog-icon">
                 <module.icon />
@@ -74,7 +73,7 @@ export function ModulesView() {
               <p>{t(`${module.nameKey}.desc`)}</p>
               <span className="catalog-status">{copy.open}</span>
               <ArrowUpRight className="catalog-open" />
-            </button>
+            </Link>
           ))}
         </div>
         {filtered.length === 0 && (

@@ -70,8 +70,8 @@ export function ToolCallCard({ record, defaultOpen = false, compact = false }: T
               )}
             />
             <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground/70">
-              {record.durationMs}ms
-              {typeof record.resultCount === "number" ? ` · ${record.resultCount} items` : ""}
+              {record.durationMs} {t("common.millisecond")}
+              {typeof record.resultCount === "number" ? ` · ${t("ownerAi.toolCall.items", { count: record.resultCount })}` : ""}
             </span>
             <ChevronRight
               className={cn(

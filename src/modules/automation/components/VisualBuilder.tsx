@@ -355,12 +355,12 @@ export function VisualBuilder({ automation, onPatch }: Props) {
             {/* Trigger-type-specific helper hint */}
             {trigger.type === "schedule" && (
               <div className="rounded-md border border-amber/30 bg-amber/5 px-2.5 py-1.5 text-[11px] text-amber">
-                Cron example: <code className="font-mono">0 9 * * 1</code> = every Monday 09:00.
+                {t("automation.builder.cronExample")} <code className="font-mono">0 9 * * 1</code> — {t("automation.builder.cronMonday")}
               </div>
             )}
             {trigger.type === "webhook" && (
               <div className="rounded-md border border-cyan/30 bg-cyan/5 px-2.5 py-1.5 text-[11px] text-cyan">
-                Webhook triggers fire when an inbound payload matches the configured event type.
+                {t("automation.builder.webhookHint")}
               </div>
             )}
           </div>

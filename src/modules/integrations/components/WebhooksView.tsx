@@ -336,7 +336,7 @@ export function WebhooksView({ endpoints, events, providers, onReplay }: Props) 
                         )}
                       </TableCell>
                       <TableCell className="hidden py-2 text-[10px] text-muted-foreground md:table-cell">
-                        {ev.bodyBytes}b
+                        {ev.bodyBytes} {t("common.byte")}
                       </TableCell>
                       <TableCell className="py-2">
                         <span

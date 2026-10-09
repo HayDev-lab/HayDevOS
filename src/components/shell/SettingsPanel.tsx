@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * SettingsPanel — Dialog with four tabs (General / Appearance / Members / Modules).
+ * Settings workspace pages: General / Members / Modules.
  */
 
 import type { ReactNode } from "react";
@@ -24,7 +24,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/core/WorkspacePages";
+import { useWorkspaceSection } from "@/lib/workspace-navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ export function SettingsPanel({
   embedded = false,
 }: SettingsPanelProps) {
   const { t, locale, setLocale } = useLocale();
+  const [section] = useWorkspaceSection("settings", "general");
   const { session } = useAuth();
   const copy = useWorkspaceCopy();
   const setModule = useAppStore((s) => s.setActiveModule);
@@ -77,12 +79,12 @@ export function SettingsPanel({
       embedded={embedded}
     >
       <div
-        className="glass-strong flex min-h-0 flex-col gap-0 overflow-hidden p-0"
+        className="glass-strong flex min-w-0 flex-col gap-0 p-0"
         style={{
           width: "min(96vw, 860px)",
           maxWidth: "min(96vw, 860px)",
-          height: "min(88dvh, 760px)",
-          maxHeight: "calc(100dvh - 16px)",
+          height: embedded ? "auto" : "min(88dvh, 760px)",
+          maxHeight: embedded ? "none" : "calc(100dvh - 16px)",
         }}
       >
         {embedded ? (
@@ -112,11 +114,11 @@ export function SettingsPanel({
         )}
 
         <Tabs
-          defaultValue="general"
-          className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden"
+          value={section}
+          className="flex min-w-0 flex-col gap-0"
         >
-          <div className="shrink-0 overflow-x-auto border-b border-border px-3 py-2">
-            <TabsList className="grid h-10 min-w-[360px] w-full grid-cols-3 bg-muted/50">
+          <div className="border-b border-border px-3 py-2">
+            <TabsList className="flex h-auto w-full flex-wrap bg-muted/50">
               <TabsTrigger value="general" className="gap-1.5 text-xs">
                 <Building2 className="h-3.5 w-3.5" />
                 {t("shell.settings.general")}
@@ -132,7 +134,7 @@ export function SettingsPanel({
             </TabsList>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+          <div className="min-w-0">
             <div className="p-4 sm:p-5">
               {/* GENERAL */}
               <TabsContent value="general" className="mt-0 space-y-4">
@@ -225,7 +227,7 @@ export function SettingsPanel({
                               ROLE_TONE[currentMember.role],
                             )}
                           >
-                            {currentMember.role}
+                            {t(`roles.${currentMember.role.toLowerCase()}`)}
                           </Badge>
                         </td>
                       </tr>

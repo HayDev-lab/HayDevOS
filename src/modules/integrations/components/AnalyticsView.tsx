@@ -149,7 +149,7 @@ export function AnalyticsView({ integrations, credentials }: Props) {
         />
         <Kpi
           label={t("integration.analytics.kpi.events24h")}
-          value={kpis.events24h.toLocaleString()}
+          value={kpis.events24h.toLocaleString(locale)}
           icon={<Activity className="h-3.5 w-3.5" />}
           tone="violet"
         />

@@ -117,7 +117,7 @@ export function SettingsView({ initial, onSave }: Props) {
                   onChange={(e) => patch({ maxBodySizeKb: Number(e.target.value) })}
                   className="mt-1 font-mono text-xs"
                 />
-                <div className="mt-0.5 text-[10px] text-muted-foreground">KB</div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground">{t("common.kilobyte")}</div>
               </div>
               <div>
                 <Label className="text-[10px] uppercase tracking-wider">
@@ -129,7 +129,7 @@ export function SettingsView({ initial, onSave }: Props) {
                   onChange={(e) => patch({ idempotencyWindowSec: Number(e.target.value) })}
                   className="mt-1 font-mono text-xs"
                 />
-                <div className="mt-0.5 text-[10px] text-muted-foreground">sec</div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground">{t("common.second")}</div>
               </div>
             </div>
 

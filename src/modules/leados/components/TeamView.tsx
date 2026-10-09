@@ -36,7 +36,7 @@ import { useLeadOSData } from "../LeadOSData";
 import { OwnerAvatar } from "./shared";
 
 export function TeamView() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { overview } = useLeadOSData();
   const teamStats = overview!.teamStats;
   const members = overview!.members;
@@ -59,13 +59,13 @@ export function TeamView() {
         <SummaryKpi
           icon={Briefcase}
           label={t("leados.team.pipelineValue")}
-          value={formatCompact(totals.pipelineValue)}
+          value={formatCompact(totals.pipelineValue, locale)}
           tone="violet"
         />
         <SummaryKpi
           icon={TrendingUp}
           label={t("leados.analytics.dealsClosed")}
-          value={`${totals.wonLeads} · ${formatCompact(totals.wonValue)}`}
+          value={`${totals.wonLeads} · ${formatCompact(totals.wonValue, locale)}`}
           tone="amber"
         />
       </div>
@@ -92,7 +92,7 @@ export function TeamView() {
                       variant="outline"
                       className="mt-1 border-border bg-muted/40 px-1.5 py-0 text-[10px] uppercase tracking-wider text-muted-foreground"
                     >
-                      {members.find((member) => member.id === m.ownerId)?.role}
+                      {t(`roles.${(members.find((member) => member.id === m.ownerId)?.role ?? "MEMBER").toLowerCase()}`)}
                     </Badge>
                   </div>
                 </div>
@@ -100,7 +100,7 @@ export function TeamView() {
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <Stat label={t("leados.team.leadCount")} value={String(m.openLeads)} tone="lime" />
                   <Stat label={t("leados.team.winRate")} value={`${Math.round(m.winRate * 100)}%`} tone="cyan" />
-                  <Stat label={t("leados.team.pipelineValue")} value={formatCompact(m.pipelineValue)} tone="violet" />
+                  <Stat label={t("leados.team.pipelineValue")} value={formatCompact(m.pipelineValue, locale)} tone="violet" />
                   <Stat label={t("leados.analytics.dealsClosed")} value={String(m.wonLeads)} tone="amber" />
                 </div>
 
@@ -158,7 +158,7 @@ export function TeamView() {
                   {t("leados.team.pipelineValue")}
                 </TableHead>
                 <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Won
+                  {t("leados.runtime.won")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -178,10 +178,10 @@ export function TeamView() {
                     {Math.round(m.winRate * 100)}%
                   </TableCell>
                   <TableCell className="py-2.5 text-sm font-medium text-foreground">
-                    {formatCurrency(m.pipelineValue, "USD")}
+                    {formatCurrency(m.pipelineValue, "USD", locale)}
                   </TableCell>
                   <TableCell className="py-2.5 text-sm text-muted-foreground">
-                    {formatCurrency(m.wonValue, "USD")}
+                    {formatCurrency(m.wonValue, "USD", locale)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -191,7 +191,7 @@ export function TeamView() {
       </Card>
 
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
-        {members.length} members · {totals.openLeads} open leads
+        {t("leados.runtime.teamSummary", { members: members.length, leads: totals.openLeads })}
       </div>
     </div>
   );

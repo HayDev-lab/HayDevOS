@@ -240,7 +240,7 @@ export function ActivityTimelineSheet() {
     } catch {
       // ignore clipboard errors
     }
-    toast.success(`${t("activity.exported")} · ${csv.length}B`);
+    toast.success(`${t("activity.exported")} · ${csv.length} ${t("common.byte")}`);
   }
 
   return (

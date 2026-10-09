@@ -14,6 +14,7 @@ import {
   fetchWithSession,
   millisecondsUntilSessionExpiry,
 } from "@/lib/auth/client-session";
+import { t as translateText } from "@/lib/i18n";
 import type { ClientSession } from "@/lib/auth/types";
 import { useAppStore } from "@/lib/store/app-store";
 import { resetOwnerAiClientState } from "@/modules/ownerai/state";
@@ -47,7 +48,18 @@ export function HayDevShell({ initialSession }: HayDevShellProps) {
 
   useEffect(() => {
     document.documentElement.lang = locale;
-    document.title = coreLocales[locale].title;
+    const syncMetadata = () => {
+      if (document.title !== coreLocales[locale].title) document.title = coreLocales[locale].title;
+      for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
+        const meta = document.querySelector(selector);
+        if (meta && meta.getAttribute("content") !== coreLocales[locale].meta) meta.setAttribute("content", coreLocales[locale].meta);
+      }
+    };
+    syncMetadata();
+    // Next can stream default metadata after the saved language has hydrated.
+    const observer = new MutationObserver(syncMetadata);
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
   }, [locale]);
 
   const invalidateSession = useCallback(() => {
@@ -92,7 +104,7 @@ export function HayDevShell({ initialSession }: HayDevShellProps) {
   const signOut = useCallback(async () => {
     const response = await fetch("/api/auth/logout", { method: "POST" });
     if (!response.ok && response.status !== 401) {
-      throw new Error("Could not sign out");
+      throw new Error(translateText("shell.toast.signOutFailed", useAppStore.getState().locale));
     }
     resetOwnerAiClientState();
     setSessionExpired(false);
@@ -106,7 +118,7 @@ export function HayDevShell({ initialSession }: HayDevShellProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orgId }),
       });
-      if (!response.ok) throw new Error("Could not switch organization");
+      if (!response.ok) throw new Error(translateText("shell.toast.orgSwitchFailed", useAppStore.getState().locale));
       const payload = (await response.json()) as { session: ClientSession };
       resetOwnerAiClientState();
       setSession(payload.session);

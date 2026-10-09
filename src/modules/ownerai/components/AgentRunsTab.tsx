@@ -42,7 +42,7 @@ const STATUS_META: Record<
 };
 
 export function AgentRunsTab() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const agentRuns = useOwnerAiStore((s) => s.agentRuns);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -86,13 +86,13 @@ export function AgentRunsTab() {
                     onClick={() => setOpenId(isOpen ? null : r.id)}
                   >
                     <td className="px-3 py-2 text-foreground/80">
-                      <div className="font-mono text-[11px]">{formatDateTime(r.startedAt)}</div>
-                      <div className="text-[10px] text-muted-foreground/70">{relativeTime(r.startedAt)}</div>
+                      <div className="font-mono text-[11px]">{formatDateTime(r.startedAt, locale)}</div>
+                      <div className="text-[10px] text-muted-foreground/70">{relativeTime(r.startedAt, locale)}</div>
                     </td>
                     <td className="px-3 py-2">
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-foreground">
                         <MIcon className="h-3 w-3 text-muted-foreground" />
-                        {r.mode}
+                        {t(`ownerAi.mode.${r.mode.toLowerCase()}`)}
                       </span>
                     </td>
                     <td className="px-3 py-2">
@@ -106,18 +106,18 @@ export function AgentRunsTab() {
                         )}
                       >
                         <SIcon className={cn("h-2.5 w-2.5", r.status === "running" && "animate-spin")} />
-                        {r.status}
+                        {t(`ownerAi.runStatus.${r.status}`)}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-[11px] text-muted-foreground">
-                      {r.provider === "openai-compatible" ? "online LLM" : "offline-fallback"}
+                      {r.provider === "openai-compatible" ? t("ownerAi.online") : t("ownerAi.offline")}
                       {r.model ? <span className="block text-[10px] text-muted-foreground/70">{r.model}</span> : null}
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-[11px] text-foreground/80">{r.toolCallCount}</td>
                     <td className="px-3 py-2 text-right font-mono text-[11px] text-foreground/80">{r.actionCount}</td>
                     <td className="px-3 py-2 text-right font-mono text-[11px] text-foreground/80">{r.approvalCount}</td>
                     <td className="px-3 py-2 text-right font-mono text-[11px] text-foreground/80">
-                      {r.durationMs != null ? `${r.durationMs}ms` : "—"}
+                      {r.durationMs != null ? `${r.durationMs} ${t("common.millisecond")}` : "—"}
                     </td>
                     <td className="px-3 py-2">
                       <span className="font-mono text-[10px] text-muted-foreground/70">{r.correlationId}</span>
@@ -131,23 +131,23 @@ export function AgentRunsTab() {
                       <td colSpan={10} className="px-3 py-3">
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                           <div className="space-y-1 text-[11px]">
-                            <DetailLine label="runId" value={r.id} mono />
-                            <DetailLine label="conversationId" value={r.conversationId} mono />
-                            <DetailLine label="correlationId" value={r.correlationId} mono />
-                            <DetailLine label="provider" value={r.provider} />
-                            <DetailLine label="model" value={r.model ?? "—"} />
+                            <DetailLine label={t("ownerAi.metadata.runId")} value={r.id} mono />
+                            <DetailLine label={t("ownerAi.metadata.conversationId")} value={r.conversationId} mono />
+                            <DetailLine label={t("ownerAi.metadata.correlationId")} value={r.correlationId} mono />
+                            <DetailLine label={t("ownerAi.metadata.provider")} value={r.provider} />
+                            <DetailLine label={t("ownerAi.metadata.model")} value={r.model ?? "—"} />
                             <DetailLine
-                              label="offline"
-                              value={r.offline ? "true" : "false"}
+                              label={t("ownerAi.metadata.offline")}
+                              value={r.offline ? t("common.yes") : t("common.no")}
                             />
                           </div>
                           <div className="space-y-1 text-[11px]">
-                            <DetailLine label="startedAt" value={formatDateTime(r.startedAt)} mono />
-                            <DetailLine label="endedAt" value={r.endedAt ? formatDateTime(r.endedAt) : "—"} mono />
-                            <DetailLine label="durationMs" value={r.durationMs != null ? `${r.durationMs}ms` : "—"} mono />
-                            <DetailLine label="toolCallCount" value={String(r.toolCallCount)} mono />
-                            <DetailLine label="actionCount" value={String(r.actionCount)} mono />
-                            <DetailLine label="approvalCount" value={String(r.approvalCount)} mono />
+                            <DetailLine label={t("ownerAi.metadata.startedAt")} value={formatDateTime(r.startedAt, locale)} mono />
+                            <DetailLine label={t("ownerAi.metadata.finishedAt")} value={r.endedAt ? formatDateTime(r.endedAt, locale) : "—"} mono />
+                            <DetailLine label={t("ownerAi.runs.col.duration")} value={r.durationMs != null ? `${r.durationMs} ${t("common.millisecond")}` : "—"} mono />
+                            <DetailLine label={t("ownerAi.runs.col.tools")} value={String(r.toolCallCount)} mono />
+                            <DetailLine label={t("ownerAi.runs.col.actions")} value={String(r.actionCount)} mono />
+                            <DetailLine label={t("ownerAi.runs.col.approvals")} value={String(r.approvalCount)} mono />
                             {r.error && (
                               <div className="mt-2 rounded border border-rose/30 bg-rose/[0.04] p-2 text-[11px] text-rose">
                                 {r.error}

@@ -1,5 +1,7 @@
 "use client";
 
+import { localizeError } from "@/lib/i18n-errors";
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CreateQuoteInput, ProductInput, UpdateQuoteSettingsInput } from "@/lib/quotes/schemas";
 import type { QuoteDto } from "@/lib/quotes/types";
@@ -25,7 +27,7 @@ export function QuoteFlowDataProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!current.current) setLoading(true);
     try { const next = await fetchQuoteOverview(); current.current = next; setOverview(next); setError(null); }
-    catch (cause) { current.current = null; setOverview(null); setError(cause instanceof Error ? cause.message : "QuoteFlow data could not be loaded"); }
+    catch (cause) { current.current = null; setOverview(null); setError(cause instanceof Error ? localizeError(cause) : localizeError(undefined)); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => {
@@ -39,7 +41,7 @@ export function QuoteFlowDataProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
       current.current = null;
       setOverview(null);
-      setError(cause instanceof Error ? cause.message : "QuoteFlow data could not be loaded");
+      setError(cause instanceof Error ? localizeError(cause) : localizeError(undefined));
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });

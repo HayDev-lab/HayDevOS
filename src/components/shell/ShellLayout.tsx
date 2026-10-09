@@ -6,7 +6,7 @@
  * Structure:
  *   <div min-h-screen flex flex-col bg-background>
  *     <TopBar/>
- *     <main flex-1> active module component (framer-motion fade on switch)
+ *     <main flex-1> workspace page selected by the URL
  *     <OwnerAiPanel/>   (overlay, slides in from right)
  *     <Footer mt-auto/>
  *
@@ -24,8 +24,10 @@
  *
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCallback, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { resolveWorkspaceRoute } from "@/lib/workspace-routes";
+import { bindWorkspaceNavigator } from "@/lib/workspace-navigation";
 import { Activity } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,10 +40,10 @@ import { cn } from "@/lib/utils";
 import { TopBar } from "./TopBar";
 import { CommandPalette } from "./CommandPalette";
 import { OwnerAiPanel } from "./OwnerAiPanel";
-import { SettingsPanel } from "./SettingsPanel";
 import { ActivityTimelineSheet } from "./ActivityTimelineSheet";
 import { ShortcutsHelpDialog } from "./ShortcutsHelpDialog";
 import { ModuleFrame } from "@/components/core/ModuleFrame";
+import { SiteHeader } from "@/components/brand/SiteHeader";
 
 interface ShellLayoutProps {
   onLogout: () => void;
@@ -77,7 +79,6 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
   const { t } = useLocale();
   const { session } = useAuth();
   const {
-    activeModule,
     setCommandOpen,
     commandOpen,
     setOwnerAiOpen,
@@ -89,7 +90,14 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
     setShortcutsOpen,
   } = useAppStore();
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const activeModule = resolveWorkspaceRoute(pathname)?.moduleId ?? "dashboard";
+  useEffect(() => bindWorkspaceNavigator((href) => router.push(href)), [router]);
+  useEffect(() => {
+    useAppStore.setState({ activeModule, moduleEntryTab: null });
+  }, [activeModule]);
+
   // Pending `g` jump state — true for up to 1.2s after the user presses `g`.
   const pendingJumpRef = useRef(false);
   const jumpTimeoutRef = useRef<number | null>(null);
@@ -98,15 +106,8 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
   const ActiveComponent = mod?.component;
   const activeOrg = session.activeOrganization;
 
-  // Normalize old persisted links so they cannot reopen the retired Control view.
-  useEffect(() => {
-    if (activeModule === "control") {
-      setActiveModule("dashboard");
-    }
-  }, [activeModule, setActiveModule]);
-
   // ─── Global keyboard shortcuts ─────────────────────────────────────────
-  const anyOverlayOpen = commandOpen || ownerAiOpen || activityOpen || shortcutsOpen || settingsOpen;
+  const anyOverlayOpen = commandOpen || ownerAiOpen || activityOpen || shortcutsOpen;
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
@@ -203,7 +204,6 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
     ownerAiOpen,
     activityOpen,
     shortcutsOpen,
-    settingsOpen,
     anyOverlayOpen,
     setCommandOpen,
     setOwnerAiOpen,
@@ -226,45 +226,40 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
 
   const year = new Date().getFullYear();
 
-  // Memoize the settings-open toggle so SettingsPanel gets a stable callback.
-  const handleOpenSettings = useCallback(() => setSettingsOpen(true), []);
+  // The account menu opens the full settings page.
+  const handleOpenSettings = useCallback(() => setActiveModule("settings"), [setActiveModule]);
 
   return (
     <div
       className={cn(
-        "haydev-core core-shell flex h-dvh min-h-0 w-full min-w-0 max-w-full flex-col overflow-hidden text-foreground",
+        "haydev-core core-shell flex min-h-dvh w-full min-w-0 max-w-full flex-col text-foreground",
         activeModule === "dashboard" && "core-shell--home",
       )}
     >
+      <SiteHeader onHome={() => setActiveModule("dashboard")} />
       <TopBar
         onOpenSettings={handleOpenSettings}
         onLogout={onLogout}
       />
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="flex flex-1">
         {/* Main content area */}
         <main
-          className="core-main relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto"
+          className="core-main relative flex min-w-0 flex-1 flex-col"
           aria-label={mod ? t(mod.nameKey) : t("shell.content")}
         >
-          <div className="flex min-h-0 flex-1 flex-col">
-            <AnimatePresence mode="wait">
-              <motion.div
+          <div className="flex flex-1 flex-col">
+              <div
                 key={activeModule}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
-                className="core-active-view min-h-0 flex-1"
+                className="core-active-view flex-1"
               >
                 {ActiveComponent ? ["dashboard", "control", "modules", "marketing"].includes(activeModule)
                   ? <ActiveComponent />
                   : <ModuleFrame nameKey={mod!.nameKey}><ActiveComponent /></ModuleFrame>
                   : null}
-              </motion.div>
-            </AnimatePresence>
+              </div>
 
-            {/* Footer pinned at the bottom of the viewport */}
+            {/* Footer follows the complete page content. */}
             <footer
               className={cn(
                 "core-footer flex h-8 shrink-0 items-center justify-between gap-3 border-t border-border bg-sidebar/60 px-4 text-[10px] uppercase tracking-wider text-muted-foreground/70",
@@ -295,9 +290,6 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
 
       {/* Command palette */}
       <CommandPalette />
-
-      {/* Settings */}
-      <SettingsPanel open={settingsOpen} onOpenChange={setSettingsOpen} />
 
       {/* Activity timeline */}
       <ActivityTimelineSheet />

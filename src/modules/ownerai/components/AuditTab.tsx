@@ -45,7 +45,7 @@ const EVENT_TONE: Partial<Record<AuditEvent["type"], string>> = {
 };
 
 export function AuditTab() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const auditEvents = useOwnerAiStore((s) => s.auditEvents);
   const config = useOwnerAiStore((s) => s.config);
   // The store doesn't currently cache `stats` separately; derive from the
@@ -165,7 +165,7 @@ export function AuditTab() {
           <option value="__all">{t("ownerAi.audit.filter.all")}</option>
           {eventTypes.map((ty) => (
             <option key={ty} value={ty}>
-              {ty}
+              {t(`ownerAi.event.${ty}`)}
             </option>
           ))}
         </select>
@@ -199,8 +199,8 @@ export function AuditTab() {
                     onClick={() => setOpenId(isOpen ? null : e.id)}
                   >
                     <td className="px-3 py-2 text-[11px] text-muted-foreground">
-                      <div className="font-mono">{formatDateTime(e.ts)}</div>
-                      <div className="text-[10px] text-muted-foreground/70">{relativeTime(e.ts)}</div>
+                      <div className="font-mono">{formatDateTime(e.ts, locale)}</div>
+                      <div className="text-[10px] text-muted-foreground/70">{relativeTime(e.ts, locale)}</div>
                     </td>
                     <td className="px-3 py-2">
                       <span
@@ -209,7 +209,7 @@ export function AuditTab() {
                           tone,
                         )}
                       >
-                        {e.type}
+                        {t(`ownerAi.event.${e.type}`)}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-[11px] text-foreground/80">
@@ -242,7 +242,7 @@ export function AuditTab() {
 }
 
 function StatsGrid({ stats, promptVersion }: { stats: AuditStats; promptVersion: string }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
   const cards: {
     icon: typeof Activity;
@@ -313,11 +313,13 @@ function StatsGrid({ stats, promptVersion }: { stats: AuditStats; promptVersion:
         <BreakdownCard
           title={t("ownerAi.audit.byMode")}
           data={stats.byMode}
+          labels="mode"
           tone="violet"
         />
         <BreakdownCard
           title={t("ownerAi.audit.byStatus")}
           data={stats.byRunStatus}
+          labels="runStatus"
           tone="lime"
         />
       </div>
@@ -328,7 +330,7 @@ function StatsGrid({ stats, promptVersion }: { stats: AuditStats; promptVersion:
             <span className="uppercase tracking-wider text-muted-foreground/60">
               {t("ownerAi.audit.stats.lastRun")}:
             </span>{" "}
-            <span className="font-mono">{formatDateTime(stats.lastRunAt)}</span>
+            <span className="font-mono">{formatDateTime(stats.lastRunAt, locale)}</span>
           </span>
         )}
         {stats.lastEventAt && (
@@ -336,7 +338,7 @@ function StatsGrid({ stats, promptVersion }: { stats: AuditStats; promptVersion:
             <span className="uppercase tracking-wider text-muted-foreground/60">
               {t("ownerAi.audit.stats.lastEvent")}:
             </span>{" "}
-            <span className="font-mono">{formatDateTime(stats.lastEventAt)}</span>
+            <span className="font-mono">{formatDateTime(stats.lastEventAt, locale)}</span>
           </span>
         )}
         <span>
@@ -354,11 +356,14 @@ function BreakdownCard({
   title,
   data,
   tone,
+  labels,
 }: {
   title: string;
   data: Record<string, number>;
   tone: "lime" | "cyan" | "amber" | "violet";
+  labels?: "mode" | "runStatus";
 }) {
+  const { t } = useLocale();
   const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
   if (entries.length === 0) {
     return (
@@ -380,7 +385,7 @@ function BreakdownCard({
         {entries.map(([k, v]) => (
           <li key={k} className="space-y-0.5">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="font-mono text-foreground/80">{k}</span>
+              <span className="font-mono text-foreground/80">{labels ? t(`ownerAi.${labels}.${k.toLowerCase()}`) : k}</span>
               <span className="font-mono text-muted-foreground">{v}</span>
             </div>
             <div className="h-1 overflow-hidden rounded-full bg-muted/40">

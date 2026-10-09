@@ -141,6 +141,7 @@ export function ChatMessage({
 }
 
 function ActionCard({ action }: { action: ProposedAction }) {
+  const { t } = useLocale();
   const Icon =
     action.safety === "safe"
       ? Zap
@@ -175,7 +176,7 @@ function ActionCard({ action }: { action: ProposedAction }) {
           <div className="flex items-center gap-1.5">
             <span className="font-mono text-[11px] font-semibold text-foreground">{action.action}</span>
             <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground/70">
-              {action.safety} · {action.status}
+              {t(`ownerAi.safety.${action.safety}`)} · {t(`ownerAi.actionStatus.${action.status}`)}
             </span>
           </div>
           {action.result && (

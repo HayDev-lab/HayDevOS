@@ -1,4 +1,5 @@
 import type { CustomerDto, InventoryBalanceDto, OrderDto, PageResult, ProductDto } from "@/lib/erp/types";
+import { localizeApiError } from "@/lib/i18n-errors";
 
 type ApiFailure = { error?: { code?: string; message?: string; details?: unknown } };
 
@@ -13,7 +14,7 @@ export async function erpRequest<T>(url: string, init?: RequestInit): Promise<T>
   if (!response.ok) {
     let failure: ApiFailure = {};
     try { failure = await response.json() as ApiFailure; } catch { /* HTTP fallback */ }
-    throw new ErpRequestError(response.status, failure.error?.code ?? "ERP_REQUEST_FAILED", failure.error?.message ?? `Request failed (${response.status})`, failure.error?.details);
+    throw new ErpRequestError(response.status, failure.error?.code ?? "ERP_REQUEST_FAILED", localizeApiError(failure.error, response.status), failure.error?.details);
   }
   return response.status === 204 ? undefined as T : response.json() as Promise<T>;
 }

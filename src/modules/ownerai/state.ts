@@ -28,6 +28,7 @@ ProposedAction,
 ToolCallRecord,
 } from "@/app/api/owner-ai/types";
 import { create } from "zustand";
+import { localizeApiError, localizeError } from "@/lib/i18n-errors";
 import { DEFAULT_MODE } from "./types";
 
 interface OwnerAiState {
@@ -261,8 +262,8 @@ export const useOwnerAiStore = create<OwnerAiState>((set, get) => ({
       });
 
       if (!res.ok) {
-        const errText = await res.text().catch(() => "");
-        throw new Error(`API ${res.status}: ${errText || res.statusText}`);
+        const failure = await res.json().catch(() => null) as { error?: { code?: string; message?: string } } | null;
+        throw new Error(localizeApiError(failure?.error, res.status));
       }
 
       const resp = (await res.json()) as OwnerAiResponse;
@@ -302,7 +303,7 @@ export const useOwnerAiStore = create<OwnerAiState>((set, get) => ({
       // Fire-and-forget — don't block the UI.
       void get().refreshState();
     } catch (e) {
-      const msg = (e as Error).message || String(e);
+      const msg = localizeError(e);
       // Replace the placeholder assistant message with an error note.
       const after = get();
       const convs = [...after.conversations];
@@ -315,7 +316,7 @@ export const useOwnerAiStore = create<OwnerAiState>((set, get) => ({
             m.id === tempAssistantId
               ? {
                   ...m,
-                  content: `⚠️ I couldn't reach the API: ${msg}. Please try again.`,
+                  content: `⚠️ ${msg}`,
                 }
               : m,
           ),

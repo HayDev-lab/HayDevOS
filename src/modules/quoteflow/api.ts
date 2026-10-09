@@ -2,6 +2,7 @@ import type { CreateQuoteInput, ProductInput, UpdateQuoteSettingsInput } from "@
 import type { QuoteDto } from "@/lib/quotes/types";
 import type { DocumentFormat, DocumentLocale, GeneratedDocumentDto } from "@/lib/documents/types";
 import { fetchWithSession } from "@/lib/auth/client-session";
+import { localizeApiError } from "@/lib/i18n-errors";
 
 export interface QuoteFlowOverview {
   quotes: QuoteDto[];
@@ -25,7 +26,7 @@ export async function quoteRequest<T>(url: string, init?: RequestInit): Promise<
   if (!response.ok) {
     let failure: ApiFailure = {};
     try { failure = await response.json() as ApiFailure; } catch { /* use HTTP fallback */ }
-    const error = new Error(failure.error?.message ?? `Request failed (${response.status})`);
+    const error = new Error(localizeApiError(failure.error, response.status));
     error.name = failure.error?.code ?? "QUOTEFLOW_REQUEST_FAILED";
     throw error;
   }

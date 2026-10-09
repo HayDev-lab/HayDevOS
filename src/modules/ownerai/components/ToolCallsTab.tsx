@@ -12,7 +12,7 @@ import { useLocale } from "@/lib/i18n";
 import { useOwnerAiStore } from "../state";
 
 export function ToolCallsTab() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const toolCalls = useOwnerAiStore((s) => s.toolCalls);
   const [openId, setOpenId] = useState<string | null>(null);
   const [toolFilter, setToolFilter] = useState<string>("__all");
@@ -94,8 +94,8 @@ export function ToolCallsTab() {
                       onClick={() => setOpenId(isOpen ? null : tc.id)}
                     >
                       <td className="px-3 py-2 text-[11px] text-muted-foreground">
-                        <div className="font-mono">{new Date(tc.ts).toLocaleTimeString()}</div>
-                        <div className="text-[10px] text-muted-foreground/70">{relativeTime(tc.ts)}</div>
+                        <div className="font-mono">{new Date(tc.ts).toLocaleTimeString(locale)}</div>
+                        <div className="text-[10px] text-muted-foreground/70">{relativeTime(tc.ts, locale)}</div>
                       </td>
                       <td className="px-3 py-2">
                         <span className="inline-flex items-center gap-1.5">
@@ -110,11 +110,11 @@ export function ToolCallsTab() {
                         {tc.resultSummary}
                         {typeof tc.resultCount === "number" && (
                           <span className="ml-1 rounded bg-background/60 px-1 text-[10px] text-muted-foreground/70">
-                            {tc.resultCount} items
+                            {t("common.items", { count: tc.resultCount })}
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-right font-mono text-[11px] text-foreground/80">{tc.durationMs}ms</td>
+                      <td className="px-3 py-2 text-right font-mono text-[11px] text-foreground/80">{tc.durationMs} {t("common.millisecond")}</td>
                       <td className="px-3 py-2">
                         <span className="font-mono text-[10px] text-muted-foreground/70">{tc.runId}</span>
                       </td>

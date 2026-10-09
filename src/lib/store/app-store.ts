@@ -2,14 +2,16 @@
 
 /**
  * HayDevOS global app shell state (Zustand).
- * Owns UI-only state: active module, locale, sidebar, command palette, Owner
- * AI panel, and global search query. Identity and tenancy come from the
+ * Owns UI-only state: the current URL's module, locale, command palette, Owner
+ * AI panel, and global search query. Navigation opens App Router pages.
+ * Identity and tenancy come from the
  * server-backed AuthContext and are deliberately never persisted here.
  */
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Locale } from "@/lib/i18n";
+import { navigateWorkspace } from "@/lib/workspace-navigation";
 
 // NOTE: we intentionally do NOT import DEFAULT_LOCALE from i18n here, to avoid
 // a circular import (i18n's useLocale hook imports useAppStore from this
@@ -65,9 +67,9 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       activeModule: "dashboard",
-      setActiveModule: (moduleId) => set({ activeModule: normalizeModuleId(moduleId), moduleEntryTab: null }),
+      setActiveModule: (moduleId) => { navigateWorkspace(moduleId); },
       moduleEntryTab: null,
-      openModule: (moduleId, tab) => set({ activeModule: normalizeModuleId(moduleId), moduleEntryTab: tab ?? null }),
+      openModule: (moduleId, tab) => { navigateWorkspace(moduleId, tab); },
 
       locale: APP_DEFAULT_LOCALE,
       setLocale: (locale) => set({ locale }),
@@ -96,13 +98,13 @@ export const useAppStore = create<AppState>()(
     {
       name: "haydev-os-app",
       storage: createJSONStorage(() => localStorage),
+      // The URL selects the module; only browser preferences are persisted.
       // The shell is server-rendered with the Armenian defaults. Hydrating the
       // persisted browser state during the first client render would make the
       // initial HTML differ for users who previously selected another locale.
       // HayDevShell rehydrates after React has attached to the server markup.
       skipHydration: true,
       partialize: (s) => ({
-        activeModule: s.activeModule,
         locale: s.locale,
         sidebarCollapsed: s.sidebarCollapsed,
       }),

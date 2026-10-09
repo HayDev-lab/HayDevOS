@@ -1,5 +1,7 @@
 "use client";
 
+import { localizeError } from "@/lib/i18n-errors";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Archive, Download, FileText, Loader2, RefreshCw, Search, ShieldCheck, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -45,7 +47,7 @@ function DocumentFlowContent() {
       setDocuments(page.items);
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("docflow.runtime.loadFailed"));
+      setError(cause instanceof Error ? localizeError(cause) : t("docflow.runtime.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -58,7 +60,7 @@ function DocumentFlowContent() {
       setDocuments(page.items);
       setError(null);
     }).catch((cause) => {
-      if (!cancelled) setError(cause instanceof Error ? cause.message : t("docflow.runtime.loadFailed"));
+      if (!cancelled) setError(cause instanceof Error ? localizeError(cause) : t("docflow.runtime.loadFailed"));
     }).finally(() => {
       if (!cancelled) setLoading(false);
     });
@@ -79,7 +81,7 @@ function DocumentFlowContent() {
       for (const file of Array.from(files)) {
         if (file.size > MAX_FILE_BYTES) { toast.error(t("docflow.runtime.fileTooLarge", { name: file.name })); continue; }
         try { await uploadDocumentFile(file); completed += 1; }
-        catch (cause) { toast.error(`${file.name}: ${cause instanceof Error ? cause.message : t("docflow.runtime.uploadFailed")}`); }
+        catch (cause) { toast.error(`${file.name}: ${cause instanceof Error ? localizeError(cause) : t("docflow.runtime.uploadFailed")}`); }
       }
       if (completed) {
         toast.success(t("docflow.runtime.uploadStored", { count: completed }));
@@ -96,7 +98,7 @@ function DocumentFlowContent() {
       await archiveDocumentRequest(document.id);
       toast.success(t("docflow.runtime.archived", { title: document.title }));
       await refresh();
-    } catch (cause) { toast.error(cause instanceof Error ? cause.message : t("docflow.runtime.archiveFailed")); }
+    } catch (cause) { toast.error(cause instanceof Error ? localizeError(cause) : t("docflow.runtime.archiveFailed")); }
   };
 
   return (
@@ -124,7 +126,7 @@ function DocumentFlowContent() {
         <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("docflow.runtime.search")} className="pl-9" maxLength={200} />
       </form>
 
-      {error ? <div className="rounded-xl border border-destructive/40 p-6"><p>{error}</p><Button className="mt-3" onClick={() => void refresh()}>{t("common.retry")}</Button></div> : loading ? <div className="grid min-h-52 place-items-center"><Loader2 className="size-7 animate-spin text-cyan" /></div> : (
+      {error ? <div className="rounded-xl border border-destructive/40 p-6"><p>{localizeError(error)}</p><Button className="mt-3" onClick={() => void refresh()}>{t("common.retry")}</Button></div> : loading ? <div className="grid min-h-52 place-items-center"><Loader2 className="size-7 animate-spin text-cyan" /></div> : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-muted-foreground"><tr><th className="p-3">{t("docflow.runtime.document")}</th><th className="p-3">{t("docflow.runtime.source")}</th><th className="p-3">{t("docflow.viewer.version")}</th><th className="p-3">{t("docflow.runtime.integrity")}</th><th className="p-3">{t("common.status")}</th><th className="p-3 text-right">{t("common.actions")}</th></tr></thead>

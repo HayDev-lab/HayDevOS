@@ -1,5 +1,7 @@
 "use client";
 
+import { localizeError } from "@/lib/i18n-errors";
+
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, CheckSquare, Clock } from "lucide-react";
 import { toast } from "sonner";
@@ -34,7 +36,7 @@ export function TasksView() {
       await completeTask(id, complete);
       toast.success(complete ? t("leados.toast.taskCompleted") : t("leados.runtime.taskReopened"));
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : t("leados.runtime.taskFailed"));
+      toast.error(cause instanceof Error ? localizeError(cause) : t("leados.runtime.taskFailed"));
     } finally {
       setWorkingId(null);
     }

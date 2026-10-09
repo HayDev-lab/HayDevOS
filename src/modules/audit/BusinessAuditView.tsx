@@ -1,5 +1,7 @@
 "use client";
 
+import { useWorkspaceSection } from "@/lib/workspace-navigation";
+
 /**
  * BusinessAuditView — top-level view for the Audit module.
  *
@@ -34,7 +36,7 @@ Tabs,
 TabsContent,
 TabsList,
 TabsTrigger,
-} from "@/components/ui/tabs";
+} from "@/components/core/WorkspacePages";
 import { useLocale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -84,7 +86,7 @@ const TABS: TabDef[] = [
 
 export function BusinessAuditView() {
   const { t } = useLocale();
-  const [tab, setTab] = useState<TabId>("questionnaire");
+  const [tab, setTab] = useWorkspaceSection<TabId>("audit", "questionnaire");
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [activeReport, setActiveReport] = useState<AuditReport | null>(null);
   const [settings, setSettings] = useState<AuditSettings>(DEFAULT_AUDIT_SETTINGS);

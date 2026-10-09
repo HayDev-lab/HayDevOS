@@ -8,12 +8,15 @@
  * dots remain visible without animation.
  */
 
+import { useLocale } from "@/lib/i18n";
+
 export function TypingDots() {
+  const { t } = useLocale();
   return (
     <span
       className="inline-flex items-center gap-1"
       role="status"
-      aria-label="typing"
+      aria-label={t("ownerAi.typing")}
     >
       {[0, 1, 2].map((i) => (
         <span

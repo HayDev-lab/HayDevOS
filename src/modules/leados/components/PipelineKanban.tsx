@@ -1,5 +1,7 @@
 "use client";
 
+import { localizeError } from "@/lib/i18n-errors";
+
 /**
  * LeadOS — Pipeline Kanban.
  *
@@ -88,7 +90,7 @@ export function PipelineKanban({ leads: initialLeads, onStageChange }: PipelineK
       else await changeStage(leadId, { stage: newStage });
       toast.success(t("leados.toast.stageMoved", { name: lead.name, stage: t(STAGE_BY_ID[newStage].labelKey) }));
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : "Stage could not be updated");
+      toast.error(cause instanceof Error ? localizeError(cause) : t("leados.runtime.stageFailed"));
     }
   }
 
@@ -101,7 +103,7 @@ export function PipelineKanban({ leads: initialLeads, onStageChange }: PipelineK
     >
       <div className="flex flex-col gap-3">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-          {t("leados.pipeline.dragHint")} · {t("leados.settings.firstResponseTarget")}: {Math.round((overview?.slaPolicy.firstResponseMinutes ?? 0) / 60)}h
+          {t("leados.pipeline.dragHint")} · {t("leados.settings.firstResponseTarget")}: {Math.round((overview?.slaPolicy.firstResponseMinutes ?? 0) / 60)} {t("common.hour")}
         </p>
         <ScrollArea className="w-full pb-2">
           <div className="flex gap-3 pb-2" style={{ minWidth: "min-content" }}>
@@ -169,7 +171,7 @@ function KanbanColumn({
           </span>
         </div>
         <span className="text-[10px] font-medium text-muted-foreground">
-          {formatCompact(total)}
+          {formatCompact(total, locale)}
         </span>
       </div>
 
@@ -187,7 +189,7 @@ function KanbanColumn({
 
       {/* Footer */}
       <div className="border-t border-border px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70">
-        {t("leados.pipeline.total")}: {formatCurrency(total, "USD")}
+        {t("leados.pipeline.total")}: {formatCurrency(total, "USD", locale)}
       </div>
     </div>
   );
@@ -237,7 +239,6 @@ function LeadCard({
   const sla = getSlaStatus(lead);
   const slaDot =
     sla === "on-track" ? "bg-cyan" : sla === "warning" ? "bg-amber" : "bg-rose";
-  void locale;
   return (
     <motion.div
       layout
@@ -259,7 +260,7 @@ function LeadCard({
       <div className="mt-2 flex items-center justify-between gap-2">
         <OwnerAvatar ownerId={lead.ownerId} size="xs" />
         <span className="text-xs font-medium text-foreground">
-          {formatCurrency(lead.value, lead.currency)}
+          {formatCurrency(lead.value, lead.currency, locale)}
         </span>
       </div>
     </motion.div>

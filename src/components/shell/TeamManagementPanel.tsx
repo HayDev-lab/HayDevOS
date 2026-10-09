@@ -1,5 +1,7 @@
 "use client";
 
+import { localizeApiError, localizeError } from "@/lib/i18n-errors";
+
 /**
  * TeamManagementPanel — OWNER-only UI to manage organization members.
  *
@@ -79,7 +81,7 @@ export function TeamManagementPanel() {
         if (!response.ok || !payload || !("members" in payload)) {
           throw new Error(
             payload && "error" in payload
-              ? payload.error?.message ?? t("shell.team.failed")
+              ? localizeApiError(payload.error, response.status)
               : t("shell.team.failed"),
           );
         }
@@ -88,7 +90,7 @@ export function TeamManagementPanel() {
         setMembers(payload.members.filter((m) => m.role !== "OWNER"));
       } catch (loadError) {
         if (!cancelled) {
-          toast.error(loadError instanceof Error ? loadError.message : t("shell.team.failed"));
+          toast.error(loadError instanceof Error ? localizeError(loadError) : t("shell.team.failed"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -111,13 +113,13 @@ export function TeamManagementPanel() {
       if (!response.ok || !payload || !("members" in payload)) {
         throw new Error(
           payload && "error" in payload
-            ? payload.error?.message ?? t("shell.team.failed")
+            ? localizeApiError(payload.error, response.status)
             : t("shell.team.failed"),
         );
       }
       setMembers(payload.members.filter((m) => m.role !== "OWNER"));
     } catch (reloadError) {
-      toast.error(reloadError instanceof Error ? reloadError.message : t("shell.team.failed"));
+      toast.error(reloadError instanceof Error ? localizeError(reloadError) : t("shell.team.failed"));
     }
   }
 
@@ -141,7 +143,7 @@ export function TeamManagementPanel() {
       if (!response.ok || !payload || !("member" in payload)) {
         throw new Error(
           payload && "error" in payload
-            ? payload.error?.message ?? t("shell.team.failed")
+            ? localizeApiError(payload.error, response.status)
             : t("shell.team.failed"),
         );
       }
@@ -151,7 +153,7 @@ export function TeamManagementPanel() {
       setInviteRole("MEMBER");
       await reloadMembers();
     } catch (inviteError) {
-      toast.error(inviteError instanceof Error ? inviteError.message : t("shell.team.failed"));
+      toast.error(inviteError instanceof Error ? localizeError(inviteError) : t("shell.team.failed"));
     } finally {
       setSubmitting(false);
     }
@@ -168,12 +170,12 @@ export function TeamManagementPanel() {
       });
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
-        throw new Error(payload?.error?.message ?? t("shell.team.failed"));
+        throw new Error(localizeApiError(payload?.error, response.status));
       }
       toast.success(t("shell.team.roleChanged"));
       await reloadMembers();
     } catch (changeError) {
-      toast.error(changeError instanceof Error ? changeError.message : t("shell.team.failed"));
+      toast.error(changeError instanceof Error ? localizeError(changeError) : t("shell.team.failed"));
     } finally {
       setBusyMemberId(null);
     }
@@ -187,12 +189,12 @@ export function TeamManagementPanel() {
       });
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
-        throw new Error(payload?.error?.message ?? t("shell.team.failed"));
+        throw new Error(localizeApiError(payload?.error, response.status));
       }
       toast.success(t("shell.team.removed"));
       await reloadMembers();
     } catch (removeError) {
-      toast.error(removeError instanceof Error ? removeError.message : t("shell.team.failed"));
+      toast.error(removeError instanceof Error ? localizeError(removeError) : t("shell.team.failed"));
     } finally {
       setBusyMemberId(null);
     }
@@ -252,7 +254,7 @@ export function TeamManagementPanel() {
               <SelectContent>
                 {INVITABLE_ROLES.map((role) => (
                   <SelectItem key={role} value={role}>
-                    {role}
+                    {t(`roles.${role.toLowerCase()}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -316,7 +318,7 @@ export function TeamManagementPanel() {
                           ROLE_TONE[member.role],
                         )}
                       >
-                        {member.role}
+                        {t(`roles.${member.role.toLowerCase()}`)}
                       </Badge>
                       <Select
                         value={member.role}
@@ -329,7 +331,7 @@ export function TeamManagementPanel() {
                         <SelectContent>
                           {INVITABLE_ROLES.map((role) => (
                             <SelectItem key={role} value={role}>
-                              {role}
+                              {t(`roles.${role.toLowerCase()}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>

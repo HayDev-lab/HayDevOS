@@ -62,7 +62,7 @@ export function UserMenu({ onOpenSettings, onLogout }: UserMenuProps) {
       setSearchQuery("");
       toast.success(t("shell.toast.orgSwitched", { org: org.name }));
     } catch {
-      toast.error("Could not switch organization");
+      toast.error(t("shell.toast.orgSwitchFailed"));
     }
   }
 
@@ -91,7 +91,7 @@ export function UserMenu({ onOpenSettings, onLogout }: UserMenuProps) {
                 {user.name}
               </span>
               <span className="block text-[10px] leading-tight text-muted-foreground">
-                {user.role}
+                {t(`roles.${user.role.toLowerCase()}`)}
               </span>
             </span>
             <ChevronDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
@@ -123,7 +123,7 @@ export function UserMenu({ onOpenSettings, onLogout }: UserMenuProps) {
               variant="outline"
               className="border-primary/30 bg-primary/10 px-1.5 text-[9px] uppercase tracking-wider text-lime"
             >
-              {user.role}
+              {t(`roles.${user.role.toLowerCase()}`)}
             </Badge>
           </DropdownMenuLabel>
 
@@ -142,7 +142,7 @@ export function UserMenu({ onOpenSettings, onLogout }: UserMenuProps) {
               <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="flex-1 text-sm text-foreground">{org.name}</span>
               <span className="text-[10px] uppercase text-muted-foreground">
-                {org.plan}
+                {t(`shell.register.plan.${org.plan.toLowerCase()}`)}
               </span>
               {org.id === activeOrganization.id && (
                 <Check className="h-3.5 w-3.5 text-lime" />
@@ -175,7 +175,7 @@ export function UserMenu({ onOpenSettings, onLogout }: UserMenuProps) {
           <DropdownMenuSeparator className="bg-border" />
 
           <DropdownMenuItem
-            onClick={() => toast.info(t("shell.user.profile") + " — coming soon")}
+            onClick={() => toast.info(t("shell.user.profile") + " — " + t("common.comingSoon"))}
             className="gap-2 px-3 py-2"
           >
             <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />

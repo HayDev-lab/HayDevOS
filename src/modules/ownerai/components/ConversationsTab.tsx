@@ -106,6 +106,7 @@ export function ConversationsTab({ onOpenChat }: ConversationsTabProps) {
 }
 
 function ConversationRow({ conv, onPick }: { conv: Conversation; onPick: () => void }) {
+  const { t, locale } = useLocale();
   return (
     <tr
       onClick={onPick}
@@ -135,19 +136,19 @@ function ConversationRow({ conv, onPick }: { conv: Conversation; onPick: () => v
             conv.mode === "AUTO" && "bg-violet/15 text-violet",
           )}
         >
-          {conv.mode}
+          {t(`ownerAi.mode.${conv.mode.toLowerCase()}`)}
         </span>
       </td>
       <td className="px-3 py-2 text-right font-mono text-[11px] text-foreground/80">
         {conv.messages.length}
       </td>
       <td className="px-3 py-2 text-[11px] text-muted-foreground">
-        <div className="font-mono">{formatDateTime(conv.createdAt)}</div>
-        <div className="text-[10px] text-muted-foreground/70">{relativeTime(conv.createdAt)}</div>
+        <div className="font-mono">{formatDateTime(conv.createdAt, locale)}</div>
+        <div className="text-[10px] text-muted-foreground/70">{relativeTime(conv.createdAt, locale)}</div>
       </td>
       <td className="px-3 py-2 text-[11px] text-muted-foreground">
-        <div className="font-mono">{formatDateTime(conv.updatedAt)}</div>
-        <div className="text-[10px] text-muted-foreground/70">{relativeTime(conv.updatedAt)}</div>
+        <div className="font-mono">{formatDateTime(conv.updatedAt, locale)}</div>
+        <div className="text-[10px] text-muted-foreground/70">{relativeTime(conv.updatedAt, locale)}</div>
       </td>
     </tr>
   );

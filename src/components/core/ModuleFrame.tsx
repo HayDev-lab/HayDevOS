@@ -3,7 +3,7 @@
 import { Home, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
-import { useAppStore } from "@/lib/store/app-store";
+import Link from "next/link";
 import { useLocale } from "@/lib/i18n";
 import { useWorkspaceCopy } from "./copy";
 
@@ -17,14 +17,13 @@ export function ModuleFrame({
   const { t } = useLocale();
   const copy = useWorkspaceCopy();
   const { session } = useAuth();
-  const setModule = useAppStore((s) => s.setActiveModule);
   return (
     <div className="core-module-frame">
       <div className="core-module-topline">
-        <button type="button" onClick={() => setModule("dashboard")}>
+        <Link href="/">
           <Home />
           {copy.back}
-        </button>
+        </Link>
         <ChevronRight />
         <span>{t(nameKey)}</span>
         <span className="core-org-name">{session.activeOrganization.name}</span>

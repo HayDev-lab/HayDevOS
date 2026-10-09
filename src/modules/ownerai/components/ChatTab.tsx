@@ -21,7 +21,7 @@ import { useOwnerAiStore } from "../state";
 import { ChatPanel } from "./ChatPanel";
 
 export function ChatTab() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const conversations = useOwnerAiStore((s) => s.conversations);
   const activeConversationId = useOwnerAiStore((s) => s.activeConversationId);
   const selectConversation = useOwnerAiStore((s) => s.selectConversation);
@@ -45,7 +45,7 @@ export function ChatTab() {
   }
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 gap-3 md:grid-cols-[260px_1fr]">
+    <div className="grid h-[min(720px,100dvh)] min-h-[480px] min-w-0 grid-cols-1 gap-3 md:grid-cols-[260px_1fr]">
       {/* Conversation list */}
       <aside
         className={cn(
@@ -112,7 +112,7 @@ export function ChatTab() {
                         <span className="truncate">
                           {c.messages.length} {t("ownerAi.conversations.messages")}
                         </span>
-                        <span>{relativeTime(c.updatedAt)}</span>
+                        <span>{relativeTime(c.updatedAt, locale)}</span>
                       </div>
                       {last && (
                         <p className="truncate pl-4 text-[10px] text-muted-foreground/60">

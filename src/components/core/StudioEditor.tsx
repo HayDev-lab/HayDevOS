@@ -171,10 +171,11 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
     setTool(1);
   }
 
+  const filterPreset = ["", "grayscale(1)", "sepia(1)"][filter];
   const visual: CSSProperties = {
     transform: `translate(${x}%, ${y}%) scale(${scale / 100}) rotate(${rotation}deg)`,
     opacity: opacity / 100,
-    filter: `${["none", "grayscale(1)", "sepia(1)"][filter]} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`,
+    filter: `${filterPreset ? `${filterPreset} ` : ""}brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`,
   };
   const mediaProps = {
     onLoadedMetadata: (event: { currentTarget: HTMLMediaElement }) => metadata(event.currentTarget),

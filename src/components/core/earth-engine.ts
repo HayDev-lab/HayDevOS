@@ -95,7 +95,7 @@ export function createEarthEngine(
     gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
     // Decode both files first, then upload sequentially: activeTexture is shared GL state.
     const maps = await Promise.all(
-      ["earth-day.jpg", "earth-night.jpg"].map(async (name) => {
+      ["earth-day.webp", "earth-night.webp"].map(async (name) => {
         const image = new Image();
         image.src = `/core/${name}`;
         await image.decode();

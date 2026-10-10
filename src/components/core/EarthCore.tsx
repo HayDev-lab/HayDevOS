@@ -36,12 +36,11 @@ export function EarthCore({
   const logo = (
     <Image
       className="core-logo"
-      src="/core/haydevos-logo.png"
+      src="/core/haydevos-logo.webp"
       alt="HayDevOS"
       width={1254}
       height={1254}
       priority
-      unoptimized
     />
   );
   return (

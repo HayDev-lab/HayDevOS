@@ -45,7 +45,7 @@
   --text: #f1f6ff;
   color: var(--text);
   font-family: "Segoe UI", var(--font-inter), sans-serif;
-  background: #020813 url("/core/earth-bg.png") center top / cover no-repeat;
+  background: #020813 url("/core/earth-bg.webp") center top / cover no-repeat;
 }
 .core-shell {
   isolation: isolate;
@@ -181,7 +181,7 @@
   position: relative;
 }
 .earth-canvas[data-renderer="fallback"] {
-  background: url("/core/earth-day.jpg") center / cover;
+  background: url("/core/earth-day.webp") center / cover;
   opacity: 0.7;
 }
 .haydev-core .core-home .ai-panel {
@@ -1091,3 +1091,7 @@
 @media (max-width: 900px) { .haydev-core .editor-magic-grid { grid-template-columns: 1fr; } .haydev-core .editor-magic-asset-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 900px) { .haydev-core .editor-magic-options-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .haydev-core .editor-magic-option-group:nth-child(odd) { border-left: 0; padding-left: 0; } }
 @media (max-width: 560px) { .haydev-core .editor-magic-settings, .haydev-core .editor-magic-character-grid, .haydev-core .editor-magic-options-grid { grid-template-columns: 1fr; } .haydev-core .editor-magic-option-group, .haydev-core .editor-magic-option-group:nth-child(n) { border-left: 0; padding-left: 0; } .haydev-core .editor-magic-asset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .haydev-core .editor-magic-plan-head { align-items: flex-start; flex-direction: column; } .haydev-core .editor-magic-plan-head span { max-width: none; text-align: left; } }
+/* Fixed background layers are expensive to repaint on touch devices. */
+@media (max-width: 820px) {
+  .haydev-core { background-attachment: scroll; }
+}

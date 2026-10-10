@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "HayDevOS" }],
   icons: {
-    icon: "/core/haydevos-logo.png",
+    icon: "/core/haydevos-logo.webp",
   },
   openGraph: {
     title: "HayDevOS",

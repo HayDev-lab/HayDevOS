@@ -2,7 +2,7 @@ import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 
-const LOGO_SOURCE = "/branding/haydevos-logo-custom.png";
+const LOGO_SOURCE = "/branding/haydevos-logo-custom.webp";
 
 export function HayDevLogo({
   className,

@@ -9,12 +9,11 @@ export function SiteHeader({ onHome }: { onHome?: () => void }) {
   const { t, locale, setLocale } = useLocale();
   const logo = (
     <Image
-      src="/core/haydevos-logo.png"
+      src="/core/haydevos-logo.webp"
       alt="ՀայDevOS"
       width={1254}
       height={1254}
       priority
-      unoptimized
       className={styles.logo}
     />
   );

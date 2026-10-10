@@ -19,3 +19,5 @@ SHA256:
 
 - day: CD7712D3E891425D9948EA5AC18D3BB1E7E834EA038188587897E689A7B35D0F
 - night: 17A868F79C7BE40FA1F557E6114D7889D907F18F7A3FCE51F33B0B830EF50242
+
+Runtime note: the shipped WebGL textures `earth-day.webp` and `earth-night.webp` are compressed, 2048 x 1024 derivatives of the credited maps above. The visual source and attribution are unchanged.

@@ -1,17 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { workspaceHref } from "@/lib/workspace-routes";
 
 import {
-  BarChart3,
-  UserRound,
-  Users,
-  FileText,
-  Coins,
-  Workflow,
-  Settings,
-  ClipboardCheck,
   Pause,
   Play,
   Sparkles,
@@ -34,29 +27,54 @@ import { useCoreCopy, useWorkspaceCopy } from "./copy";
 import { VoiceCommandButton } from "@/modules/ownerai/components/VoiceCommandButton";
 
 const orbit = [
-  { id: "marketing", className: "marketing", icon: BarChart3, phase: -112.5 },
+  {
+    id: "marketing",
+    className: "marketing",
+    image: "/core/orbit/marketing.jpg",
+    phase: -112.5,
+  },
   {
     id: "autopilot",
     className: "utility automation",
-    icon: Workflow,
+    image: "/core/orbit/automation.jpg",
     phase: -67.5,
   },
-  { id: "leados", className: "crm", icon: Users, phase: -22.5 },
-  { id: "erphub", className: "finance", icon: Coins, phase: 22.5 },
+  {
+    id: "leados",
+    className: "crm",
+    image: "/core/orbit/crm.jpg",
+    phase: -22.5,
+  },
+  {
+    id: "erphub",
+    className: "finance",
+    image: "/core/orbit/finance.jpg",
+    phase: 22.5,
+  },
   {
     id: "settings",
     className: "utility settings",
-    icon: Settings,
+    image: "/core/orbit/settings.jpg",
     phase: 67.5,
   },
-  { id: "docsmart", className: "documents", icon: FileText, phase: 112.5 },
+  {
+    id: "docsmart",
+    className: "documents",
+    image: "/core/orbit/documents.jpg",
+    phase: 112.5,
+  },
   {
     id: "audit",
     className: "utility audit",
-    icon: ClipboardCheck,
+    image: "/core/orbit/audit.jpg",
     phase: 157.5,
   },
-  { id: "ownerAi", className: "owner", icon: UserRound, phase: 202.5 },
+  {
+    id: "ownerAi",
+    className: "owner",
+    image: "/core/orbit/owner-ai.jpg",
+    phase: 202.5,
+  },
 ] as const;
 const subscribeMotion = (notify: () => void) => {
   const media = matchMedia("(prefers-reduced-motion: reduce)");
@@ -70,6 +88,7 @@ export function CoreHome() {
   const copy = useCoreCopy();
   const ws = useWorkspaceCopy();
   const [paused, setPaused] = useState(false);
+  const [hoveredModule, setHoveredModule] = useState<string | null>(null);
   const reducedMotion = useSyncExternalStore(
     subscribeMotion,
     getMotion,
@@ -184,6 +203,15 @@ export function CoreHome() {
             </g>
           ))}
         </svg>
+        <div
+          className={`orbit-tooltip${hoveredModule ? " is-visible" : ""}`}
+          role="status"
+          aria-live="polite"
+        >
+          {hoveredModule
+            ? names[orbit.findIndex((item) => item.id === hoveredModule)]
+            : ""}
+        </div>
         <EarthCore
           paused={paused || reducedMotion}
           onOpen={() => setModule("ownerAi")}
@@ -201,6 +229,10 @@ export function CoreHome() {
               key={item.id}
               className={`module ${item.className}${matches ? (search ? " match" : "") : " dim"}`}
               data-module={item.id}
+              onMouseEnter={() => setHoveredModule(item.id)}
+              onMouseLeave={() => setHoveredModule(null)}
+              onFocus={() => setHoveredModule(item.id)}
+              onBlur={() => setHoveredModule(null)}
               aria-label={names[index]}
               style={
                 {
@@ -210,9 +242,15 @@ export function CoreHome() {
               }
               href={workspaceHref(item.id)}
             >
-              <item.icon aria-hidden="true" />
-              <strong>{names[index]}</strong>
-              {descriptions[index] && <span>{descriptions[index]}</span>}
+              <Image
+                src={item.image}
+                alt=""
+                fill
+                sizes="(max-width: 440px) 25vw, 20vw"
+                className="module-image"
+                priority={index < 2}
+              />
+              <span className="module-label sr-only">{names[index]}</span>
             </Link>
           );
         })}

@@ -30,6 +30,7 @@ const EXPLICIT_HANDLERS = new Map<string, Map<string, Exclude<RouteClass, "TENAN
   ["auth/register/route.ts", new Map([["POST", "PUBLIC_EXPLICIT"]])],
   ["health/route.ts", new Map([["GET", "HEALTH"]])],
   ["ready/route.ts", new Map([["GET", "HEALTH"]])],
+  ["integrations/meta/webhook/route.ts", new Map([["GET", "PUBLIC_EXPLICIT"], ["POST", "PUBLIC_EXPLICIT"]])],
 ]);
 
 function isExported(node: ts.Node): boolean {
@@ -112,6 +113,10 @@ describe("API security coverage — every exported handler has an explicit secur
         expect(source).toContain("reserveLoginAttempts");
       }
       if (rel === "auth/login/route.ts") expect(source).toContain("verifyPassword");
+      if (rel === "integrations/meta/webhook/route.ts") {
+        expect(source).toContain("verifyMetaWebhookSignature");
+        expect(source).toContain("metaWebhookVerifyToken");
+      }
     }
 
     expect(report.length).toBeGreaterThanOrEqual(routes.length);

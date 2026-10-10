@@ -433,7 +433,7 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
 
   return <>
     {showLauncher && <section className="ai-creation" aria-label={copy.generator}>
-      <div className="ai-creation-head"><div><span className="studio-eyebrow">Owner AI</span><h3>{copy.generator}</h3><p>{copy.generatorNote}</p></div></div>
+      <div className="ai-creation-head"><div><span className="studio-eyebrow">{copy.assistantName}</span><h3>{copy.generator}</h3><p>{copy.generatorNote}</p></div></div>
       <div className="ai-generation-grid">
         {copy.types.map((label, index) => { const Icon = icons[index]; return <Link key={index} className="ai-generation-card" href={`/marketing/generator/${generatorTypes[index]}`} aria-current={active === index ? "page" : undefined}>
           <span className="ai-gen-icon"><Icon size={18}/></span><span><strong>{label}</strong><small>{copy.hints[index]}</small></span><em>{copy.open}</em>
@@ -441,7 +441,7 @@ export function ContentGenerator({ onRequest, busy, activeType, showLauncher = t
       </div>
     </section>}
     {active !== undefined && <section className="core-generator-page" aria-labelledby="generator-title">
-        <span className="studio-eyebrow">Owner AI · {copy.generator}</span>
+        <span className="studio-eyebrow">{copy.assistantName} · {copy.generator}</span>
         <h2 id="generator-title">{copy.create} · {copy.types[active]}</h2>
         <p>{copy.hints[active]}</p>
         <div className={`ai-generator-layout ${isVideo ? "video-generator-layout" : ""}`}>

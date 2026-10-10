@@ -23,6 +23,35 @@ The authenticated MCP endpoint exposes the same product boundary through:
 * `haydevos_web_search`;
 * `haydevos_studio_magic`.
 
+## Marketing identity and knowledge boundary
+
+The Marketing module presents the assistant as **HayDev Assistent**. OpenClaw
+is an internal runtime/provider choice and is not a customer-facing brand.
+Owners, admins and managers can define the assistant prompt, allowed topics,
+forbidden topics, response rules and reply mode (`draft`, `approval`, or
+`auto`). They can upload sales scripts, support scripts, FAQs, brand voice and
+other approved references. Each upload is tenant-scoped, hashed with SHA-256
+and included in the Marketing prompt only when enabled. When the approved
+knowledge does not cover a question, the assistant must say so instead of
+inventing an answer.
+
+## OpenCut reference
+
+The editor discussed in the product request is the open-source CapCut
+alternative at [OpenCut-app/OpenCut](https://github.com/OpenCut-app/OpenCut).
+This checkout keeps the HayDevOS editor boundary and does not claim that the
+external OpenCut repository is already embedded or live-connected.
+
+## Meta channel connectors
+
+The Integration Hub now has official OAuth entry points for Facebook Pages,
+Instagram Professional accounts and WhatsApp Business Cloud API, plus a
+signature-verified Meta webhook endpoint. App credentials, OAuth redirect URI,
+webhook verify token and the 32-byte integration encryption key remain
+server-only. The deployment still needs a Meta Developer App, approved scopes,
+business assets and App Review where required before a live account can be
+connected.
+
 ## OpenClaw capability policy
 
 The broker keeps browser, research and media capabilities disabled by default.

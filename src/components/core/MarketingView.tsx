@@ -23,6 +23,7 @@ import { useWorkspaceCopy } from "./copy";
 import { useStudioCopy } from "./studio-copy";
 import { ContentGenerator } from "./ContentGenerator";
 import { StudioEditor } from "./StudioEditor";
+import { MarketingAssistantPanel } from "./MarketingAssistantPanel";
 
 export function MarketingView() {
   const { t } = useLocale();
@@ -118,7 +119,7 @@ export function MarketingView() {
                         <Icon />
                         <span>
                           <strong>{title}</strong>
-                          <small>Owner AI</small>
+                          <small>{copy.assistantName}</small>
                         </span>
                         <ArrowUpRight />
                       </button>
@@ -161,6 +162,7 @@ export function MarketingView() {
               </button>
             ))}
           </div>
+          {[0, 4].includes(tab) && <MarketingAssistantPanel labels={copy.assistant} />}
           </>}
         </div>
       </div>

@@ -7,12 +7,18 @@ import type { Provider } from "./types";
  * records remain language-neutral; this helper creates a display-only copy.
  */
 const HY_PROVIDER_NAMES: Record<string, string> = {
+  facebook: "Facebook Pages",
+  instagram: "Instagram Professional",
   email: "Էլ. փոստ (SMTP/IMAP)",
   signed_webhook: "Ստորագրված վեբ ծանուցում",
   automation: "Ավտոմատացման կառուցիչ",
 };
 
 const HY_PROVIDER_DESCRIPTIONS: Record<string, string> = {
+  facebook:
+    "Facebook-ի էջերի հայտեր, Messenger-ի նամակներ, հրապարակումներ և փոխարկումներ։ Մուտքը՝ պաշտոնական Meta OAuth 2.0-ով։",
+  instagram:
+    "Instagram Professional-ի հրապարակումներ, մեկնաբանություններ, նամակներ և վիճակագրություն։ Մուտքը՝ պաշտոնական Meta OAuth 2.0-ով։",
   meta:
     "Facebook-ի և Instagram-ի հայտեր, Messenger-ի նամակներ ու գովազդային լսարաններ։ Անվտանգ մուտք՝ OAuth 2.0 և PKCE։",
   telegram:

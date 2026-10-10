@@ -78,6 +78,7 @@ import {
   withPersistentAuditStore,
 } from "./audit";
 import { buildSystemPrompt, PROMPT_VERSION } from "./prompt";
+import { getMarketingAssistantPrompt } from "@/lib/marketing-assistant/service";
 import { dispatchTool, summarizeToolResult, AVAILABLE_TOOL_NAMES } from "./tools";
 import { offlineRespond } from "./offline";
 import type {
@@ -377,11 +378,22 @@ async function runOwnerAi(
   let providerError: unknown;
   let finalContent = "";
 
+  let marketingPolicy: string | null = null;
+  if (activeModule === "marketing") {
+    try {
+      marketingPolicy = await getMarketingAssistantPrompt(context);
+    } catch {
+      // Knowledge configuration is optional; Owner AI remains available while
+      // the tenant database is unavailable, but must not invent a policy.
+      marketingPolicy = null;
+    }
+  }
   const systemPrompt = buildSystemPrompt({
     orgId: org.id,
     orgName: org.name,
     mode,
     activeModule,
+    marketingPolicy,
   });
 
   // Build the LLM history from the conversation messages (excluding the new

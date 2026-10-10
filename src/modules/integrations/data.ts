@@ -8,6 +8,7 @@ import {
   Contact,
   CreditCard,
   Facebook,
+  Instagram,
   FileText,
   Hash,
   Mail,
@@ -49,7 +50,8 @@ function defineProvider(
 }
 
 export const providers: Provider[] = [
-  defineProvider("meta", "Meta", "social", "Facebook and Instagram leads, messages, audiences, and conversions.", Facebook, "oauth", "cyan", "https://developers.facebook.com/docs/marketing-api", ["Lead capture", "Messenger inbox", "Audience sync", "Conversions API"], ["pages_show_list", "pages_messaging", "leads_retrieval"]),
+  defineProvider("facebook", "Facebook Pages", "social", "Facebook Page leads, Messenger conversations, publishing and conversions.", Facebook, "oauth", "cyan", "https://developers.facebook.com/docs/marketing-api", ["Lead capture", "Messenger inbox", "Page publishing", "Conversions API"], ["pages_show_list", "pages_read_engagement", "pages_manage_metadata", "pages_messaging", "leads_retrieval"]),
+  defineProvider("instagram", "Instagram Professional", "social", "Instagram Professional comments, messages, media publishing and insights.", Instagram, "oauth", "rose", "https://developers.facebook.com/docs/instagram-api", ["Content publishing", "Comment moderation", "Messaging", "Insights"], ["instagram_basic", "instagram_content_publish", "instagram_manage_comments", "instagram_manage_messages"]),
   defineProvider("telegram", "Telegram", "messaging", "Bot messages, notifications, and two-way conversations.", MessageCircle, "api_key", "cyan", "https://core.telegram.org/bots/api", ["Bot inbox", "Push notifications", "Channel broadcast"]),
   defineProvider("whatsapp", "WhatsApp Business", "messaging", "Business messages, templates, media, and delivery receipts.", Hash, "oauth", "lime", "https://developers.facebook.com/docs/whatsapp", ["Template messages", "Session messages", "Media exchange", "Webhook receipts"]),
   defineProvider("email", "Email (SMTP/IMAP)", "email", "Outbound email and inbound mailbox processing.", Mail, "api_key", "amber", "https://datatracker.ietf.org/doc/html/rfc3501", ["Outbound SMTP", "Inbound IMAP", "Template rendering"]),

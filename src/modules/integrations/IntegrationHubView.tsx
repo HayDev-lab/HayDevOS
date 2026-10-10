@@ -1,6 +1,7 @@
 "use client";
 
 import { useWorkspaceSection } from "@/lib/workspace-navigation";
+import { useRouter } from "next/navigation";
 
 /**
  * IntegrationHubView — top-level view for the HayDevOS Integration Hub.
@@ -31,7 +32,7 @@ AlertTriangle,
 Plug,
 Webhook
 } from "lucide-react";
-import { useMemo,useState } from "react";
+import { useEffect, useMemo,useState } from "react";
 import { toast } from "sonner";
 
 import { useLocale } from "@/lib/i18n";
@@ -87,6 +88,7 @@ type TabId =
 
 export function IntegrationHubView() {
   const { t, locale } = useLocale();
+  const router = useRouter();
   const [tab, setTab] = useWorkspaceSection<TabId>("connect", "providers");
 
   // Shared in-memory state.
@@ -96,6 +98,20 @@ export function IntegrationHubView() {
   const [syncRuns, setSyncRuns] = useState<SyncRun[]>(seedSyncRuns);
   const [audit, setAudit] = useState<IntegrationAuditEntry[]>(seedAudit);
   const [settings, setSettings] = useState<IntegrationSettings>(seedSettings);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/integrations", { credentials: "same-origin" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return response.json() as Promise<{ integrations?: Integration[] }>;
+      })
+      .then((payload) => {
+        if (!cancelled && payload?.integrations) setIntegrations(payload.integrations);
+      })
+      .catch(() => { /* the catalog remains usable while the server is unavailable */ });
+    return () => { cancelled = true; };
+  }, []);
 
   const localizedProviders = useMemo(
     () => seedProviders.map((provider) => localizeProvider(provider, locale)),
@@ -203,6 +219,10 @@ export function IntegrationHubView() {
   // ─────────────────────────────────────────────────────────────────────
 
   function openConnect(provider: Provider) {
+    if (["facebook", "instagram", "whatsapp"].includes(provider.id)) {
+      router.push(`/api/integrations/meta/start?provider=${encodeURIComponent(provider.id)}`);
+      return;
+    }
     toast.info(t("integration.connect.serverRequired", { name: provider.name }));
   }
 

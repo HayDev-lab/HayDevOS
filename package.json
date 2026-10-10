@@ -37,6 +37,7 @@
     "test:owner-ai-documentflow": "node tests/owner-ai-documentflow.mjs",
     "test:owner-ai-erp": "node tests/owner-ai-erp.mjs",
     "test:openclaw-broker": "bun test tests/openclaw-broker.test.mjs",
+    "test:meta-integration": "bun test tests/meta-integration.test.ts",
     "test:sla": "bun test tests/leados-sla.test.ts",
     "test:quoteflow-pricing": "bun test tests/quoteflow-pricing.test.ts",
     "test:quoteflow": "node tests/quoteflow-production.mjs",

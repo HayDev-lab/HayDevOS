@@ -16,7 +16,7 @@
 import { TOOL_DEFS, AVAILABLE_TOOL_NAMES } from "./tools";
 import type { OwnerAiMode } from "./types";
 
-export const PROMPT_VERSION = "ownerai-v1.1.0-documentflow";
+export const PROMPT_VERSION = "ownerai-v1.2.0-haydev-assistent";
 
 /** Risky actions — always require explicit user approval. */
 export const RISKY_ACTION_NAMES = [
@@ -113,6 +113,7 @@ export interface BuildPromptArgs {
   orgName: string;
   mode: OwnerAiMode;
   activeModule?: string;
+  marketingPolicy?: string | null;
 }
 
 export function buildSystemPrompt({
@@ -120,6 +121,7 @@ export function buildSystemPrompt({
   orgName,
   mode,
   activeModule,
+  marketingPolicy,
 }: BuildPromptArgs): string {
   const toolLines = TOOL_DEFS.map((t) => {
     const params = Object.entries(t.params)
@@ -150,6 +152,10 @@ export function buildSystemPrompt({
         return "AUTO — same as ASSIST, but you should proactively propose actions when you spot an issue the user can act on. Risky actions still require explicit user approval.";
     }
   })();
+
+  const marketingBlock = activeModule === "marketing" && marketingPolicy
+    ? [``, `# HayDev Assistent marketing policy`, marketingPolicy]
+    : [];
 
   return [
     `You are Owner AI, the executive assistant for HayDevOS.`,
@@ -182,6 +188,7 @@ export function buildSystemPrompt({
     `- Use openStudioMagic to open the editor and preload a brief without spending generation credits.`,
     `- Use startMagicMontage only when the user clearly asks to start generation; it always requires approval before the client starts the plan.`,
     `- When the OpenClaw broker is explicitly configured with browser/web_search/media capabilities, use those capabilities for actual research or generation. Otherwise report the capability as unavailable and do not claim completion.`,
+    ...marketingBlock,
     ``,
     `To propose an action, emit a fenced code block tagged \`action\` with a JSON object: \`{"action": "<name>", "args": {...}}\`. You may emit multiple action blocks. Safe actions execute immediately and their result is included in your final answer. Risky actions appear as approval cards in the UI.`,
     ``,

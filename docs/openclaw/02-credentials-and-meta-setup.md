@@ -30,7 +30,11 @@ Provision in this order:
 
 ## Meta, WhatsApp, Instagram and Facebook
 
-No Meta App, OAuth client, WABA, Page, Instagram Professional account, webhook, callback URL, App Review, token or sandbox account was created by this work.
+The checkout now contains the server-side OAuth start/callback and signed
+webhook boundaries for Meta, but no Meta App, OAuth client, WABA, Page,
+Instagram Professional account, App Review approval or production token was
+created by this work. Those account-sensitive steps must be completed by the
+owner in Meta's official developer console.
 
 When the owner explicitly authorizes this phase, use Meta's official developer console to:
 

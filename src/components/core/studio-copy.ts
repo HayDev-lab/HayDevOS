@@ -4,7 +4,7 @@ import { useLocale } from "@/lib/i18n";
 
 export const studioCopy = {
   ru: {
-    generator: "Генератор контента", generatorNote: "От идеи к видео, звуку, изображению и персонажу.",
+    assistantName: "HayDev Assistent", generator: "Генератор контента", generatorNote: "От идеи к видео, звуку, изображению и персонажу.",
     types: ["Видео", "Аудио", "Голос", "Изображение", "Аватар"],
     hints: ["Сценарий и видеоряд", "Музыка и звуковое оформление", "Текст для озвучки", "Сцена и визуальный стиль", "Персонаж и сценарий"],
     open: "Открыть", create: "Создать", prompt: "Описание", placeholder: "Опишите идею, стиль и желаемый результат…",
@@ -43,7 +43,7 @@ export const studioCopy = {
     fileError: "Выберите видео, изображение или аудиофайл.", loadError: "Не удалось открыть файл. Попробуйте другой формат.", clear: "Убрать медиа",
   },
   en: {
-    generator: "Content generator", generatorNote: "From an idea to video, sound, images and characters.",
+    assistantName: "HayDev Assistent", generator: "Content generator", generatorNote: "From an idea to video, sound, images and characters.",
     types: ["Video", "Audio", "Voice", "Image", "Avatar"],
     hints: ["Script and visuals", "Music and sound design", "Text to speech", "Scene and visual style", "Character and script"],
     open: "Open", create: "Create", prompt: "Description", placeholder: "Describe your idea, style and desired result…",
@@ -82,7 +82,7 @@ export const studioCopy = {
     fileError: "Choose a video, image or audio file.", loadError: "This file could not be opened. Try another format.", clear: "Remove media",
   },
   hy: {
-    generator: "Բովանդակության գեներատոր", generatorNote: "Գաղափարից դեպի տեսանյութ, ձայն, պատկեր և կերպար։",
+    assistantName: "HayDev Assistent", generator: "Բովանդակության գեներատոր", generatorNote: "Գաղափարից դեպի տեսանյութ, ձայն, պատկեր և կերպար։",
     types: ["Տեսանյութ", "Աուդիո", "Ձայն", "Պատկեր", "Ավատար"],
     hints: ["Սցենար և տեսաշար", "Երաժշտություն և ձայնային ձևավորում", "Տեքստի ձայնավորում", "Տեսարան և տեսողական ոճ", "Կերպար և սցենար"],
     open: "Բացել", create: "Ստեղծել", prompt: "Նկարագրություն", placeholder: "Նկարագրեք գաղափարը, ոճը և ցանկալի արդյունքը…",

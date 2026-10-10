@@ -61,6 +61,7 @@ model User {
   financeEvents            FinanceEvent[]           @relation("FinanceEventActor")
   erpEvents                ERPEvent[]               @relation("ERPEventActor")
   exportJobs               ExportJob[]              @relation("ExportJobRequester")
+  marketingAssistantKnowledge MarketingAssistantKnowledge[]
 }
 
 model Organization {
@@ -119,6 +120,8 @@ model Organization {
   fulfillmentItems      FulfillmentItem[]
   financeEvents         FinanceEvent[]
   erpEvents             ERPEvent[]
+  marketingAssistantProfile MarketingAssistantProfile?
+  marketingAssistantKnowledge MarketingAssistantKnowledge[]
 }
 
 model Membership {
@@ -1313,6 +1316,45 @@ model Integration {
   org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@unique([orgId, provider])
+}
+
+// MARKETING ASSISTENT — tenant-owned response policy and approved knowledge.
+model MarketingAssistantProfile {
+  id              String   @id @default(cuid())
+  orgId           String   @unique
+  displayName     String   @default("HayDev Assistent")
+  systemPrompt    String   @default("")
+  allowedTopics   String   @default("[]") // JSON string[]
+  forbiddenTopics String   @default("[]") // JSON string[]
+  responseRules   String   @default("[]") // JSON string[]
+  language        String   @default("ru")
+  autoReplyMode   String   @default("draft") // draft | approval | auto
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+
+  org       Organization             @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  knowledge MarketingAssistantKnowledge[]
+}
+
+model MarketingAssistantKnowledge {
+  id          String   @id @default(cuid())
+  orgId       String
+  profileId   String
+  createdById String
+  title       String
+  kind        String   @default("sales_script") // sales_script | support_script | brand_voice | faq | policy | other
+  content     String
+  contentHash String
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  org     Organization              @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  profile MarketingAssistantProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  author  User                      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([orgId, enabled, updatedAt])
+  @@unique([orgId, contentHash])
 }
 
 model WebhookEvent {

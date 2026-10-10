@@ -75,6 +75,8 @@ const orbit = [
     phase: 180,
   },
 ] as const;
+
+const ORBIT_RADIUS = 40;
 const subscribeMotion = (notify: () => void) => {
   const media = matchMedia("(prefers-reduced-motion: reduce)");
   media.addEventListener("change", notify);
@@ -124,8 +126,8 @@ export function CoreHome() {
       const rotation = (elapsed / 180000) * Math.PI * 2;
       buttons.forEach((button, index) => {
         const theta = (orbit[index].phase * Math.PI) / 180 + rotation;
-        button.style.left = `${50 + Math.cos(theta) * 38}%`;
-        button.style.top = `${50 + Math.sin(theta) * 38}%`;
+        button.style.left = `${50 + Math.cos(theta) * ORBIT_RADIUS}%`;
+        button.style.top = `${50 + Math.sin(theta) * ORBIT_RADIUS}%`;
         connections[index]?.setAttribute(
           "transform",
           `rotate(${(theta * 180) / Math.PI} 500 500)`,
@@ -197,8 +199,8 @@ export function CoreHome() {
               className="orbit-connection"
               transform={`rotate(${item.phase} 500 500)`}
             >
-              <line className="gold-link" x1="760" y1="500" x2="880" y2="500" />
-              <circle className="gold-joint" cx="766" cy="500" r="5" />
+              <line className="gold-link" x1="760" y1="500" x2="900" y2="500" />
+              <circle className="gold-joint" cx="766" cy="500" r="6" />
             </g>
           ))}
         </svg>
@@ -235,8 +237,8 @@ export function CoreHome() {
               aria-label={names[index]}
               style={
                 {
-                  left: `${50 + Math.cos(theta) * 38}%`,
-                  top: `${50 + Math.sin(theta) * 38}%`,
+                  left: `${50 + Math.cos(theta) * ORBIT_RADIUS}%`,
+                  top: `${50 + Math.sin(theta) * ORBIT_RADIUS}%`,
                 }
               }
               href={workspaceHref(item.id)}
@@ -245,7 +247,7 @@ export function CoreHome() {
                 src={item.image}
                 alt=""
                 fill
-                sizes="(max-width: 440px) 25vw, 20vw"
+                sizes="(max-width: 440px) 21vw, 17vw"
                 className="module-image"
                 priority={index < 2}
               />

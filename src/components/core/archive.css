@@ -16,8 +16,8 @@
 .haydev-core .core-controls{top:102%}
 .haydev-core .gold-network{position:absolute;inset:0;width:100%;height:100%;z-index:0;overflow:visible;pointer-events:none;stroke-linecap:round;filter:drop-shadow(0 0 4px #e9b35555)}
 .haydev-core .gold-ring{fill:none;stroke:url(#orbit-gold)}
-.haydev-core .main-ring{stroke-width:3}.haydev-core .fine-ring{stroke-width:1.2;opacity:.8}.haydev-core .core-ring{stroke-width:2;opacity:.9}
-.haydev-core .gold-link{stroke:#e6bc70;stroke-width:2.5}.haydev-core .gold-joint{fill:#ffe3a1;stroke:#b2813c;stroke-width:1.5}
+.haydev-core .main-ring{stroke-width:4}.haydev-core .fine-ring{stroke-width:1.2;opacity:.88}.haydev-core .core-ring{stroke-width:2;opacity:.96}
+.haydev-core .gold-link{stroke:#f0c875;stroke-width:2.8;filter:drop-shadow(0 0 4px #e8b54c99)}.haydev-core .gold-joint{fill:#ffe8a8;stroke:#b2813c;stroke-width:1.5;filter:drop-shadow(0 0 5px #e5ac43aa)}
 .haydev-core .outer-orbit{border-color:#e5bd76b8;box-shadow:0 0 0 4px #c4994424,0 0 0 7px #1571c025,0 0 10px #e0b44745,inset 0 0 10px #ae803735}
 .haydev-core .outer-orbit:before{border-color:#d6ac6266}
 .haydev-core .equator{border-color:#edca83c4;box-shadow:0 0 8px #edb44845}.haydev-core .equator.front{border-bottom-color:#ffe0a1}
@@ -193,14 +193,14 @@ html[lang="hy"] .haydev-core .core-title>span{font-size:clamp(13px,1.12vw,21px)}
 
 /* Orbital controls stay circular and share one diameter at every breakpoint. */
 .haydev-core .constellation.is-orbiting .module,
-.haydev-core .constellation.is-orbiting .module.utility{width:20%;aspect-ratio:1}
+.haydev-core .constellation.is-orbiting .module.utility{width:17%;aspect-ratio:1}
 
 @keyframes module-ring-spin{from{transform:rotate(var(--accent-turn,0deg))}to{transform:rotate(calc(var(--accent-turn,0deg) + 360deg))}}
 @keyframes module-ring-spin-reverse{from{transform:rotate(calc(var(--accent-turn,0deg) + 360deg))}to{transform:rotate(var(--accent-turn,0deg))}}
 .haydev-core .constellation.is-orbiting .module:is(:hover,:focus-visible)::before{animation:module-ring-spin 1.8s linear infinite}
 .haydev-core .constellation.is-orbiting .module:is(:hover,:focus-visible)::after{animation:module-ring-spin-reverse 2.4s linear infinite}
 
-@media(max-width:440px){.haydev-core .constellation.is-orbiting .module,.haydev-core .constellation.is-orbiting .module.utility{width:25%}}
+@media(max-width:440px){.haydev-core .constellation.is-orbiting .module,.haydev-core .constellation.is-orbiting .module.utility{width:20.5%}}
 
 /* The supplied emblems are the controls; only their orbit position moves. */
 .haydev-core .constellation.is-orbiting .module-image{position:absolute!important;inset:0;width:100%!important;height:100%!important;object-fit:cover;border-radius:50%;transform:scale(1.035);filter:saturate(1.08) contrast(1.04);transition:transform .45s cubic-bezier(.2,.8,.2,1),filter .35s ease}

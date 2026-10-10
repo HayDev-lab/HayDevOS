@@ -14,7 +14,6 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
-  type CSSProperties,
   type FormEvent,
 } from "react";
 import { toast } from "sonner";
@@ -31,49 +30,49 @@ const orbit = [
     id: "marketing",
     className: "marketing",
     image: "/core/orbit/marketing.jpg",
-    phase: -112.5,
+    phase: -135,
   },
   {
     id: "autopilot",
     className: "utility automation",
     image: "/core/orbit/automation.jpg",
-    phase: -67.5,
+    phase: -45,
   },
   {
     id: "leados",
     className: "crm",
     image: "/core/orbit/crm.jpg",
-    phase: -22.5,
+    phase: 0,
   },
   {
     id: "erphub",
     className: "finance",
     image: "/core/orbit/finance.jpg",
-    phase: 22.5,
+    phase: 45,
   },
   {
     id: "settings",
     className: "utility settings",
     image: "/core/orbit/settings.jpg",
-    phase: 67.5,
+    phase: -90,
   },
   {
     id: "docsmart",
     className: "documents",
     image: "/core/orbit/documents.jpg",
-    phase: 112.5,
+    phase: 90,
   },
   {
     id: "audit",
     className: "utility audit",
     image: "/core/orbit/audit.jpg",
-    phase: 157.5,
+    phase: 135,
   },
   {
     id: "ownerAi",
     className: "owner",
     image: "/core/orbit/owner-ai.jpg",
-    phase: 202.5,
+    phase: 180,
   },
 ] as const;
 const subscribeMotion = (notify: () => void) => {
@@ -125,8 +124,8 @@ export function CoreHome() {
       const rotation = (elapsed / 180000) * Math.PI * 2;
       buttons.forEach((button, index) => {
         const theta = (orbit[index].phase * Math.PI) / 180 + rotation;
-        button.style.setProperty("--orbit-x", `${Math.cos(theta) * 38}%`);
-        button.style.setProperty("--orbit-y", `${Math.sin(theta) * 38}%`);
+        button.style.left = `${50 + Math.cos(theta) * 38}%`;
+        button.style.top = `${50 + Math.sin(theta) * 38}%`;
         connections[index]?.setAttribute(
           "transform",
           `rotate(${(theta * 180) / Math.PI} 500 500)`,
@@ -236,9 +235,9 @@ export function CoreHome() {
               aria-label={names[index]}
               style={
                 {
-                  "--orbit-x": `${Math.cos(theta) * 38}%`,
-                  "--orbit-y": `${Math.sin(theta) * 38}%`,
-                } as CSSProperties
+                  left: `${50 + Math.cos(theta) * 38}%`,
+                  top: `${50 + Math.sin(theta) * 38}%`,
+                }
               }
               href={workspaceHref(item.id)}
             >

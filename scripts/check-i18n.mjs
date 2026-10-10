@@ -62,7 +62,7 @@ function declarations(file) {
   const parsed = ts.createSourceFile(file, fs.readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
   const values = {};
   const visit = (node) => {
-    if (ts.isVariableDeclaration(node) && node.initializer && ["en", "hy", "ru", "coreLocales", "workspaceCopy", "studioCopy"].includes(node.name.getText(parsed))) values[node.name.getText(parsed)] = readValue(node.initializer);
+    if (ts.isVariableDeclaration(node) && node.initializer && ["en", "hy", "ru", "coreLocales", "workspaceCopy", "studioCopy", "editorCopy"].includes(node.name.getText(parsed))) values[node.name.getText(parsed)] = readValue(node.initializer);
     ts.forEachChild(node, visit);
   };
   visit(parsed);
@@ -83,6 +83,7 @@ const groups = {
   core: declarations("src/components/core/locales.ts").coreLocales,
   workspace: declarations("src/components/core/copy.ts").workspaceCopy,
   studio: declarations("src/components/core/studio-copy.ts").studioCopy,
+  editor: declarations("src/components/core/editor-copy.ts").editorCopy,
 };
 const placeholders = (value) => [...new Set([...value.matchAll(/\{([\w]+)\}/g)].map((match) => match[1]))].sort().join(",");
 for (const [name, group] of Object.entries(groups)) {

@@ -30,6 +30,7 @@ const EXPLICIT_HANDLERS = new Map<string, Map<string, Exclude<RouteClass, "TENAN
   ["auth/register/route.ts", new Map([["POST", "PUBLIC_EXPLICIT"]])],
   ["health/route.ts", new Map([["GET", "HEALTH"]])],
   ["ready/route.ts", new Map([["GET", "HEALTH"]])],
+  ["cron/competitor-monitor/route.ts", new Map([["GET", "PUBLIC_EXPLICIT"]])],
   ["integrations/meta/webhook/route.ts", new Map([["GET", "PUBLIC_EXPLICIT"], ["POST", "PUBLIC_EXPLICIT"]])],
 ]);
 

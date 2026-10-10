@@ -24,6 +24,13 @@ const magicArgsSchema = z.object({
   durationSec: z.number().int().min(1).max(600).default(120),
   language: z.string().trim().min(1).max(80).default("Русский"),
   aspectRatio: z.enum(["16:9", "9:16", "1:1"]).default("16:9"),
+  preferences: z.object({
+    videoStyle: z.string().trim().max(160).optional(), videoTone: z.string().trim().max(160).optional(),
+    musicStyle: z.string().trim().max(160).optional(), musicTone: z.string().trim().max(160).optional(), soundStyle: z.string().trim().max(160).optional(),
+    voiceStyle: z.string().trim().max(160).optional(), voiceTone: z.string().trim().max(160).optional(),
+    imageStyle: z.string().trim().max(160).optional(), imageTone: z.string().trim().max(160).optional(),
+    avatarStyle: z.string().trim().max(160).optional(), avatarTone: z.string().trim().max(160).optional(),
+  }).strict().optional(),
   assets: z.array(inlineAssetSchema).max(6).default([]),
   characters: z.array(z.object({ name: z.string().trim().max(120), description: z.string().trim().max(1_000), locked: z.boolean() }).strict()).max(3).default([]),
 }).strict();
@@ -69,6 +76,7 @@ const magicToolDefinition = {
       durationSec: { type: "integer", minimum: 1, maximum: 600, default: 120 },
       language: { type: "string", default: "Русский" },
       aspectRatio: { type: "string", enum: ["16:9", "9:16", "1:1"], default: "16:9" },
+      preferences: { type: "object", additionalProperties: false, description: "Optional selected styles/tones. Omit for prompt-only generation." },
       assets: { type: "array", maxItems: 6, description: "Inline base64 assets: reference, firstFrame, lastFrame, music, voice, or sound." },
       characters: { type: "array", maxItems: 3, description: "Character name, description, and locked boolean." },
     },
@@ -152,6 +160,7 @@ export async function POST(req: NextRequest) {
         durationSec: input.durationSec,
         language: input.language,
         aspectRatio: input.aspectRatio,
+        preferences: input.preferences,
         assets: input.assets.map(validateInlineAsset),
         characters: input.characters,
       };

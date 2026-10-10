@@ -384,6 +384,10 @@ const MODULE_LABEL_KEYS: Record<string, string> = {
   ownerAi: "module.ownerAi",
 };
 
+export function auditModuleNameKey(moduleId: string): string {
+  return MODULE_LABEL_KEYS[moduleId] ?? `module.${moduleId}`;
+}
+
 const MODULE_RATIONALE: Record<string, { hy: string; ru: string; en: string }> = {
   leados: {
     hy: "LeadOS-ը միացնում է աղբյուրները, ավտոմատացնում է բաշխումը և ապահովում է SLA։",
@@ -439,7 +443,7 @@ export function computeRecommendedModules(gaps: Gap[]): RecommendedModule[] {
     if (!rationale) continue;
     out.push({
       moduleId,
-      nameKey: MODULE_LABEL_KEYS[moduleId] ?? `module.${moduleId}`,
+      nameKey: auditModuleNameKey(moduleId),
       rationale,
       impact: count >= 3 ? "high" : count === 2 ? "medium" : "low",
       evidenceCount: count,

@@ -1,4 +1,44 @@
 /* React integration of the supplied design. Domain components retain their APIs. */
+
+/* Integrated editing tools keep the project mounted while working with media. */
+.haydev-core .editor-integrated-panel { margin: 14px 0; padding: clamp(14px, 2vw, 24px); border: 1px solid #31587c; border-radius: 16px; background: linear-gradient(135deg,#0c2137,#061320); min-width: 0; }
+.haydev-core .editor-integrated-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 16px; }
+.haydev-core .editor-integrated-head h2 { margin: 6px 0; font-size: 18px; color: #f4e1b6; }
+.haydev-core .editor-integrated-panel textarea { width: 100%; padding: 12px; border: 1px solid #31587c; background: #040d18; color: #edf5ff; border-radius: 10px; resize: vertical; }
+.haydev-core .editor-kind-tabs, .haydev-core .editor-panel-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.haydev-core .editor-kind-tabs button, .haydev-core .editor-file-button { display: inline-flex; align-items: center; gap: 7px; }
+.haydev-core .editor-generator-fields { display: grid; grid-template-columns: minmax(0,2fr) minmax(200px,1fr); gap: 18px; margin: 14px 0; }
+.haydev-core .editor-generator-options { display: grid; gap: 10px; align-content: start; }
+.haydev-core .editor-generator-options label, .haydev-core .editor-brand-controls > label, .haydev-core .editor-caption-controls > label { display: grid; gap: 6px; font-size: 12px; color: #b1c8df; }
+.haydev-core .editor-generator-options input, .haydev-core .editor-generator-options select { width: 100%; padding: 9px; border: 1px solid #31587c; border-radius: 8px; color: #edf5ff; background: #040d18; }
+.haydev-core .editor-file-button { position: relative; overflow: hidden; cursor: pointer; overflow-wrap: anywhere; }
+.haydev-core .editor-file-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.haydev-core .editor-generated-result { display: grid; justify-items: start; gap: 12px; padding-top: 16px; }
+.haydev-core .editor-generated-result img, .haydev-core .editor-generated-result video { max-width: 100%; max-height: 240px; border-radius: 10px; }
+.haydev-core .editor-generated-result audio { max-width: 100%; }
+.haydev-core .editor-edit-proposal { margin-top: 16px; padding: 16px; border: 1px solid #846b3f; border-radius: 12px; background: #32281540; }
+.haydev-core .editor-edit-proposal ul { display: grid; gap: 8px; margin: 12px 0; padding: 0; list-style: none; }
+.haydev-core .editor-edit-proposal li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px; color: #adc4dc; }
+.haydev-core .editor-edit-proposal b { color: #f2d99a; overflow-wrap: anywhere; }
+.haydev-core .editor-operation-notice { padding: 12px; border: 1px solid #967344; border-radius: 8px; background: #33271580; }
+.haydev-core .editor-render-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; border: 1px solid #31587c; border-radius: 10px; }
+.haydev-core .editor-render-progress progress { flex: 1; min-width: 120px; accent-color: #eac477; }
+.haydev-core .core-editor-canvas .core-editor-logo { height: auto; max-height: 40%; object-fit: contain; z-index: 4; pointer-events: none; }
+.haydev-core .core-editor-canvas .core-editor-subtitle { top: 78%; bottom: auto; border-radius: 6px; background: #020813c9; }
+.haydev-core .editor-logo-thumbnail { width: auto; max-width: 100%; max-height: 90px; margin: 12px 0; object-fit: contain; background: repeating-conic-gradient(#183047 0% 25%,#0d2033 0% 50%) 50% / 14px 14px; border-radius: 6px; }
+.haydev-core .editor-brand-controls { display: grid; gap: 10px; }
+.haydev-core .editor-caption-controls { display: grid; gap: 10px; min-width: 0; }
+.haydev-core .editor-caption-controls h4 { margin: 12px 0 0; color: #efdaa6; font-size: 13px; }
+.haydev-core .editor-caption-controls button { white-space: normal; }
+.haydev-core .editor-cue-list { display: grid; gap: 10px; max-height: 330px; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.haydev-core .editor-cue-list article { display: grid; gap: 8px; padding: 10px; border: 1px solid #284968; border-radius: 9px; background: #051222; }
+.haydev-core .editor-cue-times { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; }
+.haydev-core .editor-cue-times label { display: grid; gap: 4px; font-size: 10px; }
+.haydev-core .core-editor .timeline .tracks { min-height: 240px; }
+.haydev-core .core-editor .track-caption { top: 206px; border-color: #68b4d9; background: #174e67; }
+.haydev-core .core-editor[data-rendering="true"] .editor-layout, .haydev-core .core-editor[data-rendering="true"] .editor-integrated-panel { pointer-events: none; opacity: .65; }
+@media (max-width: 700px) { .haydev-core .editor-generator-fields { grid-template-columns: minmax(0,1fr); } .haydev-core .editor-kind-tabs button { flex: 1 0 auto; justify-content: center; } }
+
 .haydev-core {
   --gold: #eac477;
   --blue: #2695ff;
@@ -12,6 +52,9 @@
 }
 .haydev-core .core-main {
   overflow: visible;
+}
+.haydev-core.core-shell--home .core-main {
+  min-height: 0;
 }
 .core-topbar {
   flex-shrink: 0;
@@ -87,13 +130,47 @@
 }
 .core-home {
   position: relative;
-  min-height: max(720px, calc(100dvh - 100px));
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 44px 0;
   overflow: hidden;
 }
 .haydev-core .core-home .constellation {
-  margin-left: 40%;
-  --size: min(53vw, 850px);
-  margin-top: 22px;
+  flex-shrink: 0;
+  --size: min(70vw, 850px, max(480px, calc(100svh - 250px)));
+  margin: 0 auto;
+  transform: none;
+}
+.haydev-core .core-home .core-controls {
+  top: calc(100% + 8px);
+}
+.haydev-core .core-owner-trigger {
+  border-color: #b58c4866;
+  color: #f3d691;
+  background: linear-gradient(135deg, #3f2c1740, #09264166);
+}
+.haydev-core .core-owner-trigger .core-owner-chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform .2s;
+}
+.haydev-core .core-owner-trigger[data-state="open"] .core-owner-chevron {
+  transform: rotate(180deg);
+}
+.haydev-core.core-owner-dropdown {
+  width: min(440px, calc(100vw - 24px));
+  height: min(620px, var(--radix-popover-content-available-height));
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #5b91ba;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #0b2945fa, #020b1bfa 72%);
+  box-shadow: 0 18px 60px #0009, 0 0 28px #168fff24;
 }
 .earth-canvas {
   display: block;
@@ -335,7 +412,19 @@
   padding: 26px 32px 0;
 }
 .haydev-core .core-owner-stage .owner-ai-heading {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
   margin: 0;
+  text-align: center;
+}
+.haydev-core .core-owner-stage .owner-ai-heading > div {
+  width: 100%;
+  min-width: 0;
+  max-width: 1100px;
+}
+.haydev-core .core-owner-stage .owner-online {
+  justify-self: center;
 }
 .haydev-core .core-owner-stage .owner-ai-heading h1 {
   font-size: 34px;
@@ -344,14 +433,20 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 20px;
+  gap: clamp(8px, 2vw, 20px);
   height: 170px;
-  margin: 0;
+  width: 100%;
+  margin: 8px auto 0;
+}
+.haydev-core .core-owner-stage .wave {
+  flex-shrink: 0;
+  width: clamp(40px, 8vw, 70px);
 }
 .haydev-core .core-owner-stage .owner-mic {
   position: relative;
   inset: auto;
   transform: none;
+  flex-shrink: 0;
   width: 110px;
   height: 110px;
 }
@@ -554,11 +649,6 @@
   font-size: 9px;
   opacity: 0.7;
 }
-@media (min-width: 1700px) {
-  .haydev-core .core-home .constellation {
-    margin-left: 43%;
-  }
-}
 @media (max-width: 1250px) {
   .haydev-core .core-topbar {
     gap: 8px;
@@ -571,12 +661,13 @@
     display: none;
   }
   .haydev-core .core-topbar nav {
+    display: flex;
+    justify-content: flex-start;
+    gap: 4px;
     margin-left: auto;
   }
   .haydev-core .core-home .constellation {
-    --size: 65vw;
-    margin-left: 35%;
-    margin-top: 40px;
+    --size: min(80vw, max(480px, calc(100svh - 250px)));
   }
   .haydev-core .core-home .ai-panel {
     right: 2%;
@@ -595,11 +686,17 @@
   }
   .haydev-core .core-topbar nav {
     order: 0;
-    flex: 1;
-    width: auto;
+    flex: 1 0 100%;
+    width: 100%;
+    overflow-x: auto;
     padding-top: 0;
     border-top: 0;
     margin: 0;
+  }
+  .haydev-core .core-topbar nav > .nav-item {
+    flex-shrink: 0;
+    min-width: max-content;
+    white-space: nowrap;
   }
   .haydev-core .core-topbar .brand {
     margin-right: auto;
@@ -618,7 +715,7 @@
   }
   .haydev-core .core-home .constellation {
     --size: 92vw;
-    margin: 20px auto 60px;
+    margin: 0 auto;
     transform: none;
   }
   .haydev-core .core-home .ai-panel {
@@ -630,7 +727,7 @@
     margin: 0 auto 32px;
   }
   .core-home {
-    min-height: calc(100dvh - 112px);
+    min-height: 0;
   }
   .core-module-topline {
     padding: 12px;
@@ -672,6 +769,18 @@
   }
 }
 @media (max-width: 440px) {
+  .haydev-core.core-owner-dropdown .owner-chat-header {
+    flex-wrap: wrap;
+  }
+  .haydev-core.core-owner-dropdown .owner-chat-modes {
+    order: 1;
+    width: 100%;
+    justify-content: center;
+  }
+  .haydev-core.core-owner-dropdown .owner-chat-modes button {
+    flex: 1;
+    justify-content: center;
+  }
   .haydev-core .core-topbar {
     padding-inline: 12px;
     gap: 6px;
@@ -706,7 +815,7 @@
   }
   .haydev-core .core-home .constellation {
     --size: 90vw;
-    margin: 24px auto 55px;
+    margin: 0 auto;
   }
   .haydev-core .core-home .ai-panel {
     padding: 16px;
@@ -729,9 +838,6 @@
   .haydev-core .core-home .ai-invitation {
     font-size: 14px;
     margin: 5px 0 12px;
-  }
-  .haydev-core .core-home .core-controls {
-    top: 102%;
   }
   .core-auth-header {
     padding: 20px 6%;
@@ -943,6 +1049,19 @@
 .haydev-core .editor-magic-prompt textarea { min-height: 94px; resize: vertical; }
 .haydev-core .editor-magic-settings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; gap: 8px; }
 .haydev-core .editor-magic-settings input, .haydev-core .editor-magic-settings select { margin-top: auto; }
+.haydev-core .editor-magic-options { margin-top: 12px; border: 1px solid #315d7d; border-radius: 10px; background: #061726aa; overflow: hidden; }
+.haydev-core .editor-magic-options summary { display: flex; align-items: center; gap: 8px; padding: 10px 11px; color: #f1d28d; font-size: 11px; font-weight: 700; cursor: pointer; list-style: none; }
+.haydev-core .editor-magic-options summary::-webkit-details-marker { display: none; }
+.haydev-core .editor-magic-options summary::after { content: "⌄"; margin-left: auto; color: #87b4d1; font-size: 15px; transition: transform .18s ease; }
+.haydev-core .editor-magic-options[open] summary::after { transform: rotate(180deg); }
+.haydev-core .editor-magic-options summary small { color: #86a7bd; font-size: 10px; font-weight: 400; }
+.haydev-core .editor-magic-options-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 0 10px 10px; }
+.haydev-core .editor-magic-option-group { display: grid; align-content: start; gap: 7px; min-width: 0; border-left: 1px solid #21465f; padding-left: 8px; }
+.haydev-core .editor-magic-option-group:first-child { border-left: 0; padding-left: 0; }
+.haydev-core .editor-magic-option-group > strong { color: #bdd8e9; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+.haydev-core .editor-magic-option { display: grid; gap: 4px; color: #8eabc0; font-size: 10px; }
+.haydev-core .editor-magic-option select { width: 100%; min-width: 0; border: 1px solid #315d7d; border-radius: 7px; padding: 7px 8px; color: #e8f5ff; background: #04101d; font: inherit; font-size: 10px; }
+.haydev-core .editor-magic-option select:focus { border-color: #d7ad5b; outline: 2px solid #d7ad5b55; outline-offset: 1px; }
 .haydev-core .editor-magic-assets, .haydev-core .editor-magic-characters { margin-top: 14px; }
 .haydev-core .editor-magic-section-title { margin-bottom: 8px; color: #f2d288; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .haydev-core .editor-magic-asset-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; }
@@ -970,4 +1089,5 @@
 .haydev-core .editor-magic-plan li strong { display: block; color: #f4f8ff; font-size: 11px; }
 .haydev-core .editor-magic-plan li span { display: block; margin-top: 2px; color: #8ca9c1; line-height: 1.4; }
 @media (max-width: 900px) { .haydev-core .editor-magic-grid { grid-template-columns: 1fr; } .haydev-core .editor-magic-asset-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 560px) { .haydev-core .editor-magic-settings, .haydev-core .editor-magic-character-grid { grid-template-columns: 1fr; } .haydev-core .editor-magic-asset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .haydev-core .editor-magic-plan-head { align-items: flex-start; flex-direction: column; } .haydev-core .editor-magic-plan-head span { max-width: none; text-align: left; } }
+@media (max-width: 900px) { .haydev-core .editor-magic-options-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .haydev-core .editor-magic-option-group:nth-child(odd) { border-left: 0; padding-left: 0; } }
+@media (max-width: 560px) { .haydev-core .editor-magic-settings, .haydev-core .editor-magic-character-grid, .haydev-core .editor-magic-options-grid { grid-template-columns: 1fr; } .haydev-core .editor-magic-option-group, .haydev-core .editor-magic-option-group:nth-child(n) { border-left: 0; padding-left: 0; } .haydev-core .editor-magic-asset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .haydev-core .editor-magic-plan-head { align-items: flex-start; flex-direction: column; } .haydev-core .editor-magic-plan-head span { max-width: none; text-align: left; } }

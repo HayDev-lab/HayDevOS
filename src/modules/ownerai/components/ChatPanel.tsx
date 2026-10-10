@@ -4,7 +4,7 @@
  * ChatPanel — the reusable Owner AI chat surface.
  *
  * Used by both:
- *  - the slide-in OwnerAiPanel (full-width, compact)
+ *  - the header OwnerAiPanel dropdown (compact)
  *  - the OwnerAiView's Chat tab (wider, non-compact)
  *
  * Layout:
@@ -33,6 +33,7 @@ TooltipProvider,
 TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLocale } from "@/lib/i18n";
+import { getModule } from "@/lib/modules/registry";
 import { useAppStore } from "@/lib/store/app-store";
 import { cn } from "@/lib/utils";
 import {
@@ -54,7 +55,7 @@ import { ChatMessage } from "./ChatMessage";
 import { TypingDots } from "./TypingDots";
 
 interface ChatPanelProps {
-  /** Compact variant for the slide-in panel. */
+  /** Compact variant for the header dropdown. */
   compact?: boolean;
   /** Optional close handler (shown in the panel header). */
   onClose?: () => void;
@@ -98,7 +99,7 @@ export function ChatPanel({ compact = false, onClose, showHeaderActions = false 
   // Auto-scroll to bottom when messages change.
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el && conv?.messages.length) el.scrollTop = el.scrollHeight;
   }, [conv?.messages, isProcessing]);
 
   function handleSend(text?: string) {
@@ -133,7 +134,7 @@ export function ChatPanel({ compact = false, onClose, showHeaderActions = false 
     <div className="flex h-full min-h-0 flex-col">
       {/* Header */}
       <div className="shrink-0 border-b border-border bg-card/40 px-3 py-2.5 backdrop-blur-md">
-        <div className="flex items-center gap-2">
+        <div className="owner-chat-header flex items-center gap-2">
           <span className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-lime/30 bg-lime/10 text-lime">
             <Sparkles className="h-4 w-4" />
             <span
@@ -154,7 +155,7 @@ export function ChatPanel({ compact = false, onClose, showHeaderActions = false 
 
           {/* Mode selector */}
           <TooltipProvider delayDuration={200}>
-            <div className="flex items-center gap-0.5 rounded-lg border border-border/60 bg-background/60 p-0.5">
+            <div className="owner-chat-modes flex items-center gap-0.5 rounded-lg border border-border/60 bg-background/60 p-0.5">
               {MODES.map((m) => {
                 const MIcon = MODE_ICONS[m];
                 const isActive = mode === m;
@@ -278,18 +279,18 @@ export function ChatPanel({ compact = false, onClose, showHeaderActions = false 
         </div>
 
         {/* Context chip */}
-        <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground/80">
-          <span className="inline-flex items-center gap-1 rounded border border-border/40 bg-background/40 px-1.5 py-0.5">
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground/80">
+          <span className="inline-flex min-w-0 max-w-full items-center gap-1 rounded border border-border/40 bg-background/40 px-1.5 py-0.5">
             <span className="font-semibold uppercase tracking-wider text-foreground/70">
               {t("ownerAi.context.org")}:
             </span>
-            <span className="text-foreground/80">{org.name}</span>
+            <span className="truncate text-foreground/80">{org.name}</span>
           </span>
-          <span className="inline-flex items-center gap-1 rounded border border-border/40 bg-background/40 px-1.5 py-0.5">
+          <span className="inline-flex min-w-0 max-w-full items-center gap-1 rounded border border-border/40 bg-background/40 px-1.5 py-0.5">
             <span className="font-semibold uppercase tracking-wider text-foreground/70">
               {t("ownerAi.context.module")}:
             </span>
-            <span className="text-foreground/80">{t(`module.${activeModule}` as const)}</span>
+            <span className="truncate text-foreground/80">{t(getModule(activeModule)?.nameKey ?? "nav.dashboard")}</span>
           </span>
           {conv && (
             <span className="ml-auto truncate font-mono text-[9px] text-muted-foreground/60">
@@ -305,6 +306,7 @@ export function ChatPanel({ compact = false, onClose, showHeaderActions = false 
         className="min-h-0 flex-1 overflow-y-auto px-2 py-3"
         role="log"
         aria-live="polite"
+        tabIndex={0}
       >
         {isEmpty ? (
           <EmptyState compact={compact} onPick={(s) => handleSend(s)} />
@@ -338,21 +340,21 @@ export function ChatPanel({ compact = false, onClose, showHeaderActions = false 
       </div>
 
       {/* Quick chips */}
-      <div className="shrink-0 border-t border-border/60 bg-card/20 px-2 pt-2">
+      {!isEmpty && <div className="shrink-0 border-t border-border/60 bg-card/20 px-2 pt-2">
         <div className="flex flex-wrap gap-1">
           {SUGGESTION_CHIPS.slice(0, compact ? 4 : 8).map((chip) => (
             <button
               key={chip.id}
               type="button"
-              onClick={() => handleSend(chip.text)}
+              onClick={() => handleSend(t(`ownerAi.suggestion.${chip.id}`))}
               disabled={isProcessing}
               className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-background/40 px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:border-lime/40 hover:bg-lime/5 hover:text-lime disabled:opacity-50"
             >
-              {chip.text}
+              {t(`ownerAi.suggestion.${chip.id}`)}
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Input */}
       <div className="shrink-0 border-t border-border/60 bg-card/40 p-2">
@@ -395,7 +397,7 @@ function EmptyState({
 }) {
   const { t } = useLocale();
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 p-4 text-center">
+    <div className="flex min-h-full flex-col items-center justify-center gap-4 p-4 text-center">
       <div className="relative">
         <div className="absolute inset-0 -z-10 rounded-full bg-lime/10 blur-2xl" />
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-lime/30 bg-lime/5 text-lime">
@@ -413,11 +415,11 @@ function EmptyState({
           <button
             key={chip.id}
             type="button"
-            onClick={() => onPick(chip.text)}
+            onClick={() => onPick(t(`ownerAi.suggestion.${chip.id}`))}
             className="group flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:border-lime/40 hover:bg-lime/5 hover:text-lime"
           >
             <Sparkles className="h-3 w-3 text-muted-foreground/60 group-hover:text-lime" />
-            <span>{chip.text}</span>
+            <span>{t(`ownerAi.suggestion.${chip.id}`)}</span>
           </button>
         ))}
       </div>

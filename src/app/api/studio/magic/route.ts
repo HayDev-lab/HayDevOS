@@ -16,6 +16,19 @@ const characterSchema = z.object({
   description: z.string().trim().max(1_000),
   locked: z.boolean(),
 }).strict();
+const preferencesSchema = z.object({
+  videoStyle: z.string().trim().max(160).optional(),
+  videoTone: z.string().trim().max(160).optional(),
+  musicStyle: z.string().trim().max(160).optional(),
+  musicTone: z.string().trim().max(160).optional(),
+  soundStyle: z.string().trim().max(160).optional(),
+  voiceStyle: z.string().trim().max(160).optional(),
+  voiceTone: z.string().trim().max(160).optional(),
+  imageStyle: z.string().trim().max(160).optional(),
+  imageTone: z.string().trim().max(160).optional(),
+  avatarStyle: z.string().trim().max(160).optional(),
+  avatarTone: z.string().trim().max(160).optional(),
+}).strict();
 const assetSummarySchema = z.object({
   kind: assetKindSchema,
   name: z.string().trim().min(1).max(240),
@@ -28,6 +41,7 @@ const magicJsonSchema = z.object({
   durationSec: z.number().int().min(1).max(600),
   language: z.string().trim().min(1).max(80),
   aspectRatio: z.enum(["16:9", "9:16", "1:1"]),
+  preferences: preferencesSchema.optional(),
   assets: z.array(assetSummarySchema).max(assetKinds.length),
   characters: z.array(characterSchema).max(3),
 }).strict();
@@ -57,6 +71,11 @@ async function parseMagicRequest(req: NextRequest): Promise<MagicRequest> {
   const durationSec = Number(form.get("durationSec") ?? 120);
   const language = String(form.get("language") ?? "Русский").trim();
   const aspectRatio = String(form.get("aspectRatio") ?? "16:9") as MagicRequest["aspectRatio"];
+  let preferences: unknown;
+  const rawPreferences = String(form.get("preferences") ?? "").trim();
+  if (rawPreferences) {
+    try { preferences = preferencesSchema.parse(JSON.parse(rawPreferences)); } catch { throw new Error("MAGIC_PREFERENCES_INVALID"); }
+  }
   const rawCharacters = String(form.get("characters") ?? "[]");
   let characters: unknown;
   try { characters = JSON.parse(rawCharacters); } catch { throw new Error("MAGIC_CHARACTERS_INVALID"); }
@@ -72,7 +91,7 @@ async function parseMagicRequest(req: NextRequest): Promise<MagicRequest> {
     if (!summary) throw new Error("MAGIC_FILE_NOT_SUPPORTED");
     assets.push(summary);
   }
-  return magicJsonSchema.parse({ prompt, durationSec, language, aspectRatio, assets, characters: parsed });
+  return magicJsonSchema.parse({ prompt, durationSec, language, aspectRatio, preferences, assets, characters: parsed });
 }
 
 export async function POST(req: NextRequest) {

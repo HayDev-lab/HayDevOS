@@ -27,41 +27,42 @@ model User {
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @db.Timestamptz(3)
 
-  memberships              Membership[]
-  sessions                 Session[]
-  auditLogs                AuditLog[]
-  notifications            Notification[]
-  uploadedDocs             DocumentRecord[]
-  tasksAssigned            Task[]                   @relation("TaskAssignee")
-  tasksOwned               Task[]                   @relation("TaskOwner")
-  tasksCreated             Task[]                   @relation("TaskCreator")
-  leadOwnership            Lead[]
-  leadActivities           LeadActivity[]           @relation("LeadActivityActor")
-  leadNotes                LeadNote[]               @relation("LeadNoteAuthor")
-  aiConversations          AiConversation[]
-  quotesOwned              Quote[]                  @relation("QuoteOwner")
-  quotesCreated            Quote[]                  @relation("QuoteCreator")
-  quoteVersionsCreated     QuoteVersion[]           @relation("QuoteVersionCreator")
-  quoteApprovalsRequested  QuoteApproval[]          @relation("QuoteApprovalRequester")
-  quoteApprovalsDecided    QuoteApproval[]          @relation("QuoteApprovalDecider")
-  quoteEvents              QuoteEvent[]             @relation("QuoteEventActor")
-  quoteDocumentsGenerated  GeneratedQuoteDocument[] @relation("QuoteDocumentGenerator")
-  documentVersionsCreated  DocumentVersion[]        @relation("DocumentVersionCreator")
-  documentTemplatesCreated DocumentTemplate[]       @relation("DocumentTemplateCreator")
-  documentGenerations      DocumentGeneration[]     @relation("DocumentGenerationActor")
-  documentAccessEvents     DocumentAccessEvent[]    @relation("DocumentAccessActor")
-  customersCreated         Customer[]               @relation("CustomerCreator")
-  ordersCreated            Order[]                  @relation("OrderCreator")
-  orderStatusEvents        OrderStatusEvent[]       @relation("OrderStatusActor")
-  inventoryMovements       InventoryMovement[]      @relation("InventoryMovementActor")
-  inventoryTransfers       InventoryTransfer[]      @relation("InventoryTransferActor")
-  fulfillments             Fulfillment[]            @relation("FulfillmentActor")
-  paymentsRecorded         Payment[]                @relation("PaymentRecorder")
-  paymentsConfirmed        Payment[]                @relation("PaymentConfirmer")
-  financeEvents            FinanceEvent[]           @relation("FinanceEventActor")
-  erpEvents                ERPEvent[]               @relation("ERPEventActor")
-  exportJobs               ExportJob[]              @relation("ExportJobRequester")
+  memberships                 Membership[]
+  sessions                    Session[]
+  auditLogs                   AuditLog[]
+  notifications               Notification[]
+  uploadedDocs                DocumentRecord[]
+  tasksAssigned               Task[]                        @relation("TaskAssignee")
+  tasksOwned                  Task[]                        @relation("TaskOwner")
+  tasksCreated                Task[]                        @relation("TaskCreator")
+  leadOwnership               Lead[]
+  leadActivities              LeadActivity[]                @relation("LeadActivityActor")
+  leadNotes                   LeadNote[]                    @relation("LeadNoteAuthor")
+  aiConversations             AiConversation[]
+  quotesOwned                 Quote[]                       @relation("QuoteOwner")
+  quotesCreated               Quote[]                       @relation("QuoteCreator")
+  quoteVersionsCreated        QuoteVersion[]                @relation("QuoteVersionCreator")
+  quoteApprovalsRequested     QuoteApproval[]               @relation("QuoteApprovalRequester")
+  quoteApprovalsDecided       QuoteApproval[]               @relation("QuoteApprovalDecider")
+  quoteEvents                 QuoteEvent[]                  @relation("QuoteEventActor")
+  quoteDocumentsGenerated     GeneratedQuoteDocument[]      @relation("QuoteDocumentGenerator")
+  documentVersionsCreated     DocumentVersion[]             @relation("DocumentVersionCreator")
+  documentTemplatesCreated    DocumentTemplate[]            @relation("DocumentTemplateCreator")
+  documentGenerations         DocumentGeneration[]          @relation("DocumentGenerationActor")
+  documentAccessEvents        DocumentAccessEvent[]         @relation("DocumentAccessActor")
+  customersCreated            Customer[]                    @relation("CustomerCreator")
+  ordersCreated               Order[]                       @relation("OrderCreator")
+  orderStatusEvents           OrderStatusEvent[]            @relation("OrderStatusActor")
+  inventoryMovements          InventoryMovement[]           @relation("InventoryMovementActor")
+  inventoryTransfers          InventoryTransfer[]           @relation("InventoryTransferActor")
+  fulfillments                Fulfillment[]                 @relation("FulfillmentActor")
+  paymentsRecorded            Payment[]                     @relation("PaymentRecorder")
+  paymentsConfirmed           Payment[]                     @relation("PaymentConfirmer")
+  financeEvents               FinanceEvent[]                @relation("FinanceEventActor")
+  erpEvents                   ERPEvent[]                    @relation("ERPEventActor")
+  exportJobs                  ExportJob[]                   @relation("ExportJobRequester")
   marketingAssistantKnowledge MarketingAssistantKnowledge[]
+  competitorMonitors          CompetitorMonitor[]           @relation("CompetitorMonitorCreator")
 }
 
 model Organization {
@@ -71,57 +72,60 @@ model Organization {
   plan      String   @default("starter") // starter | growth | scale | enterprise
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
-  memberships           Membership[]
-  sessions              Session[]
-  auditLogs             AuditLog[]
-  notifications         Notification[]
-  moduleRegistry        ModuleRegistry[]
-  leads                 Lead[]
-  tasks                 Task[]
-  quotes                Quote[]
-  products              Product[]
-  priceBooks            PriceBook[]
-  documents             DocumentRecord[]
-  automations           Automation[]
-  customers             Customer[]
-  orders                Order[]
-  invoices              Invoice[]
-  payments              Payment[]
-  integrations          Integration[]
-  webhookEvents         WebhookEvent[]
-  auditQs               AuditQuestionnaire[]
-  aiConversations       AiConversation[]
-  leadActivities        LeadActivity[]
-  leadNotes             LeadNote[]
-  leadPipelines         LeadPipeline[]
-  leadStages            LeadPipelineStage[]
-  leadSlaPolicy         LeadSlaPolicy?
-  automationRuns        AutomationRun[]
-  exportJobs             ExportJob[]
-  quoteVersions         QuoteVersion[]
-  quoteApprovals        QuoteApproval[]
-  quoteEvents           QuoteEvent[]
-  quoteNumberCounters   QuoteNumberCounter[]
-  quoteSettings         QuoteSettings?
-  quoteDocuments        GeneratedQuoteDocument[]
-  documentVersions      DocumentVersion[]
-  documentTemplates     DocumentTemplate[]
-  documentGenerations   DocumentGeneration[]
-  documentAccessEvents  DocumentAccessEvent[]
-  orderNumberCounters   OrderNumberCounter[]
-  orderItems            OrderItem[]
-  orderStatusEvents     OrderStatusEvent[]
-  warehouses            Warehouse[]
-  inventoryBalances     InventoryBalance[]
-  inventoryMovements    InventoryMovement[]
-  inventoryReservations InventoryReservation[]
-  inventoryTransfers    InventoryTransfer[]
-  fulfillments          Fulfillment[]
-  fulfillmentItems      FulfillmentItem[]
-  financeEvents         FinanceEvent[]
-  erpEvents             ERPEvent[]
-  marketingAssistantProfile MarketingAssistantProfile?
+  memberships                 Membership[]
+  sessions                    Session[]
+  auditLogs                   AuditLog[]
+  notifications               Notification[]
+  moduleRegistry              ModuleRegistry[]
+  leads                       Lead[]
+  tasks                       Task[]
+  quotes                      Quote[]
+  products                    Product[]
+  priceBooks                  PriceBook[]
+  documents                   DocumentRecord[]
+  automations                 Automation[]
+  customers                   Customer[]
+  orders                      Order[]
+  invoices                    Invoice[]
+  payments                    Payment[]
+  integrations                Integration[]
+  webhookEvents               WebhookEvent[]
+  auditQs                     AuditQuestionnaire[]
+  aiConversations             AiConversation[]
+  leadActivities              LeadActivity[]
+  leadNotes                   LeadNote[]
+  leadPipelines               LeadPipeline[]
+  leadStages                  LeadPipelineStage[]
+  leadSlaPolicy               LeadSlaPolicy?
+  automationRuns              AutomationRun[]
+  exportJobs                  ExportJob[]
+  quoteVersions               QuoteVersion[]
+  quoteApprovals              QuoteApproval[]
+  quoteEvents                 QuoteEvent[]
+  quoteNumberCounters         QuoteNumberCounter[]
+  quoteSettings               QuoteSettings?
+  quoteDocuments              GeneratedQuoteDocument[]
+  documentVersions            DocumentVersion[]
+  documentTemplates           DocumentTemplate[]
+  documentGenerations         DocumentGeneration[]
+  documentAccessEvents        DocumentAccessEvent[]
+  orderNumberCounters         OrderNumberCounter[]
+  orderItems                  OrderItem[]
+  orderStatusEvents           OrderStatusEvent[]
+  warehouses                  Warehouse[]
+  inventoryBalances           InventoryBalance[]
+  inventoryMovements          InventoryMovement[]
+  inventoryReservations       InventoryReservation[]
+  inventoryTransfers          InventoryTransfer[]
+  fulfillments                Fulfillment[]
+  fulfillmentItems            FulfillmentItem[]
+  financeEvents               FinanceEvent[]
+  erpEvents                   ERPEvent[]
+  marketingAssistantProfile   MarketingAssistantProfile?
   marketingAssistantKnowledge MarketingAssistantKnowledge[]
+  competitorMonitors          CompetitorMonitor[]
+  competitorSnapshots         CompetitorSnapshot[]
+  competitorAnalyses          CompetitorAnalysis[]
 }
 
 model Membership {
@@ -1332,7 +1336,7 @@ model MarketingAssistantProfile {
   createdAt       DateTime @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime @updatedAt @db.Timestamptz(3)
 
-  org       Organization             @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  org       Organization                  @relation(fields: [orgId], references: [id], onDelete: Cascade)
   knowledge MarketingAssistantKnowledge[]
 }
 
@@ -1353,8 +1357,77 @@ model MarketingAssistantKnowledge {
   profile MarketingAssistantProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   author  User                      @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
-  @@index([orgId, enabled, updatedAt])
   @@unique([orgId, contentHash])
+  @@index([orgId, enabled, updatedAt])
+}
+
+// COMPETITOR MONITORING — public, low-cost change detection and 3-day reports.
+// Raw HTML is never persisted; only bounded normalized text and hashes are kept.
+model CompetitorMonitor {
+  id            String    @id @default(cuid())
+  orgId         String
+  createdById   String?
+  name          String
+  url           String
+  sourceType    String    @default("auto") // auto | webpage | rss | sitemap | json
+  enabled       Boolean   @default(true)
+  cadenceDays   Int       @default(3)
+  lastCheckedAt DateTime? @db.Timestamptz(3)
+  nextCheckAt   DateTime? @db.Timestamptz(3)
+  lastStatus    String    @default("pending") // pending | unchanged | changed | blocked | error
+  lastError     String?
+  leaseUntil    DateTime? @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+
+  org       Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdBy User?                @relation("CompetitorMonitorCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  snapshots CompetitorSnapshot[]
+
+  @@unique([orgId, url])
+  @@index([orgId, enabled, nextCheckAt])
+  @@index([orgId, lastStatus])
+}
+
+model CompetitorSnapshot {
+  id           String   @id @default(cuid())
+  monitorId    String
+  orgId        String
+  sourceUrl    String
+  statusCode   Int
+  contentType  String?
+  title        String?
+  description  String?
+  contentHash  String
+  contentText  String
+  contentBytes Int
+  fetchedAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  monitor CompetitorMonitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  org     Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([monitorId, contentHash])
+  @@index([orgId, monitorId, fetchedAt])
+}
+
+model CompetitorAnalysis {
+  id          String   @id @default(cuid())
+  orgId       String
+  periodKey   String
+  periodStart DateTime
+  periodEnd   DateTime
+  status      String   @default("completed") // queued | running | completed | failed
+  provider    String   @default("local-heuristic")
+  summary     String
+  details     String
+  error       String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, periodKey])
+  @@index([orgId, periodEnd])
 }
 
 model WebhookEvent {

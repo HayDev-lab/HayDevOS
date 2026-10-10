@@ -50,6 +50,7 @@ const nextConfig: NextConfig = {
               `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
+              "media-src 'self' blob:",
               "font-src 'self' data:",
               "connect-src 'self' https:",
               "worker-src 'self' blob:",

@@ -9,6 +9,7 @@ import { useAppStore } from "@/lib/store/app-store";
 import { useCoreCopy } from "@/components/core/copy";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { UserMenu } from "./UserMenu";
+import { OwnerAiPanel } from "./OwnerAiPanel";
 
 export function TopBar({
   onOpenSettings,
@@ -34,7 +35,7 @@ export function TopBar({
   return (
     <div className="topbar core-topbar">
       <nav aria-label={copy.navigation}>
-        {items.map((item) => (
+        {items.map((item) => item.id === "ownerAi" ? <OwnerAiPanel key={item.id} /> : (
           <Link
             key={item.id}
             className={`nav-item ${activeModule === item.id || (item.id === "modules" && !["dashboard", "ownerAi", "docsmart"].includes(activeModule)) ? "active" : ""}`}

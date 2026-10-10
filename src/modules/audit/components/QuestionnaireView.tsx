@@ -6,7 +6,7 @@
  * Layout:
  *  - Top: questionnaire version, progress bar, reset and submit actions.
  *  - Left: category sidebar (6 categories) with per-category progress.
- *  - Right: the active category's questions, each rendered by `QuestionCard`
+ *  - Right: one question at a time, rendered by `QuestionCard`
  *    according to its `type`:
  *      - scale  → 5-point slider with low/high anchors
  *      - yesno  → two-button toggle (Yes / No)
@@ -18,7 +18,7 @@
  * question text/options. Switching locale in the shell instantly re-renders
  * every question.
  *
- * State is held in the parent `BusinessAuditView` (so the Report tab can reuse
+ * Answers and the current question are held in the parent `BusinessAuditView` (so the Report page can reuse
  * the live answers without a re-fetch). This view is purely presentational
  * over the `answers` prop and `onAnswer` callback.
  */
@@ -31,7 +31,6 @@ ChevronLeft,
 ChevronRight,
 Database,
 FileCheck2,
-Save,
 Settings2,
 Target,
 TrendingUp,
@@ -50,7 +49,7 @@ import { cn } from "@/lib/utils";
 import {
 QUESTION_BY_ID,
 QUESTIONNAIRE_VERSION,
-QUESTIONS_BY_CATEGORY,
+QUESTIONS,
 } from "../questionnaire";
 import { categoryProgress,totalProgress } from "../scoring";
 import {
@@ -82,6 +81,8 @@ const CATEGORY_ACCENT: Record<CategoryId, string> = {
 };
 
 interface Props {
+  questionIndex: number;
+  onQuestionIndexChange: (index: number) => void;
   answers: AnswerMap;
   onAnswer: (questionId: string, value: number | boolean | string | string[], evidence?: string) => void;
   onReset: () => void;
@@ -91,6 +92,8 @@ interface Props {
 }
 
 export function QuestionnaireView({
+  questionIndex,
+  onQuestionIndexChange,
   answers,
   onAnswer,
   onReset,
@@ -98,7 +101,13 @@ export function QuestionnaireView({
   canSubmit,
 }: Props) {
   const { t } = useLocale();
-  const [activeCategory, setActiveCategory] = useState<CategoryId>("acquisition");
+  const question = QUESTIONS[questionIndex] ?? QUESTIONS[0];
+  const activeCategory = question.category;
+
+  function selectCategory(id: CategoryId) {
+    const unanswered = QUESTIONS.findIndex((q) => q.category === id && !answers[q.id]);
+    onQuestionIndexChange(unanswered >= 0 ? unanswered : QUESTIONS.findIndex((q) => q.category === id));
+  }
 
   const progress = useMemo(() => totalProgress(answers), [answers]);
   const perCat = useMemo(
@@ -109,8 +118,6 @@ export function QuestionnaireView({
       })),
     [answers],
   );
-
-  const questions = QUESTIONS_BY_CATEGORY[activeCategory];
 
   function clearAll() {
     onReset();
@@ -183,7 +190,14 @@ export function QuestionnaireView({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr]">
         {/* Category sidebar */}
         <aside className="lg:sticky lg:top-32 lg:self-start">
-          <nav className="surface-elevated rounded-xl border border-border/60 p-2">
+          <label className="block space-y-2 text-xs lg:hidden">
+            <span className="text-muted-foreground">{t("audit.question.category")}</span>
+            <select value={activeCategory} onChange={(event) => selectCategory(event.target.value as CategoryId)}
+              className="w-full rounded-lg border border-border/60 bg-card p-3 text-sm text-foreground">
+              {perCat.map(({ cat, p }) => <option key={cat.id} value={cat.id}>{t(cat.nameKey)} · {p.answered}/{p.total}</option>)}
+            </select>
+          </label>
+          <nav aria-label={t("audit.question.category")} className="surface-elevated hidden rounded-xl border border-border/60 p-2 lg:block">
             <ul className="space-y-1">
               {perCat.map(({ cat, p }) => {
                 const Icon = CATEGORY_ICONS[cat.id];
@@ -193,14 +207,14 @@ export function QuestionnaireView({
                   <li key={cat.id}>
                     <button
                       type="button"
-                      onClick={() => setActiveCategory(cat.id)}
+                      onClick={() => selectCategory(cat.id)}
                       className={cn(
                         "group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors",
                         isActive
                           ? "bg-muted/60 text-foreground"
                           : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
                       )}
-                      aria-current={isActive ? "page" : undefined}
+                      aria-current={isActive ? "step" : undefined}
                     >
                       <span
                         className="flex h-6 w-6 items-center justify-center rounded-md border"
@@ -252,102 +266,58 @@ export function QuestionnaireView({
 
         {/* Active category questions */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1">
               <h2 className="text-base font-semibold text-foreground">
                 {t(CATEGORY_LIST.find((c) => c.id === activeCategory)!.nameKey)}
               </h2>
-              <span className="text-[11px] text-muted-foreground">
+              <p className="text-[11px] text-muted-foreground">
                 {t(CATEGORY_LIST.find((c) => c.id === activeCategory)!.descKey)}
-              </span>
+              </p>
             </div>
-            <CategoryNav
-              activeCategory={activeCategory}
-              onChange={setActiveCategory}
-            />
+            <span aria-live="polite" className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs text-primary">
+              {t("audit.question.step", { current: questionIndex + 1, total: QUESTIONS.length })}
+            </span>
           </div>
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence initial={false} mode="wait">
             <motion.div
-              key={activeCategory}
+              key={question.id}
               initial={{ opacity: 0, x: 8 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -8 }}
               transition={{ duration: 0.2 }}
               className="space-y-3"
             >
-              {questions.map((q, idx) => (
-                <QuestionCard
-                  key={q.id}
-                  question={q}
-                  index={idx + 1}
-                  answer={answers[q.id]}
-                  onAnswer={(value, evidence) => onAnswer(q.id, value, evidence)}
-                />
-              ))}
+              <QuestionCard
+                question={question}
+                index={questionIndex + 1}
+                answer={answers[question.id]}
+                onAnswer={(value, evidence) => onAnswer(question.id, value, evidence)}
+              />
             </motion.div>
           </AnimatePresence>
 
           {/* Footer nav */}
-          <div className="flex items-center justify-between gap-2 pt-2">
-            <CategoryNav activeCategory={activeCategory} onChange={setActiveCategory} />
-            <Button
-              type="button"
-              size="sm"
-              onClick={onSubmit}
-              disabled={!canSubmit}
-              className="h-8 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              <Save className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t("audit.action.saveContinue")}</span>
-              <span className="sm:hidden">{t("audit.action.submit")}</span>
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <Button type="button" variant="outline" disabled={questionIndex === 0}
+              onClick={() => onQuestionIndexChange(questionIndex - 1)} className="gap-1.5">
+              <ChevronLeft className="h-4 w-4" />{t("common.previous")}
             </Button>
+            <span className="text-xs text-muted-foreground">{t(answers[question.id] ? "audit.question.answered" : "audit.question.unanswered")}</span>
+            {questionIndex < QUESTIONS.length - 1 ? (
+              <Button type="button" onClick={() => onQuestionIndexChange(questionIndex + 1)} className="gap-1.5">
+                {t("common.next")}<ChevronRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button type="button" onClick={onSubmit} disabled={!canSubmit} className="gap-1.5">
+                <FileCheck2 className="h-4 w-4" />{t("audit.action.submit")}
+              </Button>
+            )}
           </div>
+          {questionIndex === QUESTIONS.length - 1 && !canSubmit && <p className="text-xs text-muted-foreground">{t("audit.progress.notReady")}</p>}
         </div>
       </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Category nav (prev/next)
-// ─────────────────────────────────────────────────────────────────────────────
-
-function CategoryNav({
-  activeCategory,
-  onChange,
-}: {
-  activeCategory: CategoryId;
-  onChange: (id: CategoryId) => void;
-}) {
-  const { t } = useLocale();
-  const idx = CATEGORY_LIST.findIndex((c) => c.id === activeCategory);
-  const prev = idx > 0 ? CATEGORY_LIST[idx - 1] : null;
-  const next = idx < CATEGORY_LIST.length - 1 ? CATEGORY_LIST[idx + 1] : null;
-  return (
-    <div className="flex items-center gap-1.5">
-      <Button
-        type="button"
-        size="sm"
-        variant="ghost"
-        disabled={!prev}
-        onClick={() => prev && onChange(prev.id)}
-        className="h-8 gap-1 px-2 text-muted-foreground"
-      >
-        <ChevronLeft className="h-3.5 w-3.5" />
-        <span className="hidden text-xs sm:inline">{t("common.previous")}</span>
-      </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant="ghost"
-        disabled={!next}
-        onClick={() => next && onChange(next.id)}
-        className="h-8 gap-1 px-2 text-muted-foreground"
-      >
-        <span className="hidden text-xs sm:inline">{t("common.next")}</span>
-        <ChevronRight className="h-3.5 w-3.5" />
-      </Button>
     </div>
   );
 }
@@ -374,7 +344,7 @@ function QuestionCard({
   const accent = CATEGORY_ACCENT[question.category];
 
   return (
-    <article className="surface-elevated rounded-xl border border-border/60 p-4 transition-colors hover:border-border">
+    <article aria-labelledby={`audit-question-${question.id}`} className="surface-elevated rounded-xl border border-border/60 p-4 transition-colors hover:border-border">
       <header className="mb-3 flex items-start gap-3">
         <span
           className="mt-0.5 flex h-6 min-w-6 items-center justify-center rounded-md border px-1.5 font-mono text-[10px] font-medium"
@@ -387,7 +357,7 @@ function QuestionCard({
           {question.ref}
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-foreground">
+          <h3 id={`audit-question-${question.id}`} className="text-sm font-medium text-foreground">
             <span className="mr-1.5 text-muted-foreground/60">{index}.</span>
             {pickL10n(question.text, locale)}
           </h3>

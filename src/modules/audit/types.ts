@@ -9,6 +9,7 @@
  */
 
 import type { Locale } from "@/lib/i18n";
+import type { AuditBusinessContext } from "@/lib/business-audit/context";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Categories
@@ -156,6 +157,7 @@ export interface RecommendedModule {
 }
 
 export interface AuditReport {
+  businessContext?: AuditBusinessContext;
   /** Stable run id (org-scoped). */
   id: string;
   orgId: string;

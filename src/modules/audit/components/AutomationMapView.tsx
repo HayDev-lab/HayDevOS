@@ -22,6 +22,7 @@ import { motion } from "framer-motion";
 import { Map as MapIcon, ArrowRight, Workflow } from "lucide-react";
 
 import { useLocale } from "@/lib/i18n";
+import { auditModuleNameKey } from "../scoring";
 import { useAppStore } from "@/lib/store/app-store";
 import { cn } from "@/lib/utils";
 
@@ -255,7 +256,7 @@ export function AutomationMapView({ report }: Props) {
                   onClick={() => setActiveModule(op.relatedModule!)}
                   className="mt-3 inline-flex items-center gap-1 text-[11px] text-cyan hover:text-cyan/80"
                 >
-                  {t(`module.${op.relatedModule}`)}
+                  {t(auditModuleNameKey(op.relatedModule))}
                   <ArrowRight className="h-3 w-3" />
                 </button>
               ) : null}

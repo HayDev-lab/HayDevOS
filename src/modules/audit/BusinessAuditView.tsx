@@ -38,6 +38,7 @@ TabsList,
 TabsTrigger,
 } from "@/components/core/WorkspacePages";
 import { useLocale } from "@/lib/i18n";
+import { emptyBusinessContext, snapshotBusinessContext } from "@/lib/business-audit/context";
 import { cn } from "@/lib/utils";
 
 import { HISTORY_RUNS,freshReport,getRun } from "./data";
@@ -54,6 +55,7 @@ import { AutomationMapView } from "./components/AutomationMapView";
 import { CompareView } from "./components/CompareView";
 import { HistoryView } from "./components/HistoryView";
 import { QuestionnaireView } from "./components/QuestionnaireView";
+import { BusinessContextPanel } from "./components/BusinessContextPanel";
 import { RecommendationsView } from "./components/RecommendationsView";
 import { ReportView } from "./components/ReportView";
 import { SettingsView } from "./components/SettingsView";
@@ -88,6 +90,9 @@ export function BusinessAuditView() {
   const { t } = useLocale();
   const [tab, setTab] = useWorkspaceSection<TabId>("audit", "questionnaire");
   const [answers, setAnswers] = useState<AnswerMap>({});
+  const [businessContext, setBusinessContext] = useState(emptyBusinessContext);
+  const [checkingSources, setCheckingSources] = useState(false);
+  const [questionIndex, setQuestionIndex] = useState(0);
   const [activeReport, setActiveReport] = useState<AuditReport | null>(null);
   const [settings, setSettings] = useState<AuditSettings>(DEFAULT_AUDIT_SETTINGS);
 
@@ -113,13 +118,13 @@ export function BusinessAuditView() {
 
   function handleReset() {
     setAnswers({});
+    setQuestionIndex(0);
   }
 
   function handleSubmit() {
-    // Compute the deterministic report from the live answers. If too few
-    // answers are present, we still compute — `computeScores` handles missing
-    // answers gracefully (treats them as zero contribution).
-    const report = freshReport(answers, "current");
+    // Keep source evidence alongside the deterministic questionnaire score.
+    if (!canSubmit || checkingSources) return;
+    const report = { ...freshReport(answers, "current"), businessContext: snapshotBusinessContext(businessContext) };
     setActiveReport(report);
     setTab("report");
   }
@@ -200,12 +205,17 @@ export function BusinessAuditView() {
             transition={{ duration: 0.18 }}
           >
             <TabsContent value="questionnaire" className="mt-0 focus-visible:outline-none">
+              <div className="mb-4">
+                <BusinessContextPanel context={businessContext} onChange={setBusinessContext} onCheckingChange={setCheckingSources} />
+              </div>
               <QuestionnaireView
+                questionIndex={questionIndex}
+                onQuestionIndexChange={setQuestionIndex}
                 answers={answers}
                 onAnswer={handleAnswer}
                 onReset={handleReset}
                 onSubmit={handleSubmit}
-                canSubmit={canSubmit}
+                canSubmit={canSubmit && !checkingSources}
               />
             </TabsContent>
             <TabsContent value="report" className="mt-0 focus-visible:outline-none">

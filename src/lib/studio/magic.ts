@@ -16,11 +16,27 @@ export type MagicCharacterInput = {
   locked: boolean;
 };
 
+/** Optional, user-selected generation controls. Empty means prompt-only. */
+export type MagicGenerationPreferences = {
+  videoStyle?: string;
+  videoTone?: string;
+  musicStyle?: string;
+  musicTone?: string;
+  soundStyle?: string;
+  voiceStyle?: string;
+  voiceTone?: string;
+  imageStyle?: string;
+  imageTone?: string;
+  avatarStyle?: string;
+  avatarTone?: string;
+};
+
 export type MagicRequest = {
   prompt: string;
   durationSec: number;
   language: string;
   aspectRatio: string;
+  preferences?: MagicGenerationPreferences;
   assets: MagicAssetSummary[];
   characters: MagicCharacterInput[];
 };
@@ -56,6 +72,7 @@ export type MagicPlan = {
   durationSec: number;
   language: string;
   aspectRatio: string;
+  preferences?: MagicGenerationPreferences;
   assets: MagicAssetSummary[];
   characters: MagicCharacterInput[];
   steps: MagicPlanStep[];
@@ -99,7 +116,11 @@ export function buildMagicPlan(request: MagicRequest, providerReady = false, pro
   if (lockedCharacters.length) {
     steps.push(step("characters", "lock_characters", "Зафиксировать персонажей", `${lockedCharacters.length} персонаж(а/ей) будут неизменными между сценами.`, "uploaded"));
   }
-  steps.push(step("video", "generate_video", "Собрать видеосцены", `${request.durationSec} секунд в формате ${request.aspectRatio}, язык генерации: ${request.language}.`, "ai"));
+  const selectedPreferences = Object.entries(request.preferences ?? {}).filter(([, value]) => Boolean(value));
+  const preferenceNote = selectedPreferences.length
+    ? ` Дополнительные параметры: ${selectedPreferences.map(([key, value]) => `${key}=${value}`).join(", ")}.`
+    : "";
+  steps.push(step("video", "generate_video", "Собрать видеосцены", `${request.durationSec} секунд в формате ${request.aspectRatio}, язык генерации: ${request.language}.${preferenceNote}`, "ai"));
   if (music) steps.push(step("music", "add_music", "Добавить музыку", `${music.name} будет отдельной музыкальной дорожкой.`, "uploaded"));
   if (voice) steps.push(step("voice", "add_voice", "Добавить голос", `${voice.name} будет синхронизирован как voiceover.`, "uploaded"));
   if (sound) steps.push(step("sound", "add_sound", "Добавить звуки", `${sound.name} будет добавлен как sound-design слой.`, "uploaded"));
@@ -113,6 +134,7 @@ export function buildMagicPlan(request: MagicRequest, providerReady = false, pro
     durationSec: request.durationSec,
     language: request.language,
     aspectRatio: request.aspectRatio,
+    preferences: request.preferences,
     assets: request.assets,
     characters: request.characters,
     steps,

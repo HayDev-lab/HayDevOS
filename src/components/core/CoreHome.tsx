@@ -80,7 +80,6 @@ export function CoreHome() {
   >("loading");
   const stage = useRef<HTMLElement>(null);
   const pausedRef = useRef(false);
-  const interacting = useRef(false);
   const setModule = useAppStore((s) => s.setActiveModule);
   const search = useAppStore((s) => s.searchQuery)
     .trim()
@@ -92,7 +91,7 @@ export function CoreHome() {
   useEffect(() => {
     const root = stage.current;
     if (!root) return;
-    const buttons = [...root.querySelectorAll<HTMLButtonElement>(".module")];
+    const buttons = [...root.querySelectorAll<HTMLAnchorElement>(".module")];
     const connections = [
       ...root.querySelectorAll<SVGGElement>(".orbit-connection"),
     ];
@@ -102,13 +101,13 @@ export function CoreHome() {
     function draw(time: number) {
       const delta = last ? Math.min(time - last, 100) : 0;
       last = time;
-      if (!pausedRef.current && !interacting.current && !document.hidden)
+      if (!pausedRef.current && !document.hidden)
         elapsed = (elapsed + delta) % 180000;
       const rotation = (elapsed / 180000) * Math.PI * 2;
       buttons.forEach((button, index) => {
         const theta = (orbit[index].phase * Math.PI) / 180 + rotation;
-        button.style.left = `${50 + Math.cos(theta) * 38}%`;
-        button.style.top = `${50 + Math.sin(theta) * 38}%`;
+        button.style.setProperty("--orbit-x", `${Math.cos(theta) * 38}%`);
+        button.style.setProperty("--orbit-y", `${Math.sin(theta) * 38}%`);
         connections[index]?.setAttribute(
           "transform",
           `rotate(${(theta * 180) / Math.PI} 500 500)`,
@@ -153,19 +152,6 @@ export function CoreHome() {
         ref={stage}
         className="constellation is-orbiting"
         aria-label={copy.constellation}
-        onPointerEnter={() => {
-          interacting.current = true;
-        }}
-        onPointerLeave={() => {
-          interacting.current = false;
-        }}
-        onFocusCapture={() => {
-          interacting.current = true;
-        }}
-        onBlurCapture={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget))
-            interacting.current = false;
-        }}
       >
         <div className="outer-orbit" aria-hidden="true" />
         <div className="orbit-mark top" aria-hidden="true" />
@@ -218,8 +204,8 @@ export function CoreHome() {
               aria-label={names[index]}
               style={
                 {
-                  left: `${50 + Math.cos(theta) * 38}%`,
-                  top: `${50 + Math.sin(theta) * 38}%`,
+                  "--orbit-x": `${Math.cos(theta) * 38}%`,
+                  "--orbit-y": `${Math.sin(theta) * 38}%`,
                 } as CSSProperties
               }
               href={workspaceHref(item.id)}
@@ -251,7 +237,6 @@ export function CoreHome() {
           </span>
         </div>
       </section>
-      <CoreAiDock />
       {search && (
         <p className="search-status" role="status">
           {ws.search} {search}

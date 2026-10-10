@@ -52,6 +52,8 @@ import {
   type Question,
 } from "../types";
 import { QUESTION_BY_ID } from "../questionnaire";
+import { auditModuleNameKey } from "../scoring";
+import { BusinessContextSummary } from "./BusinessContextPanel";
 import {
   ScoreGauge,
   MiniScoreGauge,
@@ -217,6 +219,8 @@ export function ReportView({ report, onOpenCompare }: Props) {
         </div>
       </section>
 
+      {report.businessContext && <BusinessContextSummary context={report.businessContext} />}
+
       {/* Category score cards */}
       <section>
         <SectionTitle
@@ -302,7 +306,7 @@ export function ReportView({ report, onOpenCompare }: Props) {
                                 onClick={() => setActiveModule(g.relatedModule!)}
                                 className="text-[10px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                               >
-                                {t(`module.${g.relatedModule}`)}
+                                {t(auditModuleNameKey(g.relatedModule))}
                               </button>
                             ) : null}
                           </div>
@@ -362,7 +366,7 @@ export function ReportView({ report, onOpenCompare }: Props) {
                               onClick={() => setActiveModule(op.relatedModule!)}
                               className="ml-auto inline-flex items-center gap-1 text-[10px] text-cyan hover:text-cyan/80"
                             >
-                              {t(`module.${op.relatedModule}`)}
+                              {t(auditModuleNameKey(op.relatedModule))}
                               <ArrowRight className="h-3 w-3" />
                             </button>
                           ) : null}

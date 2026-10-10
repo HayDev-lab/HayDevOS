@@ -24,6 +24,7 @@ import { useStudioCopy } from "./studio-copy";
 import { ContentGenerator } from "./ContentGenerator";
 import { StudioEditor } from "./StudioEditor";
 import { MarketingAssistantPanel } from "./MarketingAssistantPanel";
+import { CompetitorMonitorPanel } from "./CompetitorMonitorPanel";
 
 export function MarketingView() {
   const { t } = useLocale();
@@ -92,7 +93,7 @@ export function MarketingView() {
         </nav>
         <div className="studio-body">
           {[0, 4, 9].includes(tab) && <ContentGenerator key={`generator-${session.activeOrganization.id}`} onRequest={create} busy={isProcessing} activeType={section === "generator" ? route?.generatorType ?? 0 : undefined} />}
-          {tab === 2 ? <StudioEditor key={`editor-${session.activeOrganization.id}`} onBack={() => router.push("/marketing")} onGenerator={() => router.push("/marketing/generator")}/> : tab === 9 ? null : <>
+          {tab === 2 ? <StudioEditor key={`editor-${session.activeOrganization.id}`} onBack={() => router.push("/marketing")}/> : tab === 9 ? null : <>
           <div className="ai-creation-dock">
             <div className="ai-creation-head">
               <div>
@@ -163,6 +164,7 @@ export function MarketingView() {
             ))}
           </div>
           {[0, 4].includes(tab) && <MarketingAssistantPanel labels={copy.assistant} />}
+          {[0, 4].includes(tab) && <CompetitorMonitorPanel />}
           </>}
         </div>
       </div>

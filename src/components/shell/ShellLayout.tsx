@@ -5,9 +5,8 @@
  *
  * Structure:
  *   <div min-h-screen flex flex-col bg-background>
- *     <TopBar/>
+ *     <TopBar/>        (includes the Owner AI chat dropdown)
  *     <main flex-1> workspace page selected by the URL
- *     <OwnerAiPanel/>   (overlay, slides in from right)
  *     <Footer mt-auto/>
  *
  * Global keyboard listeners:
@@ -39,7 +38,6 @@ import { cn } from "@/lib/utils";
 
 import { TopBar } from "./TopBar";
 import { CommandPalette } from "./CommandPalette";
-import { OwnerAiPanel } from "./OwnerAiPanel";
 import { ActivityTimelineSheet } from "./ActivityTimelineSheet";
 import { ShortcutsHelpDialog } from "./ShortcutsHelpDialog";
 import { ModuleFrame } from "@/components/core/ModuleFrame";
@@ -284,8 +282,6 @@ export function ShellLayout({ onLogout }: ShellLayoutProps) {
           </div>
         </main>
 
-        {/* Owner AI panel (overlay) */}
-        <OwnerAiPanel />
       </div>
 
       {/* Command palette */}

@@ -31,6 +31,7 @@ import { useAppStore } from "@/lib/store/app-store";
 import { cn } from "@/lib/utils";
 
 import { prioritize } from "../data";
+import { auditModuleNameKey } from "../scoring";
 import { pickL10n,type AuditReport } from "../types";
 import { ImpactBadge,TONE_BG,TONE_TEXT } from "./shared";
 
@@ -146,7 +147,7 @@ export function RecommendationsView({ report }: Props) {
                           {t("audit.recommendations.recommendedModule")}
                         </span>
                         <div className="text-xs font-medium text-foreground">
-                          {t(`module.${tpl.moduleId}`)}
+                          {t(auditModuleNameKey(tpl.moduleId))}
                         </div>
                       </div>
                       <Button

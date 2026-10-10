@@ -19,6 +19,8 @@ export async function withTenantApi(
   req: NextRequest,
   options: {
     mutation?: boolean;
+    originCheck?: boolean;
+    allowBearerAuth?: boolean;
     roles?: readonly TenantRole[];
     rateLimit?: RateLimitRule;
   },
@@ -29,8 +31,8 @@ export async function withTenantApi(
   const route = req.nextUrl.pathname;
   let context: AuthContext | undefined;
   try {
-    if (options.mutation) assertSameOrigin(req);
-    context = await requireAuthContext(req);
+    if (options.mutation && options.originCheck !== false) assertSameOrigin(req);
+    context = await requireAuthContext(req, { allowBearer: options.allowBearerAuth });
     if (options.roles) requireRole(context, options.roles);
     const rateLimit = options.rateLimit ?? {
       scope: options.mutation ? `mutation:${route}` : `read:${route}`,

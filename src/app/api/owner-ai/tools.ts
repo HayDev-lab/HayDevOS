@@ -866,6 +866,41 @@ const SAFE_ACTION_ENTRIES: ToolRegistryEntry[] = [
     kind: "safe-action",
     execute: (args) => execSafeAction("generateQuoteDocument", args),
   },
+  {
+    name: "openWorkspaceTab",
+    description: "Open one of the allowlisted HayDevOS workspace sections in the current tab.",
+    parameters: {
+      module: { type: "string", required: true, description: "Known workspace module id" },
+      section: { type: "string", description: "Known section within that module" },
+    },
+    requiresApproval: false,
+    kind: "safe-action",
+    execute: (args) => execSafeAction("openWorkspaceTab", args),
+  },
+  {
+    name: "openWebSearch",
+    description: "Open a bounded external search tab for an explicit user query; this does not claim verified search results.",
+    parameters: {
+      query: { type: "string", required: true, description: "Search query" },
+      provider: { type: "string", enum: ["google", "bing", "duckduckgo"], default: "google", description: "Search host" },
+    },
+    requiresApproval: false,
+    kind: "safe-action",
+    execute: (args) => execSafeAction("openWebSearch", args),
+  },
+  {
+    name: "openStudioMagic",
+    description: "Open the Magic montage editor with a validated prompt without starting paid generation.",
+    parameters: {
+      prompt: { type: "string", required: true, description: "Video brief" },
+      durationSec: { type: "number", default: 120, description: "Requested duration in seconds" },
+      language: { type: "string", default: "Русский", description: "Generation language" },
+      aspectRatio: { type: "string", enum: ["16:9", "9:16", "1:1"], default: "16:9", description: "Video aspect ratio" },
+    },
+    requiresApproval: false,
+    kind: "safe-action",
+    execute: (args) => execSafeAction("openStudioMagic", args),
+  },
 ];
 
 // — Risky-action entries (return a "needs approval" marker, do NOT execute) —
@@ -978,6 +1013,19 @@ const RISKY_ACTION_ENTRIES: ToolRegistryEntry[] = [
     requiresApproval: true,
     kind: "risky-action",
     execute: (args) => ({ requiresApproval: true, action: "highImpactAutomation", args }),
+  },
+  {
+    name: "startMagicMontage",
+    description: "Open Magic montage and start the generation plan. REQUIRES APPROVAL because generation can consume provider credits.",
+    parameters: {
+      prompt: { type: "string", required: true, description: "Video brief" },
+      durationSec: { type: "number", default: 120, description: "Requested duration in seconds" },
+      language: { type: "string", default: "Русский", description: "Generation language" },
+      aspectRatio: { type: "string", enum: ["16:9", "9:16", "1:1"], default: "16:9", description: "Video aspect ratio" },
+    },
+    requiresApproval: true,
+    kind: "risky-action",
+    execute: (args) => ({ requiresApproval: true, action: "startMagicMontage", args }),
   },
 ];
 

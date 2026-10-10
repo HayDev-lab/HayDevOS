@@ -49,6 +49,19 @@ export type ActionStatus =
 
 export type ActionSafety = "safe" | "risky" | "forbidden";
 
+/** A bounded browser-side command emitted only after server-side action validation. */
+export type OwnerAiClientCommand =
+  | { type: "open_workspace"; href: string }
+  | { type: "open_web_search"; url: string; query: string }
+  | {
+      type: "open_studio_magic";
+      prompt: string;
+      durationSec: number;
+      language: string;
+      aspectRatio: "16:9" | "9:16" | "1:1";
+      autoRun: boolean;
+    };
+
 /** A proposed or executed safe/risky action. */
 export interface ProposedAction {
   id: string;
@@ -62,6 +75,8 @@ export interface ProposedAction {
   status: ActionStatus;
   /** Result message after execution (if any). */
   result?: string;
+  /** Optional validated command for the current browser tab. */
+  clientCommand?: OwnerAiClientCommand;
   /** ISO timestamp the action was proposed. */
   proposedAt: string;
   /** ISO timestamp the action was decided/executed (if any). */

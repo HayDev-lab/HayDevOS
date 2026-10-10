@@ -15,7 +15,8 @@
  * Empty assistant content + isPending shows a typing indicator.
  */
 
-import { Sparkles, User, ShieldCheck, Zap, AlertCircle, WifiOff } from "lucide-react";
+import { useEffect } from "react";
+import { Sparkles, User, ShieldCheck, Zap, AlertCircle, WifiOff, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   OwnerAiMessage,
@@ -24,6 +25,7 @@ import type {
   Approval,
 } from "@/app/api/owner-ai/types";
 import { useLocale } from "@/lib/i18n";
+import { navigateWorkspace } from "@/lib/workspace-navigation";
 import { Markdown } from "./Markdown";
 import { ToolCallCard } from "./ToolCallCard";
 import { ApprovalCard } from "./ApprovalCard";
@@ -142,6 +144,23 @@ export function ChatMessage({
 
 function ActionCard({ action }: { action: ProposedAction }) {
   const { t } = useLocale();
+  const clientCommand = action.clientCommand;
+
+  useEffect(() => {
+    if (action.status !== "executed" || !clientCommand || typeof window === "undefined") return;
+    const key = `haydevos.owner-ai.command.${action.id}`;
+    if (window.sessionStorage.getItem(key)) return;
+    window.sessionStorage.setItem(key, "1");
+    if (clientCommand.type === "open_workspace") {
+      navigateWorkspaceFromHref(clientCommand.href);
+    } else if (clientCommand.type === "open_web_search") {
+      const popup = window.open(clientCommand.url, "_blank", "noopener,noreferrer");
+      void popup;
+    } else {
+      window.sessionStorage.setItem("haydevos.magic.command", JSON.stringify(clientCommand));
+      navigateWorkspace("marketing", "editor");
+    }
+  }, [action.id, action.status, clientCommand]);
   const Icon =
     action.safety === "safe"
       ? Zap
@@ -182,8 +201,29 @@ function ActionCard({ action }: { action: ProposedAction }) {
           {action.result && (
             <p className="mt-0.5 text-[11px] text-muted-foreground">{action.result}</p>
           )}
+          {clientCommand?.type === "open_web_search" && (
+            <a
+              className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-lime hover:underline"
+              href={clientCommand.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <ExternalLink className="h-3 w-3" />
+              {clientCommand.query}
+            </a>
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+function navigateWorkspaceFromHref(href: string): void {
+  const path = href.replace(/^\/+/, "").split("/");
+  if (path.length === 0 || !path[0]) {
+    navigateWorkspace("dashboard");
+    return;
+  }
+  const moduleId = path[0] === "owner-ai" ? "ownerAi" : path[0];
+  navigateWorkspace(moduleId, path[1]);
 }

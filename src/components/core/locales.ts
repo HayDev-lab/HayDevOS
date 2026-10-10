@@ -37,7 +37,8 @@ export const coreLocales = {
     messageLabel: "Сообщение Owner AI",
     messagePlaceholder: "Спросите о вашем бизнесе…",
     send: "Отправить",
-    voiceUnavailable: "Голосовой сервис пока не подключён",
+    voiceUnavailable: "Голосовое управление недоступно в этом браузере или микрофон не разрешён",
+    voiceListening: "Слушаю голосовую команду",
   },
   en: {
     title: "HayDevOS · Business control core",
@@ -76,7 +77,8 @@ export const coreLocales = {
     messageLabel: "Message Owner AI",
     messagePlaceholder: "Ask about your business…",
     send: "Send",
-    voiceUnavailable: "The voice service is not connected yet",
+    voiceUnavailable: "Voice control is unavailable in this browser or microphone access was denied",
+    voiceListening: "Listening for a voice command",
   },
   hy: {
     title: "HayDevOS · Կառավարման միջուկ",
@@ -115,6 +117,7 @@ export const coreLocales = {
     messageLabel: "Հաղորդագրություն Owner AI-ին",
     messagePlaceholder: "Հարցրեք ձեր բիզնեսի մասին…",
     send: "Ուղարկել",
-    voiceUnavailable: "Ձայնային ծառայությունը դեռ միացված չէ",
+    voiceUnavailable: "Ձայնային կառավարումը հասանելի չէ այս դիտարկիչում կամ խոսափողի հասանելիությունը մերժված է",
+    voiceListening: "Լսում եմ ձայնային հրամանը",
   },
 } as const;

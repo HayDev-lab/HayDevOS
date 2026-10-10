@@ -14,6 +14,7 @@ const ALLOWED_ROLES = new Set(["OWNER", "ADMIN", "MANAGER", "MEMBER", "VIEWER"])
 const ALLOWED_LOCALES = new Set(["hy", "ru", "en"]);
 const ALLOWED_INTENTS = new Set(["observe", "assist", "auto"]);
 const ALLOWED_RISKS = new Set(["read", "approval-gated"]);
+const ALLOWED_TOOL_CAPABILITIES = new Set(["browser", "web_search", "media_generation", "studio"]);
 
 function inputError(code) {
   const error = new Error(code);
@@ -84,6 +85,13 @@ export function loadBrokerConfiguration(source = process.env) {
   if (!Number.isFinite(timeoutMs) || timeoutMs < 5_000 || timeoutMs > 120_000) {
     throw inputError("GATEWAY_TIMEOUT_INVALID");
   }
+  const toolPolicy = new Set(
+    (source.HAYDEV_OPENCLAW_TOOL_POLICY ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+  if ([...toolPolicy].some((value) => !ALLOWED_TOOL_CAPABILITIES.has(value))) throw inputError("TOOL_POLICY_INVALID");
 
   return {
     applicationToken,
@@ -94,6 +102,7 @@ export function loadBrokerConfiguration(source = process.env) {
     gatewayUrl: gateway.toString(),
     agentTarget,
     timeoutMs: Math.trunc(timeoutMs),
+    toolPolicy,
   };
 }
 
@@ -222,6 +231,12 @@ export async function handleBrokerCompletion({
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), config.timeoutMs);
   try {
+    const capabilityHint = config.toolPolicy.size > 0
+      ? [{
+          role: "system",
+          content: `OpenClaw capability policy: ${[...config.toolPolicy].join(", ")}. Use only these explicitly enabled capabilities. Never use shell, filesystem, arbitrary HTTP, or direct tenant/domain writes. HayDevOS handles approvals and domain changes.`,
+        }]
+      : [];
     const response = await fetchImpl(config.gatewayUrl, {
       method: "POST",
       headers: {
@@ -230,9 +245,9 @@ export async function handleBrokerCompletion({
       },
       body: JSON.stringify({
         model: config.agentTarget,
-        messages: request.messages,
+        messages: [...capabilityHint, ...request.messages],
         stream: false,
-        tool_choice: "none",
+        tool_choice: config.toolPolicy.size > 0 ? "auto" : "none",
         max_completion_tokens: 4096,
         // Gateway `user` selects a session; it is not used as authorization.
         user: `haydev:${request.tenantId}:${request.actorUserId}:${request.conversationId}`,

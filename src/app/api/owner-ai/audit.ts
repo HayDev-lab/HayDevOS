@@ -43,6 +43,10 @@ const ACTION_DESCRIPTIONS: Record<string, string> = {
   assignTask: "Reassign an existing task",
   generateReport: "Generate a report",
   generateQuoteDocument: "Generate a document from an immutable quote version",
+  openWorkspaceTab: "Open a validated HayDevOS workspace section",
+  openWebSearch: "Open a bounded external web-search tab",
+  openStudioMagic: "Open Magic montage with a prefilled brief",
+  startMagicMontage: "Start a Magic montage generation plan",
   runApprovedAutomation: "Run a previously-blocked automation",
   sendExternalMessage: "Send an external email/Slack/SMS",
   setLeadStage: "Change a lead's stage",
@@ -813,12 +817,13 @@ export function decideApproval(args: DecideApprovalArgs): {
 
 export function markActionResult(
   actionId: string,
-  result: { ok: boolean; message: string },
+  result: { ok: boolean; message: string; clientCommand?: ProposedAction["clientCommand"] },
 ): ProposedAction {
   const action = store.actions.get(actionId);
   if (!action) throw new Error(`Action not found: ${actionId}`);
   action.status = result.ok ? "executed" : "failed";
   action.result = result.message;
+  if (result.clientCommand) action.clientCommand = result.clientCommand;
 
   const run = store.agentRuns.get(action.runId);
   addAuditEvent({

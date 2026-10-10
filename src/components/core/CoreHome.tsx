@@ -14,7 +14,6 @@ import {
   ClipboardCheck,
   Pause,
   Play,
-  Mic,
   Sparkles,
 } from "lucide-react";
 import {
@@ -32,6 +31,7 @@ import { useOwnerAiStore } from "@/modules/ownerai/state";
 import { useLocale } from "@/lib/i18n";
 import { EarthCore } from "./EarthCore";
 import { useCoreCopy, useWorkspaceCopy } from "./copy";
+import { VoiceCommandButton } from "@/modules/ownerai/components/VoiceCommandButton";
 
 const orbit = [
   { id: "marketing", className: "marketing", icon: BarChart3, phase: -112.5 },
@@ -283,6 +283,7 @@ export function CoreHome() {
 export function CoreAiDock() {
   const copy = useCoreCopy();
   const ws = useWorkspaceCopy();
+  const { locale } = useLocale();
   const { session } = useAuth();
   const [draft, setDraft] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -327,16 +328,21 @@ export function CoreAiDock() {
       </div>
       <div className="voice-visual">
         <Wave />
-        <button
-          type="button"
+        <VoiceCommandButton
           className="mic-orb"
-          onClick={() => {
-            toast.info(copy.voiceUnavailable);
+          locale={locale}
+          label={copy.voiceAbout}
+          listeningLabel={copy.voiceListening}
+          unavailableLabel={copy.voiceUnavailable}
+          onUnavailable={(message) => toast.info(message)}
+          onTranscript={async (transcript) => {
+            if (isProcessing) return;
+            setSubmitted(true);
+            setOpen(true);
+            await sendMessage(transcript, session.activeOrganization.id, "dashboard");
           }}
-          aria-label={copy.voiceAbout}
-        >
-          <Mic />
-        </button>
+          disabled={isProcessing}
+        />
         <Wave />
       </div>
       <p className="ai-invitation">{copy.invitation}</p>

@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 
 import {
   createOwnerAiCompletion,
+  openClawCapabilities,
   ownerAiProviderConfigured,
 } from "../src/lib/owner-ai/provider";
 
@@ -40,6 +41,11 @@ function brokerSignature(timestamp: string, requestId: string, body: string): st
 }
 
 describe("Owner AI provider boundary", () => {
+  test("keeps OpenClaw browser/research/media capabilities opt-in", () => {
+    expect(openClawCapabilities({} as NodeJS.ProcessEnv)).toEqual({ browser: false, webSearch: false, mediaGeneration: false, studio: false });
+    expect(openClawCapabilities({ HAYDEV_OPENCLAW_TOOL_POLICY: "browser,web_search,media_generation,unknown" } as unknown as NodeJS.ProcessEnv)).toEqual({ browser: true, webSearch: true, mediaGeneration: true, studio: false });
+  });
+
   test("uses a real system role and requests a bounded model response", async () => {
     let body: Record<string, unknown> | undefined;
     const result = await createOwnerAiCompletion(

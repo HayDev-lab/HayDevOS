@@ -38,6 +38,7 @@ export const RISKY_ACTION_NAMES = [
   "createFulfillment",
   "confirmPayment",
   "refundPayment",
+  "startMagicMontage",
 ] as const;
 
 /** Safe actions — auto-execute (mock side effects). */
@@ -48,6 +49,9 @@ export const SAFE_ACTION_NAMES = [
   "generateReport",
   "generateQuoteDocument",
   "createOrderFromQuote",
+  "openWorkspaceTab",
+  "openWebSearch",
+  "openStudioMagic",
 ] as const;
 
 /** Forbidden actions — never allowed, regardless of mode or approval. */
@@ -67,6 +71,10 @@ const ACTION_DESCRIPTIONS: Record<string, string> = {
   generateReport: "Generate a report (daily / weekly / monthly / quarterly). Auto-approved.",
   generateQuoteDocument: "Generate a tenant-authorized PDF or DOCX from an immutable quote version. Auto-approved.",
   createOrderFromQuote: "Create exactly one draft order from an accepted immutable quote version. Auto-approved and idempotent.",
+  openWorkspaceTab: "Open one of the known HayDevOS workspace sections in the current browser tab. Auto-approved; only allowlisted workspace routes are accepted.",
+  openWebSearch: "Open an external search tab for an explicit user query. Auto-approved; only the configured search hosts are used and no result is claimed until OpenClaw/provider evidence exists.",
+  openStudioMagic: "Open the Magic montage editor with a validated brief without starting paid generation. Auto-approved.",
+  startMagicMontage: "Open Magic montage and start a generation plan from the brief. REQUIRES APPROVAL because generation may consume provider credits.",
   runApprovedAutomation: "Run an automation that is currently blocked on owner approval. REQUIRES APPROVAL.",
   sendExternalMessage: "Send an email/Slack/SMS to an external party. REQUIRES APPROVAL.",
   setLeadStage: "Change a lead's pipeline stage (e.g. to 'won' or 'lost'). REQUIRES APPROVAL.",
@@ -167,6 +175,13 @@ export function buildSystemPrompt({
     ``,
     `## Forbidden actions (NEVER propose these — they are blocked by the server)`,
     `${forbiddenLines}`,
+    ``,
+    `# Browser, research and studio commands`,
+    `- Use openWorkspaceTab for known HayDevOS modules/sections only; never invent a path.`,
+    `- Use openWebSearch only when the user explicitly asks to search the public web. It opens a bounded search URL; do not present the page as verified evidence.`,
+    `- Use openStudioMagic to open the editor and preload a brief without spending generation credits.`,
+    `- Use startMagicMontage only when the user clearly asks to start generation; it always requires approval before the client starts the plan.`,
+    `- When the OpenClaw broker is explicitly configured with browser/web_search/media capabilities, use those capabilities for actual research or generation. Otherwise report the capability as unavailable and do not claim completion.`,
     ``,
     `To propose an action, emit a fenced code block tagged \`action\` with a JSON object: \`{"action": "<name>", "args": {...}}\`. You may emit multiple action blocks. Safe actions execute immediately and their result is included in your final answer. Risky actions appear as approval cards in the UI.`,
     ``,

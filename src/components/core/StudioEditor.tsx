@@ -12,6 +12,7 @@ type MagicAssetKind = "reference" | "firstFrame" | "lastFrame" | "music" | "voic
 type MagicAssetSlot = { file: File; url: string; name: string };
 type MagicCharacter = { name: string; description: string; locked: boolean };
 type MagicPlanView = { providerReady: boolean; provider: string; durationSec: number; steps: Array<{ title: string; detail: string }>; aiSummary?: string };
+type MagicCommand = { type: "open_studio_magic"; prompt: string; durationSec: number; language: string; aspectRatio: "16:9" | "9:16" | "1:1"; autoRun: boolean };
 
 export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGenerator: () => void }) {
   const copy = useStudioCopy();
@@ -100,12 +101,16 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
     setMagicCharacters((current) => current.map((character, candidate) => candidate === index && !character.locked ? { ...character, [field]: value } : character));
   }
 
-  async function runMagic() {
-    if (!magicPrompt.trim() || magicBusy) return;
+  async function runMagic(override?: Pick<MagicCommand, "prompt" | "durationSec" | "language" | "aspectRatio">) {
+    const effectivePrompt = override?.prompt ?? magicPrompt;
+    const effectiveDuration = override?.durationSec ?? magicDuration;
+    const effectiveLanguage = override?.language ?? copy.languages[magicLanguage];
+    const effectiveAspectRatio = override?.aspectRatio ?? ratios[ratio];
+    if (!effectivePrompt.trim() || magicBusy) return;
     setMagicBusy(true); setMagicError(null); setMagicPlan(null);
     try {
       const form = new FormData();
-      form.set("prompt", magicPrompt.trim()); form.set("durationSec", String(Math.max(1, Math.min(600, magicDuration)))); form.set("language", copy.languages[magicLanguage]); form.set("aspectRatio", ratios[ratio]); form.set("characters", JSON.stringify(magicCharacters));
+      form.set("prompt", effectivePrompt.trim()); form.set("durationSec", String(Math.max(1, Math.min(600, effectiveDuration)))); form.set("language", effectiveLanguage); form.set("aspectRatio", effectiveAspectRatio); form.set("characters", JSON.stringify(magicCharacters));
       Object.entries(magicAssets).forEach(([kind, asset]) => { if (asset) form.set(kind, asset.file); });
       const response = await fetch("/api/studio/magic", { method: "POST", body: form, credentials: "same-origin" });
       const payload = await response.json() as { plan?: MagicPlanView; error?: string };
@@ -117,6 +122,33 @@ export function StudioEditor({ onBack, onGenerator }: { onBack: () => void; onGe
       setMagicBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.sessionStorage.getItem("haydevos.magic.command");
+    if (!raw) return;
+    window.sessionStorage.removeItem("haydevos.magic.command");
+    try {
+      const command = JSON.parse(raw) as Partial<MagicCommand>;
+      if (command.type !== "open_studio_magic" || typeof command.prompt !== "string" || !command.prompt.trim()) return;
+      const prompt = command.prompt;
+      const durationSec = typeof command.durationSec === "number" ? command.durationSec : 120;
+      const language = typeof command.language === "string" ? command.language : copy.languages[0] ?? "Русский";
+      const aspectRatio = command.aspectRatio && ratios.includes(command.aspectRatio) ? command.aspectRatio : "16:9";
+      const languageIndex = copy.languages.findIndex((candidate) => candidate === language);
+      queueMicrotask(() => {
+        setMagicPrompt(prompt);
+        setMagicDuration(Math.max(1, Math.min(600, Math.trunc(durationSec))));
+        setMagicLanguage(languageIndex >= 0 ? languageIndex : 0);
+        setRatio(Math.max(0, ratios.indexOf(aspectRatio)));
+        setMagicOpen(true);
+        setMagicError(null);
+        if (command.autoRun) void runMagic({ prompt, durationSec, language, aspectRatio });
+      });
+    } catch {
+      queueMicrotask(() => setMagicError(copy.magicError));
+    }
+  }, [copy.languages]);
 
   function applyMagicPlan() {
     if (!magicPlan) return;

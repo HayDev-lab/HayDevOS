@@ -1,6 +1,7 @@
 "use client";
 
 import { useWorkspaceSection } from "@/lib/workspace-navigation";
+import { useAuth } from "@/components/auth/AuthContext";
 
 /**
  * OwnerAiView — full-page Owner AI console.
@@ -21,7 +22,7 @@ import { useWorkspaceSection } from "@/lib/workspace-navigation";
  */
 
 import { useEffect, useMemo } from "react";
-import { RefreshCw, Mic } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Wave } from "@/components/core/CoreHome";
 import { useCoreCopy, useWorkspaceCopy } from "@/components/core/copy";
@@ -44,6 +45,7 @@ import { ToolCallsTab } from "./components/ToolCallsTab";
 import { ApprovalsTab } from "./components/ApprovalsTab";
 import { AuditTab } from "./components/AuditTab";
 import { SettingsTab } from "./components/SettingsTab";
+import { VoiceCommandButton } from "./components/VoiceCommandButton";
 
 type Tab =
   | "chat"
@@ -70,12 +72,14 @@ const TABS: TabDef[] = [
 ];
 
 export function OwnerAiView() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const { session } = useAuth();
   const coreCopy = useCoreCopy();
   const workspaceCopy = useWorkspaceCopy();
   const [tab, setTab] = useWorkspaceSection<Tab>("ownerAi", "chat");
   const init = useOwnerAiStore((s) => s.init);
   const refreshState = useOwnerAiStore((s) => s.refreshState);
+  const sendMessage = useOwnerAiStore((s) => s.sendMessage);
   const isProcessing = useOwnerAiStore((s) => s.isProcessing);
   const approvals = useOwnerAiStore((s) => s.approvals);
   const config = useOwnerAiStore((s) => s.config);
@@ -116,14 +120,16 @@ export function OwnerAiView() {
         </div>
         <div className="owner-voice-stage">
           <Wave />
-          <button
-            type="button"
+          <VoiceCommandButton
             className="owner-mic"
-            aria-label={coreCopy.voiceAbout}
-            onClick={() => toast.info(coreCopy.voiceUnavailable)}
-          >
-            <Mic />
-          </button>
+            locale={locale}
+            label={coreCopy.voiceAbout}
+            listeningLabel={coreCopy.voiceListening}
+            unavailableLabel={coreCopy.voiceUnavailable}
+            onUnavailable={(message) => toast.info(message)}
+            onTranscript={(transcript) => sendMessage(transcript, session.activeOrganization.id, "ownerAi")}
+            disabled={isProcessing}
+          />
           <Wave />
         </div>
       </div>

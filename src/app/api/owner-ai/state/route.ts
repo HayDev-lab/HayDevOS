@@ -16,6 +16,7 @@ import { withTenantApi } from "@/lib/api/handler";
 import {
   ownerAiDemoEnabled,
   ownerAiProviderConfigured,
+  ownerAiProviderName,
 } from "@/lib/owner-ai/provider";
 
 import {
@@ -35,13 +36,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function detectProvider(): {
-  provider: "openai-compatible" | "offline-fallback" | "unavailable";
+  provider: "openai-compatible" | "openclaw-broker" | "offline-fallback" | "unavailable";
   model: string | null;
 } {
   if (ownerAiProviderConfigured()) {
     return {
-      provider: "openai-compatible",
-      model: process.env.OWNER_AI_MODEL!.trim(),
+      provider: ownerAiProviderName(),
+      model: ownerAiProviderName() === "openai-compatible" ? process.env.OWNER_AI_MODEL!.trim() : process.env.HAYDEV_OPENCLAW_AGENT_TARGET?.trim() || "openclaw/default",
     };
   }
   if (ownerAiDemoEnabled()) {

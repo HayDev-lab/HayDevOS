@@ -65,6 +65,12 @@ function tokenFromCookieHeader(cookieHeader: string | null): string | null {
   return null;
 }
 
+function tokenFromAuthorizationHeader(value: string | null): string | null {
+  if (!value?.startsWith("Bearer ")) return null;
+  const token = value.slice("Bearer ".length).trim();
+  return /^[A-Za-z0-9_-]{32,128}$/.test(token) ? token : null;
+}
+
 export async function resolveSessionToken(token: string | null): Promise<AuthContext | null> {
   if (!token || !/^[A-Za-z0-9_-]{32,128}$/.test(token)) return null;
 
@@ -124,15 +130,16 @@ export async function resolveSessionToken(token: string | null): Promise<AuthCon
 
 export async function getOptionalAuthContext(
   req?: NextRequest,
+  options: { allowBearer?: boolean } = {},
 ): Promise<AuthContext | null> {
   const token = req
-    ? tokenFromCookieHeader(req.headers.get("cookie"))
+    ? tokenFromCookieHeader(req.headers.get("cookie")) ?? (options.allowBearer ? tokenFromAuthorizationHeader(req.headers.get("authorization")) : null)
     : (await cookies()).get(cookieName())?.value ?? null;
   return resolveSessionToken(token);
 }
 
-export async function requireAuthContext(req: NextRequest): Promise<AuthContext> {
-  const context = await getOptionalAuthContext(req);
+export async function requireAuthContext(req: NextRequest, options: { allowBearer?: boolean } = {}): Promise<AuthContext> {
+  const context = await getOptionalAuthContext(req, options);
   if (!context) throw new ApiError(401, "UNAUTHENTICATED", "Authentication required");
   return context;
 }

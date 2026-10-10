@@ -22,10 +22,13 @@ import {
   transferInventory,
 } from "@/lib/erp";
 import { getApproval } from "@/app/api/owner-ai/audit";
+import { workspaceHref } from "@/lib/workspace-routes";
+import type { OwnerAiClientCommand } from "@/app/api/owner-ai/types";
 
 export interface ActionExecutionResult {
   ok: boolean;
   message: string;
+  clientCommand?: OwnerAiClientCommand;
 }
 
 const id = z.string().trim().min(1).max(64);
@@ -34,6 +37,30 @@ const optionalDate = z
   .datetime({ offset: true })
   .optional()
   .transform((value) => (value ? new Date(value) : undefined));
+
+const workspaceCommandSchema = z.object({
+  module: z.string().trim().min(1).max(40),
+  section: z.string().trim().min(1).max(60).optional(),
+}).strict();
+const webSearchCommandSchema = z.object({
+  query: z.string().trim().min(2).max(240),
+  provider: z.enum(["google", "bing", "duckduckgo"]).default("google"),
+}).strict();
+const studioMagicCommandSchema = z.object({
+  prompt: z.string().trim().min(3).max(12_000),
+  durationSec: z.number().int().min(1).max(600).default(120),
+  language: z.string().trim().min(1).max(80).default("Русский"),
+  aspectRatio: z.enum(["16:9", "9:16", "1:1"]).default("16:9"),
+}).strict();
+
+function searchUrl(provider: z.infer<typeof webSearchCommandSchema>["provider"], query: string): string {
+  const hosts = {
+    google: "https://www.google.com/search",
+    bing: "https://www.bing.com/search",
+    duckduckgo: "https://duckduckgo.com/",
+  } as const;
+  return `${hosts[provider]}?q=${encodeURIComponent(query)}`;
+}
 
 function cleanArgs(args: Record<string, unknown>): Record<string, unknown> {
   const { __approvalId: _approvalId, ...clean } = args;
@@ -88,6 +115,37 @@ export async function executeTenantAction(
 
   try {
     switch (action) {
+      case "openWorkspaceTab": {
+        const input = workspaceCommandSchema.parse(args);
+        const href = workspaceHref(input.module, input.section);
+        return {
+          ok: true,
+          message: `Validated workspace route ${href}`,
+          clientCommand: { type: "open_workspace", href },
+        };
+      }
+
+      case "openWebSearch": {
+        const input = webSearchCommandSchema.parse(args);
+        return {
+          ok: true,
+          message: `Prepared ${input.provider} search for the requested query`,
+          clientCommand: { type: "open_web_search", url: searchUrl(input.provider, input.query), query: input.query },
+        };
+      }
+
+      case "openStudioMagic":
+      case "startMagicMontage": {
+        const input = studioMagicCommandSchema.parse(args);
+        return {
+          ok: true,
+          message: action === "startMagicMontage"
+            ? "Approved Magic montage plan will open in the editor"
+            : "Magic montage editor opened with the validated brief",
+          clientCommand: { type: "open_studio_magic", ...input, autoRun: action === "startMagicMontage" },
+        };
+      }
+
       case "createTask": {
         requireLeadPermission(domainContext, "lead.task");
         const input = z

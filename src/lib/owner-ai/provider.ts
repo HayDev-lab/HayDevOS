@@ -17,6 +17,8 @@ const BROKER_SIGNATURE_MAX_AGE_MS = 5 * 60_000;
 
 export type OwnerAiProvider = "openai-compatible" | "openclaw-broker";
 
+export type OpenClawCapability = "browser" | "web_search" | "media_generation" | "studio";
+
 export type OwnerAiInvocationContext = {
   tenantId: string;
   actorUserId: string;
@@ -206,6 +208,23 @@ export function ownerAiProviderName(
     : "openai-compatible";
 }
 
+export function openClawCapabilities(
+  source: NodeJS.ProcessEnv = process.env,
+): { browser: boolean; webSearch: boolean; mediaGeneration: boolean; studio: boolean } {
+  const enabled = new Set(
+    (source.HAYDEV_OPENCLAW_TOOL_POLICY ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter((value): value is OpenClawCapability => ["browser", "web_search", "media_generation", "studio"].includes(value)),
+  );
+  return {
+    browser: enabled.has("browser"),
+    webSearch: enabled.has("web_search"),
+    mediaGeneration: enabled.has("media_generation"),
+    studio: enabled.has("studio"),
+  };
+}
+
 async function createOpenAiCompletion(
   messages: OwnerAiChatMessage[],
   environment: NodeJS.ProcessEnv,
@@ -262,9 +281,10 @@ async function createBrokerCompletion(
     requestId: context.requestId,
     context,
     messages,
-    // The broker's OpenClaw agent is reasoning-only. HayDevOS remains the
-    // domain-tool and approval executor; no Gateway tool config is accepted.
-    capabilities: { domainTools: false, shell: false, browser: false, filesystem: false },
+    // OpenClaw capabilities are server-side opt-in. HayDevOS still remains
+    // the tenant/domain-tool and approval executor; shell/filesystem are never
+    // delegated through this protocol.
+    capabilities: { domainTools: false, shell: false, filesystem: false, ...openClawCapabilities(environment) },
   });
   const timestamp = String(Date.now());
   const controller = new AbortController();

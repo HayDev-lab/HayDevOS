@@ -116,6 +116,28 @@ describe("OpenClaw broker boundary", () => {
     })).rejects.toThrow("GATEWAY_TOOL_OR_CONTENT_REJECTED");
   });
 
+  test("enables only the explicitly configured capability policy", async () => {
+    let outgoing;
+    const request = signedRequest();
+    const config = loadBrokerConfiguration({ ...environment, HAYDEV_OPENCLAW_TOOL_POLICY: "browser,web_search" });
+    await handleBrokerCompletion({
+      ...request,
+      config,
+      now,
+      fetchImpl: async (_url, init) => {
+        outgoing = JSON.parse(String(init.body));
+        return new Response(JSON.stringify({ choices: [{ message: { content: "researched" } }] }));
+      },
+    });
+    expect(outgoing.tool_choice).toBe("auto");
+    expect(outgoing.messages[0]).toMatchObject({ role: "system" });
+    expect(outgoing.messages[0].content).toContain("browser, web_search");
+  });
+
+  test("rejects unknown capability policy values", () => {
+    expect(() => loadBrokerConfiguration({ ...environment, HAYDEV_OPENCLAW_TOOL_POLICY: "shell" })).toThrow("TOOL_POLICY_INVALID");
+  });
+
   test("returns one cached result for an identical retry and rejects a changed replay", async () => {
     const replayCache = createBrokerReplayCache();
     const request = signedRequest();
